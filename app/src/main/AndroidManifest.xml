@@ -17,23 +17,60 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:theme="@style/Theme.Carousal">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- Deep-link: carousal://payscreen, carousal://homescreen, carousal://testscreen -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="carousal" />
+                <data android:host="payscreen" />
+                <data android:host="homescreen" />
+                <data android:host="testscreen" />
             </intent-filter>
         </activity>
 
         <activity
                 android:name=".TestActivity"
                 android:exported="true"
+                android:launchMode="singleTop"
                 android:theme="@style/Theme.Carousal">
+
+            <!-- Deep-link: carousal://xmlhome -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="carousal" />
+                <data android:host="xmlhome" />
+            </intent-filter>
         </activity>
 
         <activity
                 android:name=".MoreActivity"
                 android:exported="true"
+                android:launchMode="singleTop"
                 android:theme="@style/Theme.Carousal">
+
+            <!-- Deep-link: carousal://cashbook, carousal://moreactivity -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="carousal" />
+                <data android:host="cashbook" />
+                <data android:host="moreactivity" />
+            </intent-filter>
         </activity>
     </application>
 

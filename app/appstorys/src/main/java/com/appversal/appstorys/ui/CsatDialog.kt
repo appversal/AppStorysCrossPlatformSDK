@@ -68,29 +68,21 @@ internal fun CsatDialog(
             "csatBackgroundColor" to (s?.appearance?.backgroundColor?.toColor(Color.White)
                 ?: (Color.White)),
 
-            // Title colors - check both colors field and textStyle.color
-            "csatTitleColor" to ((s?.initialFeedback?.title?.color
-                ?: s?.initialFeedback?.title?.textStyle?.color)?.toColor(Color.Black)
+            // Title colors - use textStyle.color
+            "csatTitleColor" to (s?.initialFeedback?.title?.textStyle?.color?.toColor(Color.Black)
                 ?: (Color.Black)),
 
-            // Description colors - check both colors field and textStyle.color
-            "csatDescriptionTextColor" to ((s?.initialFeedback?.subtitle?.color
-                ?: s?.initialFeedback?.subtitle?.textStyle?.color)?.toColor(Color(0xFF504F58))
+            // Description colors - use textStyle.color
+            "csatDescriptionTextColor" to (s?.initialFeedback?.subtitle?.textStyle?.color?.toColor(Color(0xFF504F58))
                 ?: (Color(0xFF504F58))),
 
-            // CTA colors - check both flat colors and nested cta structure
-            "csatCtaBackgroundColor" to ((s?.feedbackPage?.submitButton?.colors?.background
-                ?: s?.feedbackPage?.submitButton?.cta?.container?.backgroundColor)?.toColor(
-                Color(
-                    0xFF007AFF
-                )
-            ) ?: (Color(0xFF007AFF))),
-            "csatCtaTextColor" to ((s?.feedbackPage?.submitButton?.colors?.text
-                ?: s?.feedbackPage?.submitButton?.cta?.text?.color)?.toColor(Color.White)
-                ?: (Color.White)),
-            "csatCtaBorderColor" to ((s?.feedbackPage?.submitButton?.colors?.border
-                ?: s?.feedbackPage?.submitButton?.cta?.container?.borderColor)?.toColor(Color.Transparent)
-                ?: (Color.Transparent)),
+            // CTA colors - use only cta.* path
+            "csatCtaBackgroundColor" to (s?.feedbackPage?.submitButton?.cta?.container?.backgroundColor?.toColor(Color(0xFF007AFF))
+                ?: Color(0xFF007AFF)),
+            "csatCtaTextColor" to (s?.feedbackPage?.submitButton?.cta?.text?.color?.toColor(Color.White)
+                ?: Color.White),
+            "csatCtaBorderColor" to (s?.feedbackPage?.submitButton?.cta?.container?.borderColor?.toColor(Color.Transparent)
+                ?: Color.Transparent),
 
             // Option colors - non-selected
             "csatOptionBoxColour" to (s?.feedbackPage?.options?.nonSelectedOptions?.colors?.background?.toColor(
@@ -114,25 +106,19 @@ internal fun CsatDialog(
                 Color(0xFF007AFF)
             ) ?: (Color(0xFF007AFF))),
 
-            // Star colors - check both flat and nested star structure
-            "csatLowStarColor" to ((s?.rating?.low?.background
-                ?: s?.rating?.star?.low?.stylingStar?.background)?.toColor(Color(0xFFFF6B6B))
-                ?: (Color(0xFFFF6B6B))),
-            "csatLowStarBorderColor" to ((s?.rating?.low?.border
-                ?: s?.rating?.star?.low?.stylingStar?.border)?.toColor(Color.Transparent)
-                ?: (Color.Transparent)),
-            "csatHighStarColor" to ((s?.rating?.high?.background
-                ?: s?.rating?.star?.high?.stylingStar?.background)?.toColor(Color(0xFFFFD700))
-                ?: (Color(0xFFFFD700))),
-            "csatHighStarBorderColor" to ((s?.rating?.high?.border
-                ?: s?.rating?.star?.high?.stylingStar?.border)?.toColor(Color.Transparent)
-                ?: (Color.Transparent)),
-            "csatUnselectedStarColor" to ((s?.rating?.unselected?.background
-                ?: s?.rating?.star?.unselected?.stylingStar?.background)?.toColor(Color(0xFFCCCCCC))
-                ?: (Color(0xFFCCCCCC))),
-            "csatUnselectedStarBorderColor" to ((s?.rating?.unselected?.border
-                ?: s?.rating?.star?.unselected?.stylingStar?.border)?.toColor(Color.Transparent)
-                ?: (Color.Transparent)),
+            // Star colors - use only rating.star.* path
+            "csatLowStarColor" to (s?.rating?.star?.low?.stylingStar?.background?.toColor(Color(0xFFFF6B6B))
+                ?: Color(0xFFFF6B6B)),
+            "csatLowStarBorderColor" to (s?.rating?.star?.low?.stylingStar?.border?.toColor(Color.Transparent)
+                ?: Color.Transparent),
+            "csatHighStarColor" to (s?.rating?.star?.high?.stylingStar?.background?.toColor(Color(0xFFFFD700))
+                ?: Color(0xFFFFD700)),
+            "csatHighStarBorderColor" to (s?.rating?.star?.high?.stylingStar?.border?.toColor(Color.Transparent)
+                ?: Color.Transparent),
+            "csatUnselectedStarColor" to (s?.rating?.star?.unselected?.stylingStar?.background?.toColor(Color(0xFFCCCCCC))
+                ?: Color(0xFFCCCCCC)),
+            "csatUnselectedStarBorderColor" to (s?.rating?.star?.unselected?.stylingStar?.border?.toColor(Color.Transparent)
+                ?: Color.Transparent),
 
             // Additional comments colors
             "csatAdditionalTextColor" to (s?.feedbackPage?.additionalComments?.colors?.text?.toColor(
@@ -145,26 +131,18 @@ internal fun CsatDialog(
                 Color(0xFFCCCCCC)
             ) ?: (Color(0xFFCCCCCC))),
 
-            // Thank you page colors - check both colors field and textStyle.color
-            "thankyouTitleColor" to ((s?.thankyouPage?.title?.color
-                ?: s?.thankyouPage?.title?.textStyle?.color)?.toColor(Color.Black)
+            // Thank you page colors - use textStyle.color
+            "thankyouTitleColor" to (s?.thankyouPage?.title?.textStyle?.color?.toColor(Color.Black)
                 ?: (Color.Black)),
-            "thankyouSubtitleColor" to ((s?.thankyouPage?.subtitle?.color
-                ?: s?.thankyouPage?.subtitle?.textStyle?.color)?.toColor(Color(0xFF504F58))
+            "thankyouSubtitleColor" to (s?.thankyouPage?.subtitle?.textStyle?.color?.toColor(Color(0xFF504F58))
                 ?: (Color(0xFF504F58))),
-            // Thank you done button - check both flat colors and nested cta structure
-            "thankyouButtonBackgroundColor" to ((s?.thankyouPage?.doneButton?.colors?.background
-                ?: s?.thankyouPage?.doneButton?.cta?.container?.backgroundColor)?.toColor(
-                Color(
-                    0xFF007AFF
-                )
-            ) ?: (Color(0xFF007AFF))),
-            "thankyouButtonTextColor" to ((s?.thankyouPage?.doneButton?.colors?.text
-                ?: s?.thankyouPage?.doneButton?.cta?.text?.color)?.toColor(Color.White)
-                ?: (Color.White)),
-            "thankyouButtonBorderColor" to ((s?.thankyouPage?.doneButton?.colors?.border
-                ?: s?.thankyouPage?.doneButton?.cta?.container?.borderColor)?.toColor(Color.Transparent)
-                ?: (Color.Transparent))
+            // Thank you done button - use only cta.* path
+            "thankyouButtonBackgroundColor" to (s?.thankyouPage?.doneButton?.cta?.container?.backgroundColor?.toColor(Color(0xFF007AFF))
+                ?: Color(0xFF007AFF)),
+            "thankyouButtonTextColor" to (s?.thankyouPage?.doneButton?.cta?.text?.color?.toColor(Color.White)
+                ?: Color.White),
+            "thankyouButtonBorderColor" to (s?.thankyouPage?.doneButton?.cta?.container?.borderColor?.toColor(Color.Transparent)
+                ?: Color.Transparent)
         )
     }
 
@@ -328,7 +306,7 @@ private fun MainContent(
         val subtitleTextStyle = csatDetails.styling?.initialFeedback?.subtitle?.textStyle
 
         // Title alignment
-        val titleAlignment = when (titleTextStyle?.alignment?.lowercase()) {
+        val titleAlignment = when (titleTextStyle?.textAlign?.lowercase()) {
             "left" -> androidx.compose.ui.text.style.TextAlign.Start
             "right" -> androidx.compose.ui.text.style.TextAlign.End
             "center" -> androidx.compose.ui.text.style.TextAlign.Center
@@ -344,7 +322,7 @@ private fun MainContent(
         }
 
         // Subtitle alignment
-        val subtitleAlignment = when (subtitleTextStyle?.alignment?.lowercase()) {
+        val subtitleAlignment = when (subtitleTextStyle?.textAlign?.lowercase()) {
             "left" -> androidx.compose.ui.text.style.TextAlign.Start
             "right" -> androidx.compose.ui.text.style.TextAlign.End
             "center" -> androidx.compose.ui.text.style.TextAlign.Center
@@ -365,11 +343,11 @@ private fun MainContent(
                 .fillMaxWidth(),
             text = localContent["title"].toString(),
             styling = TextStyling(
-                color = csatDetails.styling?.initialFeedback?.title?.color,
-                fontSize = (titleTextStyle?.size ?: ((csatDetails.styling?.fontSize ?: 16) + 6)),
+                color = csatDetails.styling?.initialFeedback?.title?.textStyle?.color,
+                fontSize = (titleTextStyle?.fontSize ?: ((csatDetails.styling?.fontSize ?: 16) + 6)),
                 fontFamily = titleTextStyle?.fontFamily ?: "",
-                textAlign = titleTextStyle?.alignment,
-                fontDecoration = listOf("bold")
+                textAlign = titleTextStyle?.textAlign,
+                fontDecoration = titleTextStyle?.fontDecoration
             )
         )
 
@@ -381,10 +359,11 @@ private fun MainContent(
                 .fillMaxWidth(),
             text = localContent["description"].toString(),
             styling = TextStyling(
-                color = csatDetails.styling?.initialFeedback?.subtitle?.color,
-                fontSize = (subtitleTextStyle?.size ?: (csatDetails.styling?.fontSize ?: 16)),
+                color = csatDetails.styling?.initialFeedback?.subtitle?.textStyle?.color,
+                fontSize = (subtitleTextStyle?.fontSize ?: (csatDetails.styling?.fontSize ?: 16)),
                 fontFamily = subtitleTextStyle?.fontFamily ?: "",
-                textAlign = subtitleTextStyle?.alignment
+                textAlign = subtitleTextStyle?.textAlign,
+                fontDecoration = subtitleTextStyle?.fontDecoration
             )
         )
 
@@ -440,6 +419,9 @@ private fun FeedbackContent(
             )
         }
 
+        val optionRadius = csatDetails.styling?.feedbackPage?.options?.cornerRadius
+        val optionSpacing = csatDetails.styling?.feedbackPage?.options?.optionsSpacing ?: 8
+
         feedbackOptions?.forEach { option ->
             val isSelected = option == selectedOption
 
@@ -450,8 +432,8 @@ private fun FeedbackContent(
                 csatDetails.styling?.feedbackPage?.options?.nonSelectedOptions?.textStyle
             }
 
-            val optionFontSize = (optionTextStyle?.size ?: csatDetails.styling?.fontSize ?: 16).sp
-            val optionAlignment = when (optionTextStyle?.alignment?.lowercase()) {
+            val optionFontSize = (optionTextStyle?.fontSize ?: csatDetails.styling?.fontSize ?: 16).sp
+            val optionAlignment = when (optionTextStyle?.textAlign?.lowercase()) {
                 "center" -> androidx.compose.ui.text.style.TextAlign.Center
                 "right", "end" -> androidx.compose.ui.text.style.TextAlign.End
                 else -> androidx.compose.ui.text.style.TextAlign.Start
@@ -466,12 +448,18 @@ private fun FeedbackContent(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .height((csatDetails.styling?.feedbackPage?.options?.optionsHeight ?: 50).dp)
                     .padding(vertical = 4.dp),
                 color = if (isSelected) styling["csatSelectedOptionBackgroundColor"] ?: Color(
                     0xFFE3F2FD
                 )
                 else styling["csatOptionBoxColour"] ?: Color.White,
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(
+                    topStart = (optionRadius?.topLeft ?: 24).dp,
+                    topEnd = (optionRadius?.topRight ?: 24).dp,
+                    bottomStart = (optionRadius?.bottomLeft ?: 24).dp,
+                    bottomEnd = (optionRadius?.bottomRight ?: 24).dp
+                ),
                 border = androidx.compose.foundation.BorderStroke(
                     width = 1.dp,
                     color = if (isSelected) styling["csatSelectedOptionStrokeColor"] ?: Color(
@@ -489,17 +477,18 @@ private fun FeedbackContent(
                     CommonText(
                         modifier = Modifier.fillMaxWidth(),
                         text = option,
-                        styling = TextStyling(
+                            styling = TextStyling(
                             color = if (isSelected) csatDetails.styling?.feedbackPage?.options?.selectedOptions?.colors?.text
                             else csatDetails.styling?.feedbackPage?.options?.nonSelectedOptions?.colors?.text,
-                            fontSize = (optionTextStyle?.size ?: csatDetails.styling?.fontSize
+                            fontSize = (optionTextStyle?.fontSize ?: csatDetails.styling?.fontSize
                             ?: 16),
                             fontFamily = optionTextStyle?.fontFamily ?: "",
-                            textAlign = optionTextStyle?.alignment
+                            textAlign = optionTextStyle?.textAlign
                         )
                     )
                 }
             }
+            Spacer(modifier = Modifier.height(optionSpacing.dp))
         }
 
         if (feedbackOptions?.toList()?.isNotEmpty() == true) {
@@ -514,8 +503,8 @@ private fun FeedbackContent(
             // Extract text style settings for additional comments
             val commentsTextStyle = csatDetails.styling?.feedbackPage?.additionalComments?.textStyle
             val commentsFontSize =
-                (commentsTextStyle?.size ?: csatDetails.styling?.fontSize ?: 14).sp
-            val commentsAlignment = when (commentsTextStyle?.alignment?.lowercase()) {
+                (commentsTextStyle?.fontSize ?: csatDetails.styling?.fontSize ?: 14).sp
+            val commentsAlignment = when (commentsTextStyle?.textAlign?.lowercase()) {
                 "center" -> androidx.compose.ui.text.style.TextAlign.Center
                 "right", "end" -> androidx.compose.ui.text.style.TextAlign.End
                 else -> androidx.compose.ui.text.style.TextAlign.Start
@@ -539,18 +528,22 @@ private fun FeedbackContent(
                     value = additionalComments,
                     onValueChange = onCommentsChanged,
                     modifier = Modifier.fillMaxSize(),
-                    placeholder = {
-                        CommonText(
-                            modifier = Modifier.align(Alignment.TopStart),
-                            text = "Enter comments",
-                            styling = TextStyling(
-                                color = "#808080",
-                                fontSize = commentsTextStyle?.size,
-                                fontFamily = commentsTextStyle?.fontFamily ?: "",
-                                textAlign = commentsTextStyle?.alignment
+                        placeholder = {
+                            CommonText(
+                                modifier = Modifier.align(Alignment.TopStart),
+                                text = csatDetails.styling
+                                    ?.feedbackPage
+                                    ?.additionalComments
+                                    ?.placeholder
+                                    ?: "Enter comments",
+                                styling = TextStyling(
+                                    color = "#808080",
+                                    fontSize = commentsTextStyle?.fontSize,
+                                    fontFamily = commentsTextStyle?.fontFamily ?: "",
+                                    textAlign = commentsTextStyle?.textAlign
+                                )
                             )
-                        )
-                    },
+                        },
                     textStyle = androidx.compose.ui.text.TextStyle(
                         fontSize = commentsFontSize,
                         textAlign = commentsAlignment,
@@ -582,25 +575,19 @@ private fun FeedbackContent(
         Spacer(modifier = Modifier.height((submitButtonMargin?.top ?: 18).dp))
 
         val submitButtonText = submitButton?.text ?: "Submit"
-        val submitButtonRadius = submitButton?.containerRadius ?: submitButton?.cta?.cornerRadius
-        val submitButtonBorderWidth =
-            submitButton?.containerStyle?.borderWidth ?: submitButton?.cta?.container?.borderWidth
-            ?: 0
-        val submitButtonHeight =
-            submitButton?.containerStyle?.height ?: submitButton?.cta?.container?.height
-        val submitButtonAlignment =
-            submitButton?.containerStyle?.alignment ?: submitButton?.cta?.container?.alignment
-        val submitButtonFullWidth =
-            submitButton?.fullWidth ?: submitButton?.cta?.container?.ctaFullWidth ?: true
-        val submitButtonTextStyle =
-            submitButton?.textStyle ?: submitButton?.cta?.text?.let { ctaText ->
-                CsatTextStyle(
-                    color = ctaText.color,
-                    fontFamily = ctaText.fontFamily,
-                    fontSize = ctaText.fontSize,
-                    fontDecoration = ctaText.fontDecoration
-                )
-            }
+        val submitButtonRadius = submitButton?.cta?.cornerRadius
+        val submitButtonBorderWidth = submitButton?.cta?.container?.borderWidth ?: 0
+        val submitButtonHeight = submitButton?.cta?.container?.height
+        val submitButtonAlignment = submitButton?.cta?.container?.alignment
+        val submitButtonFullWidth = submitButton?.cta?.container?.ctaFullWidth ?: true
+        val submitButtonTextStyle = submitButton?.cta?.text?.let { ctaText ->
+            CsatTextStyle(
+                color = ctaText.color,
+                fontFamily = ctaText.fontFamily,
+                fontSize = ctaText.fontSize,
+                fontDecoration = ctaText.fontDecoration
+            )
+        }
 
         // Determine button alignment
         val buttonAlignment = when (submitButtonAlignment?.lowercase()) {
@@ -668,11 +655,11 @@ private fun FeedbackContent(
                 modifier = if (submitButtonFullWidth) Modifier.fillMaxWidth() else Modifier,
                 text = submitButtonText,
                 styling = TextStyling(
-                    color = csatDetails.styling?.feedbackPage?.submitButton?.colors?.text,
+                    color = csatDetails.styling?.feedbackPage?.submitButton?.cta?.text?.color,
                     fontSize = (submitButtonTextStyle?.size ?: submitButtonTextStyle?.fontSize
                     ?: ((csatDetails.styling?.fontSize ?: 16) + 2)),
                     fontFamily = submitButtonTextStyle?.fontFamily ?: "",
-                    textAlign = submitButtonTextStyle?.alignment ?: submitButtonTextStyle?.textAlign
+                    textAlign = submitButtonTextStyle?.textAlign
                 )
             )
         }
@@ -700,17 +687,14 @@ private fun ThankYouContent(
     val doneButton = csatDetails.styling?.thankyouPage?.doneButton
     val doneButtonText = doneButton?.text?.takeIf { it.isNotBlank() }
         ?: (if (selectedStars < 4) csatDetails.lowStarText else csatDetails.highStarText) ?: "Done"
-    val doneButtonRadius = doneButton?.containerRadius ?: doneButton?.cta?.cornerRadius
-    val doneButtonBorderWidth =
-        doneButton?.containerStyle?.borderWidth ?: doneButton?.cta?.container?.borderWidth ?: 0
-    val doneButtonHeight = doneButton?.containerStyle?.height ?: doneButton?.cta?.container?.height
-    val doneButtonWidth = doneButton?.containerStyle?.width ?: doneButton?.cta?.container?.ctaWidth
-    val doneButtonAlignment =
-        doneButton?.containerStyle?.alignment ?: doneButton?.cta?.container?.alignment
-    val doneButtonFullWidth =
-        doneButton?.fullWidth ?: doneButton?.cta?.container?.ctaFullWidth ?: true
+    val doneButtonRadius = doneButton?.cta?.cornerRadius
+    val doneButtonBorderWidth = doneButton?.cta?.container?.borderWidth ?: 0
+    val doneButtonHeight = doneButton?.cta?.container?.height
+    val doneButtonWidth = doneButton?.cta?.container?.ctaWidth
+    val doneButtonAlignment = doneButton?.cta?.container?.alignment
+    val doneButtonFullWidth = doneButton?.cta?.container?.ctaFullWidth ?: true
     val doneButtonMargin = doneButton?.margin ?: doneButton?.cta?.margin
-    val doneButtonTextStyle = doneButton?.textStyle ?: doneButton?.cta?.text?.let { ctaText ->
+    val doneButtonTextStyle = doneButton?.cta?.text?.let { ctaText ->
         CsatTextStyle(
             color = ctaText.color,
             fontFamily = ctaText.fontFamily,
@@ -779,7 +763,7 @@ private fun ThankYouContent(
         val titleConfig = csatDetails.styling?.thankyouPage?.title
         val titleTextStyle = titleConfig?.textStyle
         val titleAlignment =
-            when ((titleConfig?.alignment ?: titleTextStyle?.alignment)?.lowercase()) {
+            when ((titleConfig?.textAlign ?: titleConfig?.alignment ?: titleTextStyle?.textAlign)?.lowercase()) {
                 "left" -> androidx.compose.ui.text.style.TextAlign.Start
                 "right" -> androidx.compose.ui.text.style.TextAlign.End
                 "center" -> androidx.compose.ui.text.style.TextAlign.Center
@@ -798,18 +782,16 @@ private fun ThankYouContent(
                 ?.takeIf { it.isNotBlank() }
                 ?: (
                         if (selectedStars < 4)
-                            csatDetails.styling?.rating?.low?.lowRatingTitle
-                                ?: csatDetails.styling?.rating?.lowRatingTitle
+                            csatDetails.styling?.rating?.lowRatingTitle
                         else
-                            csatDetails.styling?.rating?.high?.highRatingTitle
-                                ?: csatDetails.styling?.rating?.highRatingTitle
+                            csatDetails.styling?.rating?.highRatingTitle
                         ) ?: "Thank You",
             styling = TextStyling(
-                color = csatDetails.styling?.thankyouPage?.title?.color,
+                color = csatDetails.styling?.thankyouPage?.title?.textStyle?.color,
                 fontSize = (titleTextStyle?.size ?: ((csatDetails.styling?.fontSize ?: 16) + 6)),
                 fontFamily = titleTextStyle?.fontFamily ?: "",
-                textAlign = titleConfig?.alignment ?: titleTextStyle?.alignment,
-                fontDecoration = listOf("bold")
+                textAlign = titleConfig?.textAlign ?: titleConfig?.alignment ?: titleTextStyle?.textAlign,
+                fontDecoration = titleTextStyle?.fontDecoration
             )
         )
 
@@ -819,7 +801,7 @@ private fun ThankYouContent(
         val subtitleConfig = csatDetails.styling?.thankyouPage?.subtitle
         val subtitleTextStyle = subtitleConfig?.textStyle
         val subtitleAlignment =
-            when ((subtitleConfig?.alignment ?: subtitleTextStyle?.alignment)?.lowercase()) {
+            when ((subtitleConfig?.textAlign ?: subtitleConfig?.alignment ?: subtitleTextStyle?.textAlign)?.lowercase()) {
                 "left" -> androidx.compose.ui.text.style.TextAlign.Start
                 "right" -> androidx.compose.ui.text.style.TextAlign.End
                 "center" -> androidx.compose.ui.text.style.TextAlign.Center
@@ -838,17 +820,16 @@ private fun ThankYouContent(
                 ?.takeIf { it.isNotBlank() }
                 ?: (
                         if (selectedStars < 4)
-                            csatDetails.styling?.rating?.low?.lowRatingSubtitle
-                                ?: csatDetails.styling?.rating?.lowRatingSubtitle
+                            csatDetails.styling?.rating?.lowRatingSubtitle
                         else
-                            csatDetails.styling?.rating?.high?.highRatingSubtitle
-                                ?: csatDetails.styling?.rating?.highRatingSubtitle
+                            csatDetails.styling?.rating?.highRatingSubtitle
                         ) ?: "Thank you",
             styling = TextStyling(
-                color = csatDetails.styling?.thankyouPage?.subtitle?.color,
+                color = csatDetails.styling?.thankyouPage?.subtitle?.textStyle?.color,
                 fontSize = (subtitleTextStyle?.size ?: (csatDetails.styling?.fontSize ?: 16)),
                 fontFamily = subtitleTextStyle?.fontFamily ?: "",
-                textAlign = subtitleConfig?.alignment ?: subtitleTextStyle?.alignment
+                textAlign = subtitleConfig?.textAlign ?: subtitleConfig?.alignment ?: subtitleTextStyle?.textAlign,
+                fontDecoration = subtitleTextStyle?.fontDecoration
             )
         )
 
@@ -935,12 +916,11 @@ private fun ThankYouContent(
                     modifier = if (doneButtonFullWidth) Modifier.fillMaxWidth() else Modifier,
                     text = doneButtonText,
                     styling = TextStyling(
-                        color = csatDetails.styling?.thankyouPage?.doneButton?.colors?.text,
+                        color = csatDetails.styling?.thankyouPage?.doneButton?.cta?.text?.color,
                         fontSize = (doneButtonTextStyle?.size ?: doneButtonTextStyle?.fontSize
-                        ?: ((csatDetails.styling?.fontSize
-                            ?: 16) + 2)),
+                        ?: ((csatDetails.styling?.fontSize ?: 16) + 2)),
                         fontFamily = doneButtonTextStyle?.fontFamily ?: "",
-                        textAlign = doneButtonTextStyle?.alignment ?: doneButtonTextStyle?.textAlign
+                        textAlign = doneButtonTextStyle?.textAlign
                     )
                 )
             }
@@ -1024,14 +1004,9 @@ private fun StarRating(
         }
 
         val borderWidth = when {
-            !isSelected -> csatDetails.styling?.rating?.unselected?.borderWidth
-                ?: csatDetails.styling?.rating?.star?.unselected?.stylingStar?.borderWidth ?: 0
-
-            isHighRatingMode -> csatDetails.styling?.rating?.high?.borderWidth
-                ?: csatDetails.styling?.rating?.star?.high?.stylingStar?.borderWidth ?: 0
-
-            else -> csatDetails.styling?.rating?.low?.borderWidth
-                ?: csatDetails.styling?.rating?.star?.low?.stylingStar?.borderWidth ?: 0
+            !isSelected -> csatDetails.styling?.rating?.star?.unselected?.stylingStar?.borderWidth ?: 0
+            isHighRatingMode -> csatDetails.styling?.rating?.star?.high?.stylingStar?.borderWidth ?: 0
+            else -> csatDetails.styling?.rating?.star?.low?.stylingStar?.borderWidth ?: 0
         }
 
         Box(

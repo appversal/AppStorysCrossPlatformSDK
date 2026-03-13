@@ -412,7 +412,11 @@ internal fun StoryScreenContent(
     // Use a set for O(1) lookup instead of list - reset on story group change
     val completedSlides = remember(storyGroup.id) { mutableSetOf<Int>() }
 
-    val isImage = currentSlide.image != null
+    val isStudioSlide = currentSlide.styling?.editorSource == "studio"
+
+    // Studio slides behave like images for progress-bar timing purposes
+    val isImage = currentSlide.image != null || isStudioSlide
+
     // Use slideShowTime from styling if available, otherwise default to 5 seconds
     val storyDuration = if (isImage) (storyGroup.styling?.slideShowTime ?: 5) * 1000 else 0
 
@@ -727,128 +731,136 @@ internal fun StoryScreenContent(
                 }
             },
         content = {
-            // Story Content with optimized image loading
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                // Image content with support for Lottie, GIF, and regular images
-                if (currentSlide.image != null) {
-                    val imageUrl = currentSlide.image
-
-                    when {
-                        // Lottie animation (.json or .lottie files)
-                        isLottieUrl(imageUrl) -> {
-                            val composition by rememberLottieComposition(
-                                spec = LottieCompositionSpec.Url(imageUrl)
-                            )
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                LottieAnimation(
-                                    composition = composition,
-                                    iterations = LottieConstants.IterateForever,
+                // ── Studio canvas slide ─────────────────────────────────────────
+                if (isStudioSlide) {
+                    StudioSlideRenderer(
+                        slide       = currentSlide,
+                        modifier    = Modifier.fillMaxSize(),
+                        onCtaClick  = { url ->
+                            try { uriHandler.openUri(url) } catch (e: Exception) {
+                                Log.e("StudioSlide", "Failed to open URL: ${e.message}")
+                            }
+                            sendEvent(Pair(currentSlide, "CLK"))
+                            sendClickEvent(Pair(currentSlide, "clicked"))
+                        },
+                    )
+                } else {
+                    // ── Normal image slide ──────────────────────────────────────
+                    if (currentSlide.image != null) {
+                        val imageUrl = currentSlide.image
+                        when {
+                            isLottieUrl(imageUrl) -> {
+                                val composition by rememberLottieComposition(
+                                    spec = LottieCompositionSpec.Url(imageUrl)
+                                )
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    LottieAnimation(
+                                        composition = composition,
+                                        iterations = LottieConstants.IterateForever,
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Fit
+                                    )
+                                }
+                            }
+                            isGifUrl(imageUrl) -> {
+                                val imageLoader = remember(context) {
+                                    ImageLoader.Builder(context)
+                                        .components {
+                                            if (SDK_INT >= 28) {
+                                                add(ImageDecoderDecoder.Factory())
+                                            } else {
+                                                add(GifDecoder.Factory())
+                                            }
+                                        }
+                                        .build()
+                                }
+                                val painter = rememberAsyncImagePainter(
+                                    ImageRequest.Builder(context)
+                                        .data(imageUrl)
+                                        .memoryCacheKey(imageUrl)
+                                        .diskCacheKey(imageUrl)
+                                        .diskCachePolicy(CachePolicy.ENABLED)
+                                        .memoryCachePolicy(CachePolicy.ENABLED)
+                                        .crossfade(true)
+                                        .apply { size(coil.size.Size.ORIGINAL) }
+                                        .build(),
+                                    imageLoader = imageLoader
+                                )
+                                Image(
+                                    painter = painter,
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Fit
+                                )
+                            }
+                            else -> {
+                                val imageRequest = remember(imageUrl) {
+                                    ImageRequest.Builder(context)
+                                        .data(imageUrl)
+                                        .memoryCacheKey(imageUrl)
+                                        .diskCacheKey(imageUrl)
+                                        .diskCachePolicy(CachePolicy.ENABLED)
+                                        .memoryCachePolicy(CachePolicy.ENABLED)
+                                        .crossfade(true)
+                                        .build()
+                                }
+                                Image(
+                                    painter = rememberAsyncImagePainter(imageRequest),
+                                    contentDescription = null,
                                     modifier = Modifier.fillMaxSize(),
                                     contentScale = ContentScale.Fit
                                 )
                             }
                         }
+                    }
 
-                        // GIF images
-                        isGifUrl(imageUrl) -> {
-                            val imageLoader = remember(context) {
-                                ImageLoader.Builder(context)
-                                    .components {
-                                        if (SDK_INT >= 28) {
-                                            add(ImageDecoderDecoder.Factory())
-                                        } else {
-                                            add(GifDecoder.Factory())
-                                        }
-                                    }
-                                    .build()
-                            }
-
-                            val painter = rememberAsyncImagePainter(
-                                ImageRequest.Builder(context)
-                                    .data(imageUrl)
-                                    .memoryCacheKey(imageUrl)
-                                    .diskCacheKey(imageUrl)
-                                    .diskCachePolicy(CachePolicy.ENABLED)
-                                    .memoryCachePolicy(CachePolicy.ENABLED)
-                                    .crossfade(true)
-                                    .apply { size(coil.size.Size.ORIGINAL) }
-                                    .build(),
-                                imageLoader = imageLoader
-                            )
-
-                            Image(
-                                painter = painter,
-                                contentDescription = null,
+                    // ── Normal video slide ──────────────────────────────────────
+                    if (currentSlide.video != null) {
+                        AndroidView(
+                            factory = { ctx ->
+                                PlayerView(ctx).apply {
+                                    this.player = player
+                                    layoutParams = FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+                                    useController = false
+                                }
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        if (isBuffering) {
+                            Box(
                                 modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Fit
-                            )
-                        }
-
-                        // Regular images (JPEG, PNG, etc.)
-                        else -> {
-                            val imageRequest = remember(imageUrl) {
-                                ImageRequest.Builder(context)
-                                    .data(imageUrl)
-                                    .memoryCacheKey(imageUrl)
-                                    .diskCacheKey(imageUrl)
-                                    .diskCachePolicy(CachePolicy.ENABLED)
-                                    .memoryCachePolicy(CachePolicy.ENABLED)
-                                    .crossfade(true)
-                                    .build()
+                                contentAlignment = Alignment.Center
+                            ) {
+                                androidx.compose.material3.CircularProgressIndicator(
+                                    color = Color.White,
+                                    modifier = Modifier.size(48.dp)
+                                )
                             }
-                            Image(
-                                painter = rememberAsyncImagePainter(imageRequest),
-                                contentDescription = null,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Fit
-                            )
                         }
                     }
                 }
 
-                // Video content
-                if (currentSlide.video != null) {
-                    AndroidView(
-                        factory = { ctx ->
-                            PlayerView(ctx).apply {
-                                this.player = player
-                                layoutParams = FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
-                                useController = false
-                            }
-                        },
-                        modifier = Modifier.fillMaxSize()
-                    )
-
-                    // Show loading indicator only while initially buffering
-                    if (isBuffering) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            androidx.compose.material3.CircularProgressIndicator(
-                                color = Color.White,
-                                modifier = Modifier.size(48.dp)
-                            )
-                        }
-                    }
-                }
-
-                // CTA Button
-                if (currentSlide.link?.isNotEmpty() == true && currentSlide.buttonText?.isNotEmpty() == true) {
-                    val styling = currentSlide.styling
-                    val ctaConfig = styling?.cta
+                // ── Bottom CTA button — only for normal slides ──────────────────
+                // Studio slides render their own CTAs on the canvas.
+                if (!isStudioSlide &&
+                    currentSlide.link?.isNotEmpty() == true &&
+                    currentSlide.buttonText?.isNotEmpty() == true
+                ) {
+                    val slideStyling = currentSlide.styling
+                    val ctaConfig = slideStyling?.cta
                     val container = ctaConfig?.container
                     val cornerRadius = ctaConfig?.cornerRadius
-                    val ctaMargin = ctaConfig?.margin ?: styling?.ctaMargins
+                    val ctaMargin = ctaConfig?.margin ?: slideStyling?.ctaMargins
                     val ctaText = ctaConfig?.text
 
-                    val alignmentStr = container?.alignment ?: styling?.ctaAlignment
+                    val alignmentStr = container?.alignment ?: slideStyling?.ctaAlignment
                     val alignment = when (alignmentStr?.lowercase()) {
                         "left" -> Alignment.BottomStart
                         "right" -> Alignment.BottomEnd
@@ -856,22 +868,22 @@ internal fun StoryScreenContent(
                     }
 
                     val ctaButtonConfig = createCTAButtonConfig(
-                        textColor = ctaText?.color ?: styling?.ctaText?.fontColor ?: "#FFFFFF",
-                        textSize = ctaText?.fontSize ?: styling?.ctaText?.fontSize ?: 12,
+                        textColor = ctaText?.color ?: slideStyling?.ctaText?.fontColor ?: "#FFFFFF",
+                        textSize = ctaText?.fontSize ?: slideStyling?.ctaText?.fontSize ?: 12,
                         fontFamily = ctaText?.fontFamily,
                         fontDecoration = ctaText?.fontDecoration,
                         marginTop = ctaMargin?.top ?: 12,
                         marginEnd = ctaMargin?.right ?: 12,
                         marginBottom = ctaMargin?.bottom ?: 12,
                         marginStart = ctaMargin?.left ?: 12,
-                        height = container?.height ?: styling?.ctaHeight ?: 32,
+                        height = container?.height ?: slideStyling?.ctaHeight ?: 32,
                         width = container?.ctaWidth,
                         borderColorString = container?.borderColor
-                            ?: styling?.ctaBackground?.borderColor,
-                        borderWidth = container?.borderWidth ?: styling?.borderWidth ?: 2,
-                        fullWidth = container?.ctaFullWidth ?: styling?.fullWidthCta ?: false,
+                            ?: slideStyling?.ctaBackground?.borderColor,
+                        borderWidth = container?.borderWidth ?: slideStyling?.borderWidth ?: 2,
+                        fullWidth = container?.ctaFullWidth ?: ((slideStyling?.fullWidthCta ?: 0) != false),
                         backgroundColorString = container?.backgroundColor
-                            ?: styling?.ctaBackground?.backgroundColor ?: "#FFFFFF",
+                            ?: slideStyling?.ctaBackground?.backgroundColor ?: "#FFFFFF",
                         alignment = alignmentStr ?: "center",
                         borderRadiusTopLeft = cornerRadius?.topLeft ?: 12,
                         borderRadiusTopRight = cornerRadius?.topRight ?: 12,
@@ -900,13 +912,9 @@ internal fun StoryScreenContent(
                     }
                 }
 
-                // Transition overlay to mask content swap and prevent flicker
+                // Transition overlay (keep as-is)
                 if (isTransitioning) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.Black)
-                    )
+                    Box(modifier = Modifier.fillMaxSize().background(Color.Black))
                 }
             }
 
