@@ -68,6 +68,8 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import com.appversal.appstorys.AppStorys
 import com.appversal.appstorys.utils.appstorys
@@ -78,9 +80,63 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Handle deep link on cold start (app was not running)
+        handleDeepLinkIntent(intent)
+        // Handle screen_name extra from other Activities
+        handleScreenNameExtra(intent)
         setContent {
             CarousalTheme {
                 MyApp()
+            }
+        }
+    }
+
+    // Called when the Activity is already running (singleTop) and a new
+    // deep-link Intent arrives — no Activity recreation happens.
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleDeepLinkIntent(intent)
+        handleScreenNameExtra(intent)
+    }
+
+    private fun handleDeepLinkIntent(intent: Intent?) {
+        if (intent?.action == Intent.ACTION_VIEW) {
+            val uri: Uri? = intent.data
+            if (uri != null) {
+                val screenName = uri.host?.lowercase()
+                if (!screenName.isNullOrEmpty()) {
+                    routeScreen(screenName)
+                }
+            }
+        }
+    }
+
+    private fun handleScreenNameExtra(intent: Intent?) {
+        val screenName = intent?.getStringExtra("screen_name")
+        if (!screenName.isNullOrEmpty()) {
+            val app = applicationContext as App
+            app.navigateToScreen(screenName)
+            intent.removeExtra("screen_name")
+        }
+    }
+
+    /**
+     * Routes to the correct destination — Compose screens are handled
+     * via the StateFlow, XML Activity screens are launched via startActivity.
+     */
+    private fun routeScreen(screenName: String) {
+        when (screenName.lowercase()) {
+            // XML Activity targets — launch the right Activity
+            "xmlhome" -> {
+                startActivity(Intent(this, TestActivity::class.java))
+            }
+            "cashbook" -> {
+                startActivity(Intent(this, MoreActivity::class.java))
+            }
+            // Compose screens — emit to flow, LaunchedEffect picks it up
+            else -> {
+                val app = applicationContext as App
+                app.navigateToScreen(screenName)
             }
         }
     }
@@ -226,7 +282,7 @@ fun HomeHost(onNavigateToTest: () -> Unit) {
                 padding = innerPadding,
                 isPresented = isPresented,
                 onIsPresentedChange = { isPresented = it },
-                onNavigateToTest = onNavigateToTest   // passed up to NavController
+                onNavigateToTest = onNavigateToTest
             )
 
             1 -> PayScreen(innerPadding)
@@ -356,6 +412,20 @@ fun HomeScreen(
                         modifier = Modifier.appstorys("anuridhtest")
                     ) {
                         Text("Set Story User Properties")
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = 12.dp),
+                    contentAlignment = Alignment.BottomCenter
+                ) {
+                    Button(
+                        onClick = {},
+                        modifier = Modifier.appstorys("open_bottom_sheet")
+                    ) {
+                        Text("Tooltip_Test")
                     }
                 }
 

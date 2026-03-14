@@ -520,7 +520,7 @@ object AppStorys {
                     }
                     val client = OkHttpClient()
                     val request = Request.Builder()
-                        .url("https://tracking.appstorys.com/capture-event")
+                        .url("https://tracking.appstorys.co/capture-event")
                         .post(
                             requestBody.toString()
                                 .toRequestBody("application/json".toMediaTypeOrNull())
@@ -2563,10 +2563,17 @@ object AppStorys {
         try {
             val value = json.optString("value", null)
             val type = json.optString("type", null)
-            val context = json.optJSONObject("context")?.toMap()
+            val deepLinkContext = json.optJSONObject("context")?.toMap()
 
             if (value != null) {
-                navigateToScreen(value)
+                if (value.contains("://")) {
+                    // URI-style deep link → fire Intent so the OS routes it
+                    // through the client Activity's intent-filter / onNewIntent()
+                    openUrl(value)
+                } else {
+                    // Plain screen name → use the navigateToScreen callback
+                    navigateToScreen(value)
+                }
             }
 
         } catch (e: Exception) {
@@ -2595,12 +2602,28 @@ object AppStorys {
     }
 
     internal fun isValidUrl(url: String?): Boolean {
-        return !url.isNullOrEmpty() && Patterns.WEB_URL.matcher(url).matches()
+        if (url.isNullOrEmpty()) return false
+        // Standard http / https web URL  →  open in browser
+        if (Patterns.WEB_URL.matcher(url).matches()) return true
+        // Any other URI scheme (e.g. myapp://, appstorys://, app://) is a
+        // custom-scheme deep link.  Returning true sends it through openUrl()
+        // which fires Intent.ACTION_VIEW, letting the OS route it to the
+        // client app's matching intent-filter and deliver it via onNewIntent().
+        // Plain screen-name strings (e.g. "HomeScreen") contain no "://" and
+        // therefore return false, continuing to reach navigateToScreen() as before.
+        if (url.contains("://")) return true
+        return false
     }
 
     internal fun openUrl(url: String) {
         try {
-            val intent = Intent(Intent.ACTION_VIEW, url.toUri())
+            val uri = url.toUri()
+            // Fire a standard ACTION_VIEW Intent for ALL URIs (http, https,
+            // and custom schemes like myapp://PayScreen).
+            // For custom schemes the OS routes the Intent to the client app's
+            // Activity via its intent-filter, delivering it through
+            // onNewIntent() (singleTop) or a fresh onCreate().
+            val intent = Intent(Intent.ACTION_VIEW, uri)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
             context.startActivity(intent)
         } catch (e: Exception) {
