@@ -234,6 +234,7 @@ data class StorySlideStyling(
     val ctaMargins: StoryCtaMargins?,
     val ctaText: StoryCtaText?,
     val fullWidthCta: Boolean?,
+    @SerialName("editor_source") val editorSource: String? = null,
 
     // New nested CTA structure from backend
     val cta: StoryCtaConfig? = null
@@ -550,14 +551,18 @@ data class CsatFeedbackPage(
 data class CsatAdditionalComments(
     val colors: CsatColors?,
     val enabled: Boolean?,
-    val textStyle: CsatTextStyle?
+    val textStyle: CsatTextStyle?,
+    val placeholder: String? = null
 )
 
 @Keep
 @Serializable
 data class CsatOptions(
+    val cornerRadius: CornerRadius? = null,
     val nonSelectedOptions: CsatOptionStyle?,
-    val selectedOptions: CsatOptionStyle?
+    val selectedOptions: CsatOptionStyle?,
+    val optionsHeight: Int? = null,
+    val optionsSpacing: Int? = null
 )
 
 @Keep
@@ -634,6 +639,7 @@ data class CsatInitialFeedback(
 data class CsatTextElement(
     val alignment: String? = null,
     val color: String? = null,
+    val textAlign: String? = null,
     val textStyle: CsatTextStyle? = null
 )
 

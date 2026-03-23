@@ -477,7 +477,7 @@ private fun FeedbackContent(
                     CommonText(
                         modifier = Modifier.fillMaxWidth(),
                         text = option,
-                            styling = TextStyling(
+                        styling = TextStyling(
                             color = if (isSelected) csatDetails.styling?.feedbackPage?.options?.selectedOptions?.colors?.text
                             else csatDetails.styling?.feedbackPage?.options?.nonSelectedOptions?.colors?.text,
                             fontSize = (optionTextStyle?.fontSize ?: csatDetails.styling?.fontSize
@@ -528,22 +528,22 @@ private fun FeedbackContent(
                     value = additionalComments,
                     onValueChange = onCommentsChanged,
                     modifier = Modifier.fillMaxSize(),
-                        placeholder = {
-                            CommonText(
-                                modifier = Modifier.align(Alignment.TopStart),
-                                text = csatDetails.styling
-                                    ?.feedbackPage
-                                    ?.additionalComments
-                                    ?.placeholder
-                                    ?: "Enter comments",
-                                styling = TextStyling(
-                                    color = "#808080",
-                                    fontSize = commentsTextStyle?.fontSize,
-                                    fontFamily = commentsTextStyle?.fontFamily ?: "",
-                                    textAlign = commentsTextStyle?.textAlign
-                                )
+                    placeholder = {
+                        CommonText(
+                            modifier = Modifier.align(Alignment.TopStart),
+                            text = csatDetails.styling
+                                ?.feedbackPage
+                                ?.additionalComments
+                                ?.placeholder
+                                ?: "Enter comments",
+                            styling = TextStyling(
+                                color = "#808080",
+                                fontSize = commentsTextStyle?.fontSize,
+                                fontFamily = commentsTextStyle?.fontFamily ?: "",
+                                textAlign = commentsTextStyle?.textAlign
                             )
-                        },
+                        )
+                    },
                     textStyle = androidx.compose.ui.text.TextStyle(
                         fontSize = commentsFontSize,
                         textAlign = commentsAlignment,

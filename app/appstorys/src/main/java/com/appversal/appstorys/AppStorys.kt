@@ -115,8 +115,11 @@ import com.appversal.appstorys.ui.saveScratchedCampaigns
 import com.appversal.appstorys.ui.spinwheel.getSpinCount
 import com.appversal.appstorys.ui.spinwheel.saveSpinCount
 import com.appversal.appstorys.utils.AppStorysSdkState
+import com.appversal.appstorys.utils.CampaignEngine
+import com.appversal.appstorys.utils.EventTracker
 import com.appversal.appstorys.utils.TriggerEventMatcher
 import com.appversal.appstorys.utils.ViewTreeAnalyzer
+import com.appversal.appstorys.utils.UserManager
 import com.appversal.appstorys.utils.getDeviceInfo
 import com.appversal.appstorys.utils.toJsonElementMap
 import com.appversal.appstorys.utils.toMap
@@ -136,12 +139,8 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import com.appversal.appstorys.utils.TriggerEventMatcher.TrackedEventData
 import kotlinx.coroutines.flow.asStateFlow
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import kotlin.collections.plus
 import kotlin.toString
@@ -157,8 +156,7 @@ object AppStorys {
 
     private var isAnonymousUser: Boolean = true
 
-    private const val PREFS_USER_ID = "appstorys_user_id"
-    private const val PREFS_IS_ANONYMOUS = "appstorys_is_anonymous"
+    private lateinit var userManager: UserManager
 
     internal lateinit var navigateToScreen: (String) -> Unit
 
@@ -187,10 +185,14 @@ object AppStorys {
 
     private val scratchedCampaigns = MutableStateFlow<List<String>>(emptyList())
 
-    // In-memory spin count per campaign — keyed by campaign ID, value = remaining spins
-    private val spinCountByCampaign = mutableStateMapOf<String, Int>()
+     // In-memory spin count per campaign — keyed by campaign ID, value = remaining spins
+     private val spinCountByCampaign = mutableStateMapOf<String, Int>()
 
-    private var accessToken = ""
+     private val eventTracker = EventTracker()
+
+     private val campaignEngine = CampaignEngine()
+
+     private var accessToken = ""
 
     private var currentScreen = ""
 
@@ -232,88 +234,14 @@ object AppStorys {
     private val currentMilestoneIndex = MutableStateFlow(0)
     private var showMilestone by mutableStateOf(true)
 
-    private fun generateAnonymousUserId(): String {
-        val timestamp = System.currentTimeMillis()
-        val deviceModel = Build.MODEL.replace(" ", "_").lowercase()
-        return "${timestamp}_${deviceModel}"
-    }
-
-    /**
-     * Gets the stored user ID from SharedPreferences or generates a new one
-     */
-    private fun getOrCreateUserId(): String {
-        val prefs = context.getSharedPreferences("AppStory", Context.MODE_PRIVATE)
-
-        // Check if we have a saved user ID
-        val savedUserId = prefs.getString(PREFS_USER_ID, null)
-        val savedIsAnonymous = prefs.getBoolean(PREFS_IS_ANONYMOUS, true)
-
-        return if (!savedUserId.isNullOrEmpty()) {
-            // Use saved user ID
-            isAnonymousUser = savedIsAnonymous
-            savedUserId
-        } else {
-            // Generate new anonymous user ID
-            val anonymousId = generateAnonymousUserId()
-            isAnonymousUser = true
-
-            // Save to SharedPreferences
-            prefs.edit().apply {
-                putString(PREFS_USER_ID, anonymousId)
-                putBoolean(PREFS_IS_ANONYMOUS, true)
-                apply()
-            }
-
-            anonymousId
-        }
-    }
-
-    /**
-     * Saves user ID to SharedPreferences
-     */
-    private fun saveUserId(userId: String, isAnonymous: Boolean) {
-        val prefs = context.getSharedPreferences("AppStory", Context.MODE_PRIVATE)
-        prefs.edit().apply {
-            putString(PREFS_USER_ID, userId)
-            putBoolean(PREFS_IS_ANONYMOUS, isAnonymous)
-            apply()
-        }
-    }
-
-    private fun isBackPressCampaignReady(): Boolean {
-        if (backPressCampaignConsumed) return false
-        val disabled = disabledCampaigns.value
-        val currentEvents = _trackedEventNames.value
-
-        return campaigns.value.any { campaign ->
-            !disabled.contains(campaign.id) &&
-                    when (val trigger = campaign.triggerEvent) {
-                        is TriggerEvent.ObjectTrigger -> {
-                            val isBackPress = trigger.eventConfig.any { it.backPress == true }
-                            if (!isBackPress) return@any false
-
-                            val realConditions = trigger.eventConfig.filter { it.backPress == null }
-
-                            if (realConditions.isEmpty()) {
-                                // No conditions → always ready on back press
-                                true
-                            } else {
-                                // Conditions exist → must already be satisfied by tracked events
-                                val matchingEvents =
-                                    currentEvents.filter { it.eventName == trigger.event }
-                                matchingEvents.any { tracked ->
-                                    TriggerEventMatcher.matchesAllConditions(
-                                        realConditions,
-                                        tracked.metadata
-                                    )
-                                }
-                            }
-                        }
-
-                        else -> false
-                    }
-        }
-    }
+     private fun isBackPressCampaignReady(): Boolean {
+         return campaignEngine.isBackPressCampaignReady(
+             campaigns = campaigns.value,
+             disabledIds = disabledCampaigns.value,
+             currentEvents = _trackedEventNames.value,
+             backPressCampaignConsumed = backPressCampaignConsumed
+         )
+     }
 
     fun initialize(
         context: Application,
@@ -331,15 +259,17 @@ object AppStorys {
         this.appId = appId
         this.accountId = accountId
         this.navigateToScreen = navigateToScreen
+        this.userManager = UserManager(context)
 
         if (userId.isNotEmpty()) {
             // User provided an ID
             this.userId = userId
             this.isAnonymousUser = false
-            saveUserId(userId, false)
+            userManager.setIdentifiedUser(userId)
         } else {
             // Generate or retrieve anonymous user ID
-            this.userId = getOrCreateUserId()
+            this.userId = userManager.getOrCreateAnonymousId()
+            this.isAnonymousUser = userManager.isAnonymous
         }
 
         this.repository = ApiRepository(context, apiService, webSocketService) {
@@ -510,28 +440,13 @@ object AppStorys {
                         } else {
                             updatedMetadata
                         }
-                    val requestBody = JSONObject().apply {
-                        put("user_id", userId)
-                        campaign_id?.let { put("campaign_id", it) }
-                        put("event", event)
-                        if (mergedMetadata.isNotEmpty()) {
-                            put("metadata", JSONObject(mergedMetadata))
-                        }
-                    }
-                    val client = OkHttpClient()
-                    val request = Request.Builder()
-                        .url("https://tracking.appstorys.co/capture-event")
-                        .post(
-                            requestBody.toString()
-                                .toRequestBody("application/json".toMediaTypeOrNull())
-                        )
-                        .addHeader("Authorization", "Bearer $accessToken")
-                        .build()
-
-                    val response = client.newCall(request).execute()
-
-                    Log.i("Event Captured", response.toString())
-                    Log.i("Event Captured", requestBody.toString())
+                    eventTracker.captureEvent(
+                        accessToken = accessToken,
+                        userId = userId,
+                        campaignId = campaign_id,
+                        event = event,
+                        metadata = mergedMetadata
+                    )
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
@@ -640,7 +555,7 @@ object AppStorys {
                 // Update user ID
                 userId = newUserId
                 isAnonymousUser = false
-                saveUserId(newUserId, false)
+                userManager.setIdentifiedUser(newUserId)
 
                 Log.i("AppStorys", "User ID updated to: $newUserId")
 
@@ -723,29 +638,28 @@ object AppStorys {
     }
 
     @Composable
-    fun CSAT(
-        bottomPadding: Dp = 0.dp
-    ) {
-        if (!showCsat) {
-            val campaignsData = campaigns.collectAsStateWithLifecycle()
+     fun CSAT(
+         bottomPadding: Dp = 0.dp
+     ) {
+         if (!showCsat) {
+             val campaignsData = campaigns.collectAsStateWithLifecycle()
+             val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+             val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-            val campaign = campaignsData.value.firstOrNull { it.campaignType == "CSAT" }
-            val csatDetails = when (val details = campaign?.details) {
-                is CSATDetails -> details
-                else -> null
-            }
+             val filtered = campaignEngine.filterCampaigns(
+                 campaigns = campaignsData.value,
+                 campaignType = "CSAT",
+                 trackedEvents = trackedEventsData.value,
+                 disabledCampaignIds = disabledData.value
+             )
 
-            val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+             val campaign = filtered.firstOrNull()
+             val csatDetails = when (val details = campaign?.details) {
+                 is CSATDetails -> details
+                 else -> null
+             }
 
-            val shouldShowCSAT = remember(campaign, trackedEventsData.value.size) {
-                TriggerEventMatcher.shouldShowCampaign(
-                    triggerEvent = campaign?.triggerEvent,
-                    campaignId = campaign?.id,
-                    trackedEvents = trackedEventsData.value
-                )
-            }
-
-            if (csatDetails != null && shouldShowCSAT) {
+             if (csatDetails != null && campaign != null) {
                 val style = csatDetails.styling
                 var isVisibleState by remember { mutableStateOf(false) }
                 val delaySeconds = remember(style) {
@@ -758,11 +672,11 @@ object AppStorys {
                     } ?: 0
                 }
 
-                LaunchedEffect(Unit) {
-                    campaign?.id?.let {
-                        trackEvents(it, "viewed")
-                    }
-                    delay(delaySeconds * 1000L)
+                 LaunchedEffect(Unit) {
+                     campaign.id?.let {
+                         trackEvents(it, "viewed")
+                     }
+                     delay(delaySeconds * 1000L)
                     isVisibleState = true
                 }
 
@@ -823,37 +737,36 @@ object AppStorys {
         }
     }
 
-    @Composable
-    fun Floater(
-        modifier: Modifier = Modifier,
-        bottomPadding: Dp = 0.dp
-    ) {
-        val campaignsData = campaigns.collectAsStateWithLifecycle()
+     @Composable
+     fun Floater(
+         modifier: Modifier = Modifier,
+         bottomPadding: Dp = 0.dp
+     ) {
+         val campaignsData = campaigns.collectAsStateWithLifecycle()
+         val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+         val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-        val campaign =
-            campaignsData.value.firstOrNull { it.campaignType == "FLT" && it.details is FloaterDetails }
+         val filtered = campaignEngine.filterCampaigns(
+             campaigns = campaignsData.value,
+             campaignType = "FLT",
+             trackedEvents = trackedEventsData.value,
+             disabledCampaignIds = disabledData.value
+         )
 
-        val floaterDetails = when (val details = campaign?.details) {
-            is FloaterDetails -> details
-            else -> null
-        }
+         val campaign = filtered.firstOrNull { it.details is FloaterDetails }
 
-        val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+         val floaterDetails = when (val details = campaign?.details) {
+             is FloaterDetails -> details
+             else -> null
+         }
 
-        val shouldShowFloater = remember(campaign, trackedEventsData.value.size) {
-            TriggerEventMatcher.shouldShowCampaign(
-                triggerEvent = campaign?.triggerEvent,
-                campaignId = campaign?.id,
-                trackedEvents = trackedEventsData.value
-            )
-        }
 
-        if (floaterDetails != null && (!floaterDetails.image.isNullOrEmpty() || !floaterDetails.lottie_data.isNullOrEmpty()) && shouldShowFloater) {
-            LaunchedEffect(Unit) {
-                campaign?.id?.let {
-                    trackEvents(it, "viewed")
-                }
-            }
+         if (floaterDetails != null && (!floaterDetails.image.isNullOrEmpty() || !floaterDetails.lottie_data.isNullOrEmpty()) && campaign != null) {
+             LaunchedEffect(Unit) {
+                 campaign.id?.let {
+                     trackEvents(it, "viewed")
+                 }
+             }
 
             val styling = floaterDetails.styling
 
@@ -898,40 +811,38 @@ object AppStorys {
     }
 
 
-    @Composable
-    fun Pip(
-        modifier: Modifier = Modifier,
-        bottomPadding: Dp = 0.dp,
-        topPadding: Dp = 0.dp,
-    ) {
-        val campaignsData = campaigns.collectAsStateWithLifecycle()
+     @Composable
+     fun Pip(
+         modifier: Modifier = Modifier,
+         bottomPadding: Dp = 0.dp,
+         topPadding: Dp = 0.dp,
+     ) {
+         val campaignsData = campaigns.collectAsStateWithLifecycle()
+         val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+         val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-        val campaign =
-            campaignsData.value.firstOrNull { it.campaignType == "PIP" && it.details is PipDetails }
+         val filtered = campaignEngine.filterCampaigns(
+             campaigns = campaignsData.value,
+             campaignType = "PIP",
+             trackedEvents = trackedEventsData.value,
+             disabledCampaignIds = disabledData.value
+         )
 
-        val pipDetails = when (val details = campaign?.details) {
-            is PipDetails -> details
-            else -> null
-        }
+         val campaign = filtered.firstOrNull { it.details is PipDetails }
 
-        val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+         val pipDetails = when (val details = campaign?.details) {
+             is PipDetails -> details
+             else -> null
+         }
 
-        val shouldShowPip = remember(campaign, trackedEventsData.value.size) {
-            TriggerEventMatcher.shouldShowCampaign(
-                triggerEvent = campaign?.triggerEvent,
-                campaignId = campaign?.id,
-                trackedEvents = trackedEventsData.value
-            )
-        }
-
-        if (pipDetails != null && !pipDetails.small_video.isNullOrEmpty() && shouldShowPip) {
+         if (pipDetails != null && !pipDetails.small_video.isNullOrEmpty() && campaign != null) {
             key(
                 campaign?.id, campaign?.triggerEvent
             ) {
 
                 var showPip by remember { mutableStateOf(true) }
                 LaunchedEffect(Unit) {
-                    campaign?.id?.let {
+                    campaign.id?.let {
                         trackEvents(it, "viewed")
                     }
                 }
@@ -1119,24 +1030,24 @@ object AppStorys {
         }
     }
 
-    @OptIn(UnstableApi::class)
-    @Composable
-    fun Stories() {
-        val campaignsData = campaigns.collectAsStateWithLifecycle()
-        val campaign = campaignsData.value.firstOrNull { it.campaignType == "STR" }
-        val storiesDetails = campaign?.details as? StoriesDetails
+     @OptIn(UnstableApi::class)
+     @Composable
+     fun Stories() {
+         val campaignsData = campaigns.collectAsStateWithLifecycle()
+         val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+         val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-        val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+         val filtered = campaignEngine.filterCampaigns(
+             campaigns = campaignsData.value,
+             campaignType = "STR",
+             trackedEvents = trackedEventsData.value,
+             disabledCampaignIds = disabledData.value
+         )
 
-        val shouldShowStories = remember(campaign, trackedEventsData.value.size) {
-            TriggerEventMatcher.shouldShowCampaign(
-                triggerEvent = campaign?.triggerEvent,
-                campaignId = campaign?.id,
-                trackedEvents = trackedEventsData.value
-            )
-        }
+         val campaign = filtered.firstOrNull()
+         val storiesDetails = campaign?.details as? StoriesDetails
 
-        if (storiesDetails != null && !storiesDetails.groups.isNullOrEmpty() && shouldShowStories) {
+        if (storiesDetails != null && !storiesDetails.groups.isNullOrEmpty() && campaign != null) {
             StoryAppMain(
                 apiStoriesDetails = storiesDetails,
                 sendEvent = {
@@ -1152,26 +1063,25 @@ object AppStorys {
         }
     }
 
-    @Composable
-    fun Reels(modifier: Modifier = Modifier) {
-        val campaignsData = campaigns.collectAsStateWithLifecycle()
-        val campaign =
-            campaignsData.value.firstOrNull { it.campaignType == "REL" && it.details is ReelsDetails }
-        val reelsDetails = campaign?.details as? ReelsDetails
-        val selectedReelIndex by selectedReelIndex.collectAsStateWithLifecycle()
-        val visibility by reelFullScreenVisible.collectAsStateWithLifecycle()
+     @Composable
+     fun Reels(modifier: Modifier = Modifier) {
+         val campaignsData = campaigns.collectAsStateWithLifecycle()
+         val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+         val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-        val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+         val filtered = campaignEngine.filterCampaigns(
+             campaigns = campaignsData.value,
+             campaignType = "REL",
+             trackedEvents = trackedEventsData.value,
+             disabledCampaignIds = disabledData.value
+         )
 
-        val shouldShowReels = remember(campaign, trackedEventsData.value.size) {
-            TriggerEventMatcher.shouldShowCampaign(
-                triggerEvent = campaign?.triggerEvent,
-                campaignId = campaign?.id,
-                trackedEvents = trackedEventsData.value
-            )
-        }
+         val campaign = filtered.firstOrNull()
+         val reelsDetails = campaign?.details as? ReelsDetails
+         val selectedReelIndex by selectedReelIndex.collectAsStateWithLifecycle()
+         val visibility by reelFullScreenVisible.collectAsStateWithLifecycle()
 
-        if (reelsDetails?.reels != null && reelsDetails.reels.isNotEmpty() && shouldShowReels) {
+         if (reelsDetails?.reels != null && reelsDetails.reels.isNotEmpty() && campaign != null) {
             Box(modifier = Modifier.fillMaxSize()) {
 
                 ReelsRow(
@@ -1334,36 +1244,28 @@ object AppStorys {
         return userId
     }
 
-    @Composable
-    fun PinnedBanner(
-        modifier: Modifier = Modifier,
-        placeholder: Drawable? = null,
-        placeholderContent: (@Composable () -> Unit)? = null,
-        bottomPadding: Dp = 0.dp,
-    ) {
-        val campaignsData = campaigns.collectAsStateWithLifecycle()
-        val disabledCampaigns = disabledCampaigns.collectAsStateWithLifecycle()
+     @Composable
+     fun PinnedBanner(
+         modifier: Modifier = Modifier,
+         placeholder: Drawable? = null,
+         placeholderContent: (@Composable () -> Unit)? = null,
+         bottomPadding: Dp = 0.dp,
+     ) {
+         val campaignsData = campaigns.collectAsStateWithLifecycle()
+         val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+         val disabledCampaignsFlow = disabledCampaigns.collectAsStateWithLifecycle()
 
-        val configuration = LocalConfiguration.current
-        val screenWidth = configuration.screenWidthDp.dp
+         val filtered = campaignEngine.filterCampaigns(
+             campaigns = campaignsData.value,
+             campaignType = "BAN",
+             trackedEvents = trackedEventsData.value,
+             disabledCampaignIds = disabledCampaignsFlow.value
+         )
 
-        val campaign = campaignsData.value.firstOrNull {
-            it.campaignType == "BAN" && it.details is BannerDetails
-        }
+         val campaign = filtered.firstOrNull { it.details is BannerDetails }
+         val bannerDetails = campaign?.details as? BannerDetails
 
-        val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
-
-        val shouldShowBanner = remember(campaign, trackedEventsData.value.size) {
-            TriggerEventMatcher.shouldShowCampaign(
-                triggerEvent = campaign?.triggerEvent,
-                campaignId = campaign?.id,
-                trackedEvents = trackedEventsData.value
-            )
-        }
-
-        val bannerDetails = campaign?.details as? BannerDetails
-
-        if (bannerDetails != null && !disabledCampaigns.value.contains(campaign.id) && shouldShowBanner) {
+         if (bannerDetails != null && campaign != null) {
             val style = bannerDetails.styling
             val bannerUrl = bannerDetails.image
 
@@ -1473,34 +1375,32 @@ object AppStorys {
     }
 
     @Composable
-    fun Widget(
-        modifier: Modifier = Modifier,
-        placeholder: Drawable? = null,
-        position: String? = null
-    ) {
-        val campaignsData = campaigns.collectAsStateWithLifecycle()
-        val campaign =
-            campaignsData.value.filter { it.campaignType == "WID" && it.details is WidgetDetails }
-                .firstOrNull {
-                    if (position == null) {
-                        it.position == null
-                    } else {
-                        it.position == position
-                    }
-                }
-        val widgetDetails = campaign?.details as? WidgetDetails
+     fun Widget(
+         modifier: Modifier = Modifier,
+         placeholder: Drawable? = null,
+         position: String? = null
+     ) {
+         val campaignsData = campaigns.collectAsStateWithLifecycle()
+         val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+         val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-        val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+         val filtered = campaignEngine.filterCampaigns(
+             campaigns = campaignsData.value,
+             campaignType = "WID",
+             trackedEvents = trackedEventsData.value,
+             disabledCampaignIds = disabledData.value
+         )
 
-        val shouldShowWidget = remember(campaign, trackedEventsData.value.size) {
-            TriggerEventMatcher.shouldShowCampaign(
-                triggerEvent = campaign?.triggerEvent,
-                campaignId = campaign?.id,
-                trackedEvents = trackedEventsData.value
-            )
-        }
+         val campaign = filtered.firstOrNull {
+             if (position == null) {
+                 it.position == null
+             } else {
+                 it.position == position
+             }
+         }
+         val widgetDetails = campaign?.details as? WidgetDetails
 
-        if (widgetDetails != null && shouldShowWidget) {
+         if (widgetDetails != null && campaign != null) {
 
             if (widgetDetails.type == "full") {
 
@@ -1846,35 +1746,33 @@ object AppStorys {
     }
 
     @Composable
-    fun BottomSheet() {
+     fun BottomSheet() {
 
-        val campaignsData = campaigns.collectAsStateWithLifecycle()
+         val campaignsData = campaigns.collectAsStateWithLifecycle()
+         val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+         val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-        val campaign =
-            campaignsData.value.firstOrNull { it.campaignType == "BTS" && it.details is BottomSheetDetails }
+         val filtered = campaignEngine.filterCampaigns(
+             campaigns = campaignsData.value,
+             campaignType = "BTS",
+             trackedEvents = trackedEventsData.value,
+             disabledCampaignIds = disabledData.value
+         )
 
-        val bottomSheetDetails = when (val details = campaign?.details) {
-            is BottomSheetDetails -> details
-            else -> null
-        }
+         val campaign = filtered.firstOrNull { it.details is BottomSheetDetails }
 
-        val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+         val bottomSheetDetails = when (val details = campaign?.details) {
+             is BottomSheetDetails -> details
+             else -> null
+         }
 
-        val shouldShowBottomSheet = remember(campaign, trackedEventsData.value.size) {
-            TriggerEventMatcher.shouldShowCampaign(
-                triggerEvent = campaign?.triggerEvent,
-                campaignId = campaign?.id,
-                trackedEvents = trackedEventsData.value
-            )
-        }
+         if (bottomSheetDetails != null && showBottomSheet && campaign != null) {
 
-        if (bottomSheetDetails != null && showBottomSheet && shouldShowBottomSheet) {
-
-            LaunchedEffect(Unit) {
-                campaign?.id?.let {
-                    trackEvents(it, "viewed")
-                }
-            }
+             LaunchedEffect(Unit) {
+                 campaign.id?.let {
+                     trackEvents(it, "viewed")
+                 }
+             }
 
             BottomSheetComponent(
                 onDismissRequest = {
@@ -1904,31 +1802,29 @@ object AppStorys {
         }
     }
 
-    @Composable
-    fun Survey() {
-        var showSurvey by remember { mutableStateOf(true) }
+     @Composable
+     fun Survey() {
+         var showSurvey by remember { mutableStateOf(true) }
 
-        val campaignsData = campaigns.collectAsStateWithLifecycle()
+         val campaignsData = campaigns.collectAsStateWithLifecycle()
+         val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+         val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-        val campaign =
-            campaignsData.value.firstOrNull { it.campaignType == "SUR" && it.details is SurveyDetails }
+         val filtered = campaignEngine.filterCampaigns(
+             campaigns = campaignsData.value,
+             campaignType = "SUR",
+             trackedEvents = trackedEventsData.value,
+             disabledCampaignIds = disabledData.value
+         )
 
-        val surveyDetails = when (val details = campaign?.details) {
-            is SurveyDetails -> details
-            else -> null
-        }
+         val campaign = filtered.firstOrNull { it.details is SurveyDetails }
 
-        val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+         val surveyDetails = when (val details = campaign?.details) {
+             is SurveyDetails -> details
+             else -> null
+         }
 
-        val shouldShowSurvey = remember(campaign, trackedEventsData.value.size) {
-            TriggerEventMatcher.shouldShowCampaign(
-                triggerEvent = campaign?.triggerEvent,
-                campaignId = campaign?.id,
-                trackedEvents = trackedEventsData.value
-            )
-        }
-
-        if (surveyDetails != null && showSurvey && shouldShowSurvey) {
+         if (surveyDetails != null && showSurvey && campaign != null) {
             SurveyBottomSheet(
                 onDismissRequest = {
                     showSurvey = false
@@ -1946,35 +1842,33 @@ object AppStorys {
         }
     }
 
-    @Composable
-    fun Modals() {
-        val campaignsData = campaigns.collectAsStateWithLifecycle()
+     @Composable
+     fun Modals() {
+         val campaignsData = campaigns.collectAsStateWithLifecycle()
+         val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+         val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-        val campaign =
-            campaignsData.value.firstOrNull { it.campaignType == "MOD" && it.details is ModalDetails }
+         val filtered = campaignEngine.filterCampaigns(
+             campaigns = campaignsData.value,
+             campaignType = "MOD",
+             trackedEvents = trackedEventsData.value,
+             disabledCampaignIds = disabledData.value
+         )
 
-        val modalDetails = when (val details = campaign?.details) {
-            is ModalDetails -> details
-            else -> null
-        }
+         val campaign = filtered.firstOrNull { it.details is ModalDetails }
 
-        val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+         val modalDetails = when (val details = campaign?.details) {
+             is ModalDetails -> details
+             else -> null
+         }
 
-        val shouldShowModals = remember(campaign, trackedEventsData.value.size) {
-            TriggerEventMatcher.shouldShowCampaign(
-                triggerEvent = campaign?.triggerEvent,
-                campaignId = campaign?.id,
-                trackedEvents = trackedEventsData.value
-            )
-        }
+         if (modalDetails != null && showModal && campaign != null) {
 
-        if (modalDetails != null && showModal && shouldShowModals) {
-
-            LaunchedEffect(Unit) {
-                campaign?.id?.let {
-                    trackEvents(it, "viewed")
-                }
-            }
+             LaunchedEffect(Unit) {
+                 campaign.id?.let {
+                     trackEvents(it, "viewed")
+                 }
+             }
 
             PopupModal(
                 onCloseClick = {
@@ -2017,53 +1911,45 @@ object AppStorys {
 
     @RequiresApi(Build.VERSION_CODES.M)
     @Composable
-    fun ScratchCard() {
+     fun ScratchCard() {
 
-        var confettiTrigger by remember { mutableStateOf(0) }
-        val campaignsData = campaigns.collectAsStateWithLifecycle()
+         var confettiTrigger by remember { mutableStateOf(0) }
+         val campaignsData = campaigns.collectAsStateWithLifecycle()
+         val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+         val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-        val scratchedCampaignsData = scratchedCampaigns.collectAsStateWithLifecycle()
+         val filtered = campaignEngine.filterCampaigns(
+             campaigns = campaignsData.value,
+             campaignType = "SCRT",
+             trackedEvents = trackedEventsData.value,
+             disabledCampaignIds = disabledData.value
+         )
 
-        val campaign =
-            campaignsData.value.firstOrNull { it.campaignType == "SCRT" && it.details is ScratchCardDetails }
+         val campaign = filtered.firstOrNull { it.details is ScratchCardDetails }
 
-        val scratchCardDetails = when (val details = campaign?.details) {
-            is ScratchCardDetails -> details
-            else -> null
-        }
+         val scratchCardDetails = when (val details = campaign?.details) {
+             is ScratchCardDetails -> details
+             else -> null
+         }
 
-        val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+         val scratchedCampaignsData = scratchedCampaigns.collectAsStateWithLifecycle()
 
-        val shouldShowScratchCard = remember(campaign, trackedEventsData.value.size) {
-            TriggerEventMatcher.shouldShowCampaign(
-                triggerEvent = campaign?.triggerEvent,
-                campaignId = campaign?.id,
-                trackedEvents = trackedEventsData.value
-            )
-        }
+         val isAlreadyScratched = campaign?.id?.let {
+             scratchedCampaignsData.value.contains(it)
+         } ?: false
 
-        val isAlreadyScratched = campaign?.id?.let {
-            scratchedCampaignsData.value.contains(it)
-        } ?: false
+         var wasFullyScratched by remember(campaign?.id, isAlreadyScratched) {
+             mutableStateOf(isAlreadyScratched)
+         }
 
-        var wasFullyScratched by remember(campaign?.id, isAlreadyScratched) {
-            mutableStateOf(isAlreadyScratched)
-        }
+         var isPresented by remember(campaign?.id) { mutableStateOf(true) }
 
-        var isPresented by remember(campaign?.id) { mutableStateOf(true) }
+         if (scratchCardDetails != null && campaign != null && isPresented) {
 
-        LaunchedEffect(shouldShowScratchCard) {
-            if (shouldShowScratchCard && !isPresented) {
-                isPresented = true
-            }
-        }
-
-        if (scratchCardDetails != null && shouldShowScratchCard && isPresented) {
-
-            LaunchedEffect(Unit) {
-                campaign?.id?.let {
-                    trackEvents(it, "viewed")
-                }
+             LaunchedEffect(Unit) {
+                 campaign.id?.let {
+                     trackEvents(it, "viewed")
+                 }
             }
 
             LaunchedEffect(wasFullyScratched) {
@@ -2164,64 +2050,55 @@ object AppStorys {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.M)
-    @Composable
-    fun SpinTheWheel() {
-        val campaignsData = campaigns.collectAsStateWithLifecycle()
+     @RequiresApi(Build.VERSION_CODES.M)
+     @Composable
+     fun SpinTheWheel() {
+         val campaignsData = campaigns.collectAsStateWithLifecycle()
+         val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+         val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-        val campaign = campaignsData.value.firstOrNull {
-            it.campaignType == "STW" && it.details is SpinTheWheelDetails
-        }
+         val filtered = campaignEngine.filterCampaigns(
+             campaigns = campaignsData.value,
+             campaignType = "STW",
+             trackedEvents = trackedEventsData.value,
+             disabledCampaignIds = disabledData.value
+         )
 
-        val spinTheWheelDetails = when (val details = campaign?.details) {
-            is SpinTheWheelDetails -> details
-            else -> null
-        }
+         val campaign = filtered.firstOrNull { it.details is SpinTheWheelDetails }
 
-        val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+         val spinTheWheelDetails = when (val details = campaign?.details) {
+             is SpinTheWheelDetails -> details
+             else -> null
+         }
 
-        val shouldShowSpinWheel = remember(campaign, trackedEventsData.value.size) {
-            TriggerEventMatcher.shouldShowCampaign(
-                triggerEvent = campaign?.triggerEvent,
-                campaignId = campaign?.id,
-                trackedEvents = trackedEventsData.value
-            )
-        }
+         var isPresented by remember(campaign?.id) { mutableStateOf(true) }
 
-        var isPresented by remember(campaign?.id) { mutableStateOf(true) }
+         // Spin count: hoist here so it survives recomposition and screen navigation
+         val campaignId = campaign?.id
+         if (spinTheWheelDetails != null && campaignId != null && campaign != null) {
+             val initialSpins = spinTheWheelDetails.availableSpins
+                 ?: spinTheWheelDetails.content?.userInteraction?.numberSpin
+                 ?: 3
 
-        LaunchedEffect(shouldShowSpinWheel) {
-            if (shouldShowSpinWheel && !isPresented) {
-                isPresented = true
-            }
-        }
+             // Seed in-memory map on first encounter (also covers post-restart restore)
+             if (!spinCountByCampaign.containsKey(campaignId)) {
+                 val persisted = getSpinCount(
+                     campaignId = campaignId,
+                     sharedPreferences = context.getSharedPreferences(
+                         "appstorys_spin_counts",
+                         Context.MODE_PRIVATE
+                     )
+                 )
+                 spinCountByCampaign[campaignId] = persisted ?: initialSpins
+             }
 
-        // ── Spin count: hoist here so it survives recomposition and screen navigation ──
-        val campaignId = campaign?.id
-        if (spinTheWheelDetails != null && campaignId != null) {
-            val initialSpins = spinTheWheelDetails.availableSpins
-                ?: spinTheWheelDetails.content?.userInteraction?.numberSpin
-                ?: 3
+             val spinsLeft = spinCountByCampaign[campaignId] ?: initialSpins
 
-            // Seed in-memory map on first encounter (also covers post-restart restore)
-            if (!spinCountByCampaign.containsKey(campaignId)) {
-                val persisted = getSpinCount(
-                    campaignId = campaignId,
-                    sharedPreferences = context.getSharedPreferences(
-                        "appstorys_spin_counts",
-                        Context.MODE_PRIVATE
-                    )
-                )
-                spinCountByCampaign[campaignId] = persisted ?: initialSpins
-            }
+             if (isPresented) {
 
-            val spinsLeft = spinCountByCampaign[campaignId] ?: initialSpins
-
-            if (shouldShowSpinWheel && isPresented) {
-
-                LaunchedEffect(Unit) {
-                    trackEvents(campaignId, "viewed")
-                }
+                 LaunchedEffect(Unit) {
+                     trackEvents(campaignId, "viewed")
+                 }
 
                 val redirectUrl = spinTheWheelDetails.link ?: ""
 
@@ -2276,57 +2153,53 @@ object AppStorys {
         }
     }
 
-    @Composable
-    fun Milestone(
-        topPadding: Dp = 0.dp,
-        bottomPadding: Dp = 0.dp,
-        isWidgets: Boolean = true
-    ) {
-        val campaignsData = campaigns.collectAsStateWithLifecycle()
-        val disabledCampaigns = disabledCampaigns.collectAsStateWithLifecycle()
+     @Composable
+     fun Milestone(
+         topPadding: Dp = 0.dp,
+         bottomPadding: Dp = 0.dp,
+         isWidgets: Boolean = true
+     ) {
+         val campaignsData = campaigns.collectAsStateWithLifecycle()
+         val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+         val disabledCampaignsFlow = disabledCampaigns.collectAsStateWithLifecycle()
 
-        val campaign = campaignsData.value.firstOrNull {
-            it.campaignType == "MIL" && it.details is MilestoneDetails
-        }
+         val filtered = campaignEngine.filterCampaigns(
+             campaigns = campaignsData.value,
+             campaignType = "MIL",
+             trackedEvents = trackedEventsData.value,
+             disabledCampaignIds = disabledCampaignsFlow.value
+         )
 
-        val milestoneDetails = campaign?.details as? MilestoneDetails
+         val campaign = filtered.firstOrNull { it.details is MilestoneDetails }
 
-        val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+         val milestoneDetails = campaign?.details as? MilestoneDetails
 
-        val shouldShowMilestone = remember(campaign, trackedEventsData.value.size) {
-            TriggerEventMatcher.shouldShowCampaign(
-                triggerEvent = campaign?.triggerEvent,
-                campaignId = campaign?.id,
-                trackedEvents = trackedEventsData.value
-            )
-        }
+         val currentIndex by currentMilestoneIndex.collectAsStateWithLifecycle()
 
-        val currentIndex by currentMilestoneIndex.collectAsStateWithLifecycle()
+         // Track events and update milestone index
+         LaunchedEffect(trackedEventNames.value.size, milestoneDetails) {
+             milestoneDetails?.milestoneItems?.let { items ->
+                 val sortedItems = items.sortedBy { it.order }
 
-        // Track events and update milestone index
-        LaunchedEffect(trackedEventNames.value.size, milestoneDetails) {
-            milestoneDetails?.milestoneItems?.let { items ->
-                val sortedItems = items.sortedBy { it.order }
+                 for ((index, item) in sortedItems.withIndex()) {
+                     item.triggerEvents?.forEach { trigger ->
+                         trigger.eventName?.let { eventName ->
+                             if (trackedEventsData.value.any { it.eventName == eventName } && index > currentIndex) {
+                                 currentMilestoneIndex.emit(index)
+                                 return@LaunchedEffect
+                             }
+                         }
+                     }
+                 }
+             }
+         }
 
-                for ((index, item) in sortedItems.withIndex()) {
-                    item.triggerEvents?.forEach { trigger ->
-                        trigger.eventName?.let { eventName ->
-                            if (trackedEventsData.value.any { it.eventName == eventName } && index > currentIndex) {
-                                currentMilestoneIndex.emit(index)
-                                return@LaunchedEffect
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        if (milestoneDetails != null &&
-            campaign?.id != null &&
-            !disabledCampaigns.value.contains(campaign.id) &&
-            shouldShowMilestone &&
-            showMilestone
-        ) {
+         if (milestoneDetails != null &&
+             campaign?.id != null &&
+             !disabledCampaignsFlow.value.contains(campaign.id) &&
+             campaign != null &&
+             showMilestone
+         ) {
             val sortedItems = milestoneDetails.milestoneItems?.sortedBy { it.order } ?: return
 
             if (currentIndex >= sortedItems.size) return

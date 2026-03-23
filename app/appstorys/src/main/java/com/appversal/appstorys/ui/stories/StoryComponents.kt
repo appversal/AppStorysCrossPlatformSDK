@@ -1437,6 +1437,54 @@ internal fun StoryAppMain(
     )
 }
 
+@Composable
+private fun StudioSlideRenderer(
+    slide: StorySlide,
+    modifier: Modifier = Modifier,
+    onCtaClick: (String) -> Unit
+) {
+    val ctaLink = slide.link
+    val ctaText = slide.buttonText
+    val ctaAlignment = when ((slide.styling?.cta?.container?.alignment ?: slide.styling?.ctaAlignment)?.lowercase()) {
+        "left" -> Alignment.BottomStart
+        "right" -> Alignment.BottomEnd
+        else -> Alignment.BottomCenter
+    }
+
+    Box(modifier = modifier.background(Color.Black)) {
+        if (!slide.image.isNullOrEmpty()) {
+            Image(
+                painter = rememberAsyncImagePainter(model = slide.image),
+                contentDescription = "Studio slide",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+        }
+
+        if (!ctaLink.isNullOrEmpty() && !ctaText.isNullOrEmpty()) {
+            Box(
+                modifier = Modifier
+                    .align(ctaAlignment)
+                    .navigationBarsPadding()
+                    .padding(12.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color.Black.copy(alpha = 0.45f))
+                    .clickable { onCtaClick(ctaLink) }
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
+            ) {
+                CommonText(
+                    text = ctaText,
+                    styling = TextStyling(
+                        color = "#FFFFFF",
+                        fontSize = 14,
+                        fontFamily = ""
+                    )
+                )
+            }
+        }
+    }
+}
+
 internal fun saveViewedStories(idList: List<String>, sharedPreferences: SharedPreferences) {
     val jsonArray = JSONArray(idList)
     sharedPreferences.edit { putString("VIEWED_STORIES", jsonArray.toString()) }
