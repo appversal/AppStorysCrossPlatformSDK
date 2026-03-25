@@ -72,8 +72,9 @@ import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
-import com.appversal.appstorys.api.CommonMargins
-import com.appversal.appstorys.api.TextStyling
+import com.appversal.appstorys.core.model.CommonMargins
+import com.appversal.appstorys.core.model.TextStyling
+import com.appversal.appstorys.core.model.ScratchCardDetails
 import com.appversal.appstorys.ui.common_components.CommonText
 import com.appversal.appstorys.ui.common_components.CrossButton
 import com.appversal.appstorys.ui.common_components.CrossButtonConfig
@@ -94,7 +95,7 @@ fun CardScratch(
     onConfettiTrigger: () -> Unit,
     wasFullyScratched: Boolean,
     onWasFullyScratched: (Boolean) -> Unit,
-    scratchCardDetails: com.appversal.appstorys.api.ScratchCardDetails,
+    scratchCardDetails: ScratchCardDetails,
     onCtaClick: () -> Unit = {},
 ) {
     val details = scratchCardDetails.content

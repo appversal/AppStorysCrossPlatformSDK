@@ -17,7 +17,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.TextUnit
-import com.appversal.appstorys.api.TextStyling
 import com.appversal.appstorys.utils.personalizeText
 import com.appversal.appstorys.utils.toColor
 import androidx.compose.ui.text.font.FontFamily
@@ -28,7 +27,7 @@ import com.appversal.appstorys.utils.FontCache
 fun CommonText(
     modifier: Modifier = Modifier,
     text: String,
-    styling: TextStyling,
+    styling: com.appversal.appstorys.core.model.TextStyling,
     lineHeight: Float? = null,
     letterSpacing: Float? = null,
     maxLines: Int? = null
@@ -39,7 +38,6 @@ fun CommonText(
 
     // State to hold the loaded font family
     var fontFamily by remember { mutableStateOf<FontFamily?>(null) }
-    var isLoadingFont by remember { mutableStateOf(false) }
 
     val decoration = styling.fontDecoration.orEmpty()
 
@@ -54,27 +52,25 @@ fun CommonText(
         if (decoration.contains("underline")) TextDecoration.Underline else null
 
     LaunchedEffect(styling.fontFamily) {
-        if (!styling.fontFamily.isNullOrBlank() && isUrl(styling.fontFamily)) {
-            isLoadingFont = true
+        val styleFontFamily = styling.fontFamily
+        if (!styleFontFamily.isNullOrBlank() && isUrl(styleFontFamily)) {
             scope.launch {
                 try {
                     val loadedFont = FontCache.loadFont(
                         context = context,
-                        fontUrl = styling.fontFamily,
+                        fontUrl = styleFontFamily,
                         weight = fontWeight,
                         style = fontStyle
                     )
                     fontFamily = loadedFont ?: getDefaultFontFamily()
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     // Fallback to default font on error
                     fontFamily = getDefaultFontFamily()
-                } finally {
-                    isLoadingFont = false
                 }
             }
-        } else if (!styling.fontFamily.isNullOrBlank()) {
+        } else if (!styleFontFamily.isNullOrBlank()) {
             // Handle system font families
-            fontFamily = getSystemFontFamily(styling.fontFamily)
+            fontFamily = getSystemFontFamily(styleFontFamily)
         } else {
             // Use default font
             fontFamily = getDefaultFontFamily()

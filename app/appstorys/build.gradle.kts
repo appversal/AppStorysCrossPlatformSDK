@@ -45,13 +45,10 @@ android {
 }
 
 dependencies {
+    implementation(project(":shared-core"))
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.material3)
     implementation(libs.coil.compose)
-    implementation(libs.retrofit)
-    implementation(libs.retrofit.kotlinx.serialization)
-    implementation(libs.retrofit.scalars)
-    implementation(libs.okhttp.logging)
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.5")
     implementation("com.google.accompanist:accompanist-coil:0.15.0")
     implementation("androidx.compose.ui:ui-text-google-fonts")
@@ -63,6 +60,11 @@ dependencies {
 
     implementation(libs.gson)
     implementation(libs.kotlinx.serialization.json)
+    implementation("io.ktor:ktor-client-core:2.3.12")
+    implementation("io.ktor:ktor-client-okhttp:2.3.12")
+    implementation("io.ktor:ktor-client-content-negotiation:2.3.12")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.12")
+    implementation("io.ktor:ktor-client-logging:2.3.12")
     implementation(libs.coil.gif)
     implementation(libs.androidx.activity.ktx)
     implementation(libs.exoplayer.ui)

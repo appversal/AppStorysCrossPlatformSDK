@@ -53,7 +53,7 @@ import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
-import com.appversal.appstorys.api.WidgetDetails
+import com.appversal.appstorys.core.model.WidgetDetails
 import com.appversal.appstorys.utils.isGifUrl
 
 const val AUTO_SLIDE_DURATION = 5000L

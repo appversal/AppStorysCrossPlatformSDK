@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -20,11 +19,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.appversal.appstorys.api.TextStyling
+import com.appversal.appstorys.core.model.TextStyling
 
 data class CTAButtonConfig(
     // Text styling
@@ -216,16 +213,4 @@ fun createCTAButtonConfig(
     )
 }
 
-// Helper functions for font mapping
-fun mapFontWeight(value: String?): FontWeight = when (value?.lowercase()) {
-    "bold", "700", "800" -> FontWeight.Bold
-    "600" -> FontWeight.SemiBold
-    "500" -> FontWeight.Medium
-    else -> FontWeight.Normal
-}
-
-fun mapFontStyle(value: String?): FontStyle =
-    if (value?.equals("italic", true) == true)
-        FontStyle.Italic
-    else FontStyle.Normal
 

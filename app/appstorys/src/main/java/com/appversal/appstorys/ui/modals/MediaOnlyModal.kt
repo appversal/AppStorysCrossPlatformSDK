@@ -18,7 +18,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.appversal.appstorys.api.Modal
+import com.appversal.appstorys.core.model.Modal
 import com.appversal.appstorys.ui.common_components.CrossButton
 import com.appversal.appstorys.ui.common_components.createCrossButtonConfig
 import com.appversal.appstorys.ui.common_components.parseColorString

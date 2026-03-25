@@ -60,33 +60,8 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
-import com.appversal.appstorys.api.ApiRepository
-import com.appversal.appstorys.api.ApiResult
-import com.appversal.appstorys.api.BannerDetails
-import com.appversal.appstorys.api.BottomSheetDetails
-import com.appversal.appstorys.api.CSATDetails
-import com.appversal.appstorys.api.Campaign
-import com.appversal.appstorys.api.CampaignVariant
-import com.appversal.appstorys.api.CsatFeedbackPostRequest
-import com.appversal.appstorys.api.FloaterDetails
-import com.appversal.appstorys.api.MilestoneDetails
-import com.appversal.appstorys.api.ModalDetails
-import com.appversal.appstorys.api.PipDetails
-import com.appversal.appstorys.api.ReconcileUserRequest
-import com.appversal.appstorys.api.ReelStatusRequest
-import com.appversal.appstorys.api.ReelsDetails
-import com.appversal.appstorys.api.RetrofitClient
-import com.appversal.appstorys.api.ScratchCardDetails
-import com.appversal.appstorys.api.SpinTheWheelDetails
-import com.appversal.appstorys.api.StoriesDetails
-import com.appversal.appstorys.api.SurveyDetails
-import com.appversal.appstorys.api.Tooltip
-import com.appversal.appstorys.api.TooltipsDetails
-import com.appversal.appstorys.api.TriggerEvent
-import com.appversal.appstorys.api.UpdateUserPropertiesRequest
-import com.appversal.appstorys.api.WidgetDetails
-import com.appversal.appstorys.api.WidgetImage
-import com.appversal.appstorys.api.safeApiCall
+import com.appversal.appstorys.core.api.ApiClient
+import com.appversal.appstorys.core.api.ApiResult
 import com.appversal.appstorys.ui.AutoSlidingCarousel
 import com.appversal.appstorys.ui.BottomSheetComponent
 import com.appversal.appstorys.ui.CardScratch
@@ -116,8 +91,32 @@ import com.appversal.appstorys.ui.spinwheel.getSpinCount
 import com.appversal.appstorys.ui.spinwheel.saveSpinCount
 import com.appversal.appstorys.utils.AppStorysSdkState
 import com.appversal.appstorys.utils.CampaignEngine
-import com.appversal.appstorys.utils.EventTracker
-import com.appversal.appstorys.utils.TriggerEventMatcher
+import com.appversal.appstorys.core.engine.TriggerEventMatcher
+import com.appversal.appstorys.core.model.BannerDetails
+import com.appversal.appstorys.core.model.BottomSheetDetails
+import com.appversal.appstorys.core.model.Campaign
+import com.appversal.appstorys.core.model.CampaignVariant
+import com.appversal.appstorys.core.model.CSATDetails
+import com.appversal.appstorys.core.model.CsatFeedbackPostRequest
+import com.appversal.appstorys.core.model.FloaterDetails
+import com.appversal.appstorys.core.model.MilestoneDetails
+import com.appversal.appstorys.core.model.ModalDetails
+import com.appversal.appstorys.core.model.PipDetails
+import com.appversal.appstorys.core.model.ReconcileUserRequest
+import com.appversal.appstorys.core.model.ReelStatusRequest
+import com.appversal.appstorys.core.model.ReelsDetails
+import com.appversal.appstorys.core.model.ScratchCardDetails
+import com.appversal.appstorys.core.model.SpinTheWheelDetails
+import com.appversal.appstorys.core.model.StoriesDetails
+import com.appversal.appstorys.core.model.SurveyDetails
+import com.appversal.appstorys.core.model.Tooltip
+import com.appversal.appstorys.core.model.TooltipsDetails
+import com.appversal.appstorys.core.model.TriggerEvent
+import com.appversal.appstorys.core.model.UpdateUserPropertiesRequest
+import com.appversal.appstorys.core.model.ValidateAccountRequest
+import com.appversal.appstorys.core.model.TrackUserWebSocketRequest
+import com.appversal.appstorys.core.model.WidgetDetails
+import com.appversal.appstorys.core.model.WidgetImage
 import com.appversal.appstorys.utils.ViewTreeAnalyzer
 import com.appversal.appstorys.utils.UserManager
 import com.appversal.appstorys.utils.getDeviceInfo
@@ -139,7 +138,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import com.appversal.appstorys.utils.TriggerEventMatcher.TrackedEventData
+import com.appversal.appstorys.core.engine.TriggerEventMatcher.TrackedEventData
 import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONObject
 import kotlin.collections.plus
@@ -160,11 +159,7 @@ object AppStorys {
 
     internal lateinit var navigateToScreen: (String) -> Unit
 
-    private val apiService = RetrofitClient.apiService
-
-    private val webSocketService = RetrofitClient.webSocketApiService
-
-    internal lateinit var repository: ApiRepository
+    internal lateinit var apiClient: ApiClient
 
     private val campaigns = MutableStateFlow<List<Campaign>>(emptyList())
 
@@ -187,8 +182,6 @@ object AppStorys {
 
      // In-memory spin count per campaign — keyed by campaign ID, value = remaining spins
      private val spinCountByCampaign = mutableStateMapOf<String, Int>()
-
-     private val eventTracker = EventTracker()
 
      private val campaignEngine = CampaignEngine()
 
@@ -272,9 +265,8 @@ object AppStorys {
             this.isAnonymousUser = userManager.isAnonymous
         }
 
-        this.repository = ApiRepository(context, apiService, webSocketService) {
-            currentScreen
-        }
+        // Initialize ApiClient from shared-core (Ktor-based)
+        this.apiClient = ApiClient()
 
         if (sdkState == AppStorysSdkState.Initialized || sdkState == AppStorysSdkState.Initializing) {
             return
@@ -308,14 +300,17 @@ object AppStorys {
         )
         coroutineScope.launch {
             try {
-                val accessToken = repository.getAccessToken(
+                val accessToken = apiClient.validateAccount(
                     appId,
-                    accountId,
-                    this@AppStorys.userId,
-                    AppStorys.context
+                    ValidateAccountRequest(
+                        app_id = appId,
+                        account_id = accountId,
+                        user_id = this@AppStorys.userId,
+                        attributes = getDeviceInfo(context = AppStorys.context).toJsonElementMap()
+                    )
                 )
-                if (!accessToken.isNullOrBlank()) {
-                    this@AppStorys.accessToken = accessToken
+                if (accessToken is ApiResult.Success && !accessToken.data.access_token.isNullOrBlank()) {
+                    this@AppStorys.accessToken = accessToken.data.access_token!!
                     sdkState = AppStorysSdkState.Initialized
                     val savedScratchedCampaigns = getScratchedCampaigns(
                         context.getSharedPreferences("AppStory", Context.MODE_PRIVATE)
@@ -367,21 +362,64 @@ object AppStorys {
 
                 ensureActive()
 
-                val (campaignsList, variants, personalizationResponse, isTestUser) = repository.getScreenCampaignsData(
-                    accessToken = accessToken,
+                // Fetch eligible campaigns for this screen
+                val eligibleResult = apiClient.getEligibleCampaigns(
                     accountId = accountId,
-                    screenName = currentScreen,
-                    userId = userId
+                    accessToken = accessToken,
+                    request = TrackUserWebSocketRequest(
+                        user_id = userId,
+                        screenName = currentScreen
+                    )
                 )
 
-                isScreenCaptureEnabled = isTestUser ?: false
+                if (eligibleResult !is ApiResult.Success) {
+                    Log.e("AppStorys", "Failed to get eligible campaigns")
+                    return@launch
+                }
 
+                val eligibleData = eligibleResult.data
+                val eligibleCampaignIds = eligibleData.eligibleCampaignList ?: emptyList()
+
+                // Fetch campaigns.json from CDN with ETag caching
+                val campaignsJsonResult = apiClient.fetchCampaignsJson(accountId = accountId)
+
+                if (campaignsJsonResult !is ApiResult.Success) {
+                    Log.e("AppStorys", "Failed to fetch campaigns.json")
+                    return@launch
+                }
+
+                var allCampaigns = campaignsJsonResult.data
+
+                // Load missing campaigns if needed
+                val cachedIds = allCampaigns.mapNotNull { it.id }.toSet()
+                val missingIds = eligibleCampaignIds.filter { it !in cachedIds }
+
+                if (missingIds.isNotEmpty()) {
+                    val missingResult = apiClient.loadMissingCampaigns(
+                        accessToken = accessToken,
+                        campaignIds = missingIds
+                    )
+                    if (missingResult is ApiResult.Success) {
+                        allCampaigns = allCampaigns + missingResult.data
+                    }
+                }
+
+                // Filter campaigns for this screen and apply variants
+                val campaignsList = allCampaigns.filter { campaign ->
+                    campaign.id in eligibleCampaignIds && campaign.screen?.equals(currentScreen, ignoreCase = true) == true
+                }
+
+                val variants = eligibleData.variants ?: emptyList()
+                val personalizationResponse = eligibleData.personalization_data ?: emptyMap()
+                val isTestUser = eligibleData.test_user
+
+                isScreenCaptureEnabled = isTestUser ?: false
                 personalizationData = personalizationResponse
 
                 ensureActive()
 
-                campaignsList?.let { campaigns.emit(it) }
-                campaignVariants.emit(variants ?: emptyList())
+                campaigns.emit(campaignsList)
+                campaignVariants.emit(variants)
                 Log.e("AppStorys", "Campaign: ${campaigns.value}")
             } catch (exception: Exception) {
                 Log.e("AppStorys", "Error getting campaigns for $screenName", exception)
@@ -440,7 +478,7 @@ object AppStorys {
                         } else {
                             updatedMetadata
                         }
-                    eventTracker.captureEvent(
+                    apiClient.captureEvent(
                         accessToken = accessToken,
                         userId = userId,
                         campaignId = campaign_id,
@@ -480,15 +518,13 @@ object AppStorys {
 
             val mergedMetadata = attributes + deviceInfo
 
-            val result = safeApiCall {
-                webSocketService.updateUserProperties(
-                    token = "Bearer $accessToken",
-                    request = UpdateUserPropertiesRequest(
-                        user_id = userId,
-                        attributes = mergedMetadata.toJsonElementMap()
-                    )
+            val result = apiClient.updateUserProperties(
+                accessToken = accessToken,
+                request = UpdateUserPropertiesRequest(
+                    user_id = userId,
+                    attributes = mergedMetadata.toJsonElementMap()
                 )
-            }
+            )
             when (result) {
                 is ApiResult.Success -> {
                     Log.i(
@@ -533,9 +569,8 @@ object AppStorys {
                         "Reconciling anonymous user $previousUserId with identified user $newUserId"
                     )
 
-                    val result = webSocketService.reconcileAnonymousUser(
-
-                        token = "Bearer $accessToken",
+                    val result = apiClient.reconcileAnonymousUser(
+                        accessToken = accessToken,
                         request = ReconcileUserRequest(
                             anonymous_user_id = previousUserId,
                             identified_user_id = newUserId
@@ -707,7 +742,7 @@ object AppStorys {
                             },
                             onSubmitFeedback = { feedback ->
                                 coroutineScope.launch {
-                                    repository.captureCSATResponse(
+                                    apiClient.sendCSATResponse(
                                         accessToken,
                                         CsatFeedbackPostRequest(
                                             user_id = userId,
@@ -789,9 +824,11 @@ object AppStorys {
                             }
                         ),
                         onClick = {
-                            if (campaign?.id != null && !floaterDetails.link.isNullOrEmpty()) {
-                                clickEvent(link = floaterDetails.link, campaignId = campaign.id)
-                                trackEvents(campaign.id, "clicked")
+                            campaign?.id?.let { campaignId ->
+                                if (!floaterDetails.link.isNullOrEmpty()) {
+                                    clickEvent(link = floaterDetails.link, campaignId = campaignId)
+                                    trackEvents(campaignId, "clicked")
+                                }
                             }
                         },
                         image = floaterDetails.image ?: "",
@@ -839,6 +876,7 @@ object AppStorys {
             key(
                 campaign?.id, campaign?.triggerEvent
             ) {
+                val smallVideo = pipDetails.small_video
 
                 var showPip by remember { mutableStateOf(true) }
                 LaunchedEffect(Unit) {
@@ -856,7 +894,7 @@ object AppStorys {
                             ?: pipDetails.width?.dp ?: 113.dp
 
                         PipVideo(
-                            videoUri = pipDetails.small_video,
+                            videoUri = smallVideo ?: "",
                             fullScreenVideoUri = if (!pipDetails.large_video.isNullOrEmpty()) {
                                 pipDetails.large_video
                             } else {
@@ -1014,14 +1052,15 @@ object AppStorys {
                 if (tooltipsDetails != null) {
                     for (tooltip in tooltipsDetails.tooltips?.sortedBy { it.order }
                         ?: emptyList()) {
-                        if (tooltip.target != null && !tooltipViewed.value.contains(tooltip.target)) {
+                        val target = tooltip.target
+                        if (target != null && !tooltipViewed.value.contains(target)) {
                             while (tooltipTargetView.value != null) {
                                 delay(500L)
                             }
                             tooltipTargetView.emit(tooltip)
                             showcaseVisible.emit(true)
                             tooltipViewed.update {
-                                it + tooltip.target
+                                it + target
                             }
                         }
                     }
@@ -1080,13 +1119,14 @@ object AppStorys {
          val reelsDetails = campaign?.details as? ReelsDetails
          val selectedReelIndex by selectedReelIndex.collectAsStateWithLifecycle()
          val visibility by reelFullScreenVisible.collectAsStateWithLifecycle()
+         val reels = reelsDetails?.reels
 
-         if (reelsDetails?.reels != null && reelsDetails.reels.isNotEmpty() && campaign != null) {
+         if (!reels.isNullOrEmpty() && campaign != null) {
             Box(modifier = Modifier.fillMaxSize()) {
 
                 ReelsRow(
                     modifier = modifier,
-                    reels = reelsDetails.reels,
+                    reels = reels,
                     onReelClick = { index ->
                         coroutineScope.launch {
                             this@AppStorys.selectedReelIndex.emit(index)
@@ -1152,7 +1192,7 @@ object AppStorys {
 
                 FullScreenVideoScreen(
                     reelsDetails = reelsDetails,
-                    reels = reelsDetails.reels,
+                    reels = reelsDetails.reels ?: emptyList(),
                     likedReels = likedReels,
                     startIndex = selectedReelIndex,
                     sendLikesStatus = {
@@ -1181,9 +1221,9 @@ object AppStorys {
                                 )
                             }
 
-                            repository.sendReelLikeStatus(
+                            apiClient.sendReelLikeStatus(
                                 accessToken = accessToken,
-                                actions = ReelStatusRequest(
+                                request = ReelStatusRequest(
                                     user_id = userId,
                                     action = it.second,
                                     reel = it.first.id
@@ -1278,8 +1318,9 @@ object AppStorys {
             }
 
             val forcedHeight: Dp? = remember(bannerDetails) {
-                if (bannerDetails.width == null && bannerDetails.height != null) {
-                    bannerDetails.height.dp   // 👈 explicit stretch intent
+                val bannerHeight = bannerDetails.height
+                if (bannerDetails.width == null && bannerHeight != null) {
+                    bannerHeight.dp
                 } else null
             }
 
@@ -1446,11 +1487,13 @@ object AppStorys {
         val screenWidth = configuration.screenWidthDp.dp
 
 
-        if (widgetDetails?.widgetImages != null && widgetDetails.widgetImages.isNotEmpty() && campaign.id != null && !disabledCampaigns.value.contains(
-                campaign.id
-            ) && widgetDetails.type == "full"
+        val widgetImages = widgetDetails?.widgetImages
+        val campaignId = campaign?.id
+
+        if (widgetDetails != null && !widgetImages.isNullOrEmpty() && campaignId != null &&
+            !disabledCampaigns.value.contains(campaignId) && widgetDetails.type == "full"
         ) {
-            val sortedWidgetImages = widgetDetails.widgetImages.sortedBy { it.order }
+            val sortedWidgetImages = widgetImages.sortedBy { it.order }
             val pagerState = rememberPagerState(pageCount = {
                 sortedWidgetImages.count()
             })
@@ -1458,7 +1501,9 @@ object AppStorys {
 
             val calculatedHeight =
                 if (widgetDetails.width != null && widgetDetails.height != null) {
-                    val aspectRatio = widgetDetails.height.toFloat() / widgetDetails.width.toFloat()
+                    val widgetWidth = widgetDetails.width
+                    val widgetHeight = widgetDetails.height
+                    val aspectRatio = widgetHeight!!.toFloat() / widgetWidth!!.toFloat()
 
                     val marginLeft = (widgetDetails.styling?.leftMargin ?: 0).dp
                     val marginRight = (widgetDetails.styling?.rightMargin ?: 0).dp
@@ -1530,18 +1575,20 @@ object AppStorys {
                                 if (sortedWidgetImages[index].link.toString().trim()
                                         .removeSurrounding("\"").isNotEmpty()
                                 ) {
-                                    clickEvent(
-                                        link = sortedWidgetImages[index].link.toString().trim()
-                                            .removeSurrounding("\""),
-                                        campaignId = campaign.id,
-                                        widgetImageId = sortedWidgetImages[index].id
-                                    )
+                                    campaign.id?.let { campaignId ->
+                                        clickEvent(
+                                            link = sortedWidgetImages[index].link.toString().trim()
+                                                .removeSurrounding("\""),
+                                            campaignId = campaignId,
+                                            widgetImageId = sortedWidgetImages[index].id
+                                        )
 
-                                    trackEvents(
-                                        campaign.id,
-                                        "clicked",
-                                        mapOf("widget_image" to sortedWidgetImages[index].id!!)
-                                    )
+                                        trackEvents(
+                                            campaignId,
+                                            "clicked",
+                                            mapOf("widget_image" to sortedWidgetImages[index].id!!)
+                                        )
+                                    }
                                 }
                             },
                             contentScale = contentScale,
@@ -1581,14 +1628,19 @@ object AppStorys {
         val configuration = LocalConfiguration.current
         val screenWidth = configuration.screenWidthDp.dp
 
-        if (widgetDetails != null && campaign.id != null &&
-            !disabledCampaigns.value.contains(campaign.id) && widgetDetails.widgetImages != null && widgetDetails.type == "half"
+        val widgetImages = widgetDetails?.widgetImages
+        val campaignId = campaign?.id
+
+        if (widgetDetails != null && campaignId != null &&
+            !disabledCampaigns.value.contains(campaignId) && !widgetImages.isNullOrEmpty() && widgetDetails.type == "half"
         ) {
             val widthInDp: Dp? = widgetDetails.width?.dp
 
             val calculatedHeight =
                 if (widgetDetails.width != null && widgetDetails.height != null) {
-                    val aspectRatio = widgetDetails.height.toFloat() / widgetDetails.width.toFloat()
+                    val widgetWidth = widgetDetails.width
+                    val widgetHeight = widgetDetails.height
+                    val aspectRatio = widgetHeight!!.toFloat() / widgetWidth!!.toFloat()
 
                     val marginLeft = (widgetDetails.styling?.leftMargin ?: 0).dp
                     val marginRight = (widgetDetails.styling?.rightMargin ?: 0).dp
@@ -1601,7 +1653,7 @@ object AppStorys {
                     (widgetDetails.height?.minus(12))?.div(2)?.dp
                 }
 
-            val widgetImagesPairs = widgetDetails.widgetImages.turnToPair()
+            val widgetImagesPairs = widgetImages.turnToPair()
             val pagerState = rememberPagerState(pageCount = {
                 widgetImagesPairs.count()
             })
@@ -1683,18 +1735,20 @@ object AppStorys {
                                         if (leftImage.link.toString().trim()
                                                 .removeSurrounding("\"").isNotEmpty()
                                         ) {
-                                            clickEvent(
-                                                link = leftImage.link.toString().trim()
-                                                    .removeSurrounding("\""),
-                                                campaignId = campaign.id,
-                                                widgetImageId = leftImage.id
-                                            )
+                                            campaign.id?.let { campaignId ->
+                                                clickEvent(
+                                                    link = leftImage.link.toString().trim()
+                                                        .removeSurrounding("\""),
+                                                    campaignId = campaignId,
+                                                    widgetImageId = leftImage.id
+                                                )
 
-                                            trackEvents(
-                                                campaign.id,
-                                                "clicked",
-                                                mapOf("widget_image" to leftImage.id!!)
-                                            )
+                                                trackEvents(
+                                                    campaignId,
+                                                    "clicked",
+                                                    mapOf("widget_image" to leftImage.id!!)
+                                                )
+                                            }
                                         }
 
                                     },
@@ -1717,18 +1771,20 @@ object AppStorys {
                                         if (rightImage.link.toString().trim()
                                                 .removeSurrounding("\"").isNotEmpty()
                                         ) {
-                                            clickEvent(
-                                                link = rightImage.link.toString().trim()
-                                                    .removeSurrounding("\""),
-                                                campaignId = campaign.id,
-                                                widgetImageId = rightImage.id
-                                            )
+                                            campaign.id?.let { campaignId ->
+                                                clickEvent(
+                                                    link = rightImage.link.toString().trim()
+                                                        .removeSurrounding("\""),
+                                                    campaignId = campaignId,
+                                                    widgetImageId = rightImage.id
+                                                )
 
-                                            trackEvents(
-                                                campaign.id,
-                                                "clicked",
-                                                mapOf("widget_image" to rightImage.id!!)
-                                            )
+                                                trackEvents(
+                                                    campaignId,
+                                                    "clicked",
+                                                    mapOf("widget_image" to rightImage.id!!)
+                                                )
+                                            }
                                         }
                                     },
                                 imageUrl = rightImage.image ?: "",
@@ -2311,15 +2367,14 @@ object AppStorys {
                 }
                 shouldAnalyze = false
                 isCapturing = false
-
                 if (widgetPositionList.isNotEmpty() && widgetPositionList[0].isNotEmpty()) {
                     Log.i(TAG, "widgetPositionList is valid")
                     coroutineScope.launch {
-                        Log.i(TAG, "Calling repository.sendWidgetPositions()")
-                        repository.sendWidgetPositions(
+                        Log.i(TAG, "Calling apiClient.identifyPositions()")
+                        apiClient.identifyPositions(
                             accessToken = accessToken,
-                            screenName = currentScreen,
-                            positionList = widgetPositionList
+                            positionList = widgetPositionList,
+                            screenName = currentScreen
                         )
                     }
                 }
@@ -2365,7 +2420,10 @@ object AppStorys {
     internal fun handleTooltipAction(tooltip: Tooltip, isClick: Boolean = false) {
         coroutineScope.launch {
             val campaign = campaigns.value.firstOrNull { campaign ->
-                campaign.campaignType == "TTP" && campaign.details is TooltipsDetails && campaign.details.tooltips?.any { it.id == tooltip.id } != null
+                campaign.campaignType == "TTP" &&
+                    (campaign.details as? TooltipsDetails)
+                        ?.tooltips
+                        ?.any { it.id == tooltip.id } != null
             } ?: campaigns.value.firstOrNull { campaign ->
                 campaign.campaignType == "TTP" && campaign.details is TooltipsDetails
             }
@@ -2382,18 +2440,19 @@ object AppStorys {
             }
 
             if (isClick) {
-                if (!tooltip.link.isNullOrEmpty()) {
+                val tooltipLink = tooltip.link
+                if (!tooltipLink.isNullOrEmpty()) {
                     trackEvents(
                         campaign?.id,
                         "clicked",
                         mapOf("tooltip_id" to tooltipId)
                     )
 
-                    if (tooltip.link.isNotEmpty()) {
-                        if (!isValidUrl(tooltip.link)) {
-                            navigateToScreen(tooltip.link)
+                    if (tooltipLink.isNotEmpty()) {
+                        if (!isValidUrl(tooltipLink)) {
+                            navigateToScreen(tooltipLink)
                         } else {
-                            openUrl(tooltip.link)
+                            openUrl(tooltipLink)
                         }
                     } else {
                         dismissTooltip()
@@ -2507,3 +2566,5 @@ object AppStorys {
     @JvmStatic
     fun getInstance() = this
 }
+
+

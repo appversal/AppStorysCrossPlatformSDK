@@ -33,8 +33,8 @@ import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import coil.compose.rememberAsyncImagePainter
-import com.appversal.appstorys.api.Reel
-import com.appversal.appstorys.api.ReelsDetails
+import com.appversal.appstorys.core.model.Reel
+import com.appversal.appstorys.core.model.ReelsDetails
 import com.appversal.appstorys.ui.common_components.LikeButton
 import com.appversal.appstorys.ui.common_components.createLikeButtonConfig
 import com.appversal.appstorys.ui.common_components.ShareButton

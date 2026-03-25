@@ -44,10 +44,11 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
-import com.appversal.appstorys.api.SpinTheWheelDetails
-import com.appversal.appstorys.api.SpinWheelRewardConfig
-import com.appversal.appstorys.api.WheelRewardStyling
-import com.appversal.appstorys.api.WheelSlice
+import com.appversal.appstorys.core.model.SpinTheWheelDetails
+import com.appversal.appstorys.core.model.SpinWheelRewardConfig
+import com.appversal.appstorys.core.model.WheelConfettiConfig
+import com.appversal.appstorys.core.model.WheelRewardStyling
+import com.appversal.appstorys.core.model.WheelSlice
 import com.appversal.appstorys.ui.common_components.CrossButton
 import com.appversal.appstorys.ui.common_components.createCrossButtonConfig
 import kotlinx.coroutines.delay
@@ -1360,7 +1361,7 @@ private fun triggerHapticFeedback(context: android.content.Context, duration: Lo
 @Composable
 private fun ConfettiEffect(
     modifier: Modifier = Modifier,
-    confettiConfig: com.appversal.appstorys.api.WheelConfettiConfig? = null,
+    confettiConfig: WheelConfettiConfig? = null,
     onComplete: () -> Unit = {}
 ) {
     // Parse confetti colors from backend or use defaults

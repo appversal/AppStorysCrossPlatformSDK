@@ -37,7 +37,7 @@ import androidx.compose.ui.window.PopupProperties
 import com.appversal.appstorys.AppStorys
 import com.appversal.appstorys.AppStorys.dismissTooltip
 import com.appversal.appstorys.AppStorys.tooltipTargetView
-import com.appversal.appstorys.api.Tooltip
+import com.appversal.appstorys.core.model.Tooltip
 import com.appversal.appstorys.utils.AppStorysCoordinates
 
 /**

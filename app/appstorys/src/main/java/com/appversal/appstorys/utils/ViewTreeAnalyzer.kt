@@ -20,7 +20,7 @@ import androidx.compose.ui.semantics.SemanticsOwner
 import androidx.compose.ui.semantics.SemanticsPropertyKey
 import androidx.compose.ui.semantics.SemanticsPropertyReceiver
 import androidx.compose.ui.semantics.getOrNull
-import com.appversal.appstorys.AppStorys.repository
+import com.appversal.appstorys.AppStorys.apiClient
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.JsonElement
@@ -112,14 +112,27 @@ internal object ViewTreeAnalyzer {
             Log.i("ViewTreeAnalyzer", "Screenshot captured. Sending to server...")
 
             try {
-                repository.tooltipIdentify(
-                    accessToken = accessToken,
-                    user_id = user_id,
-                    screenName = screenName,
-                    childrenJson = formattedJson,
-                    screenshotFile = screenshot
-                )
-                Log.i("ViewTreeAnalyzer", "tooltipIdentify() sent successfully.")
+                when (
+                    val result = apiClient.tooltipIdentify(
+                        accessToken = accessToken,
+                        userId = user_id,
+                        screenName = screenName,
+                        childrenJson = formattedJson,
+                        screenshotBytes = screenshot.readBytes(),
+                        screenshotFileName = screenshot.name
+                    )
+                ) {
+                    is com.appversal.appstorys.core.api.ApiResult.Success -> {
+                        Log.i("ViewTreeAnalyzer", "tooltipIdentify() sent successfully.")
+                    }
+
+                    is com.appversal.appstorys.core.api.ApiResult.Error -> {
+                        Log.e(
+                            "ViewTreeAnalyzer",
+                            "tooltipIdentify() server error: ${result.code} ${result.message}"
+                        )
+                    }
+                }
             } catch (e: Exception) {
                 Log.e("ViewTreeAnalyzer", "tooltipIdentify() failed", e)
             }

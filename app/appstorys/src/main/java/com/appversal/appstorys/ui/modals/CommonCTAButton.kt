@@ -22,8 +22,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.appversal.appstorys.api.ModalCta
-import com.appversal.appstorys.api.TextStyling
+import com.appversal.appstorys.core.model.TextStyling
+import com.appversal.appstorys.core.model.ModalCta
 import com.appversal.appstorys.ui.common_components.CommonText
 import com.appversal.appstorys.ui.common_components.parseColorString
 

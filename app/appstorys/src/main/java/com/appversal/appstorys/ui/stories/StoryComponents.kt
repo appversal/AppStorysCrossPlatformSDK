@@ -91,11 +91,11 @@ import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.appversal.appstorys.AppStorys
 import com.appversal.appstorys.AppStorys.trackEvents
-import com.appversal.appstorys.api.StoriesDetails
-import com.appversal.appstorys.api.StoryGroup
-import com.appversal.appstorys.api.StoryGroupStyling
-import com.appversal.appstorys.api.StorySlide
-import com.appversal.appstorys.api.TextStyling
+import com.appversal.appstorys.core.model.StoriesDetails
+import com.appversal.appstorys.core.model.StoryGroup
+import com.appversal.appstorys.core.model.StoryGroupStyling
+import com.appversal.appstorys.core.model.StorySlide
+import com.appversal.appstorys.core.model.TextStyling
 import com.appversal.appstorys.ui.common_components.CommonText
 import com.appversal.appstorys.ui.common_components.ShareButton
 import com.appversal.appstorys.ui.common_components.createShareButtonConfig
@@ -148,10 +148,11 @@ internal fun StoryCircles(
             items = sortedStoryGroups,
             key = { storyGroup -> storyGroup.id ?: storyGroup.hashCode() }
         ) { storyGroup ->
-            if (storyGroup.thumbnail != null) {
+            val thumbnail = storyGroup.thumbnail
+            if (thumbnail != null) {
                 StoryItem(
                     isStoryGroupViewed = viewedStories.contains(storyGroup.id),
-                    imageUrl = storyGroup.thumbnail,
+                    imageUrl = thumbnail,
                     username = storyGroup.name ?: "",
                     ringColor = remember(storyGroup.ringColor) {
                         try {
@@ -557,9 +558,10 @@ internal fun StoryScreenContent(
         player.stop()
         player.clearMediaItems()
 
-        if (!isImage && currentSlide.video != null) {
+        val slideVideo = currentSlide.video
+        if (!isImage && slideVideo != null) {
             isBuffering = true  // Set buffering true before prepare
-            player.setMediaItem(MediaItem.fromUri(currentSlide.video.toUri()))
+            player.setMediaItem(MediaItem.fromUri(slideVideo.toUri()))
             player.prepare()
         }
 
@@ -750,8 +752,8 @@ internal fun StoryScreenContent(
                     )
                 } else {
                     // ── Normal image slide ──────────────────────────────────────
-                    if (currentSlide.image != null) {
-                        val imageUrl = currentSlide.image
+                    val imageUrl = currentSlide.image
+                    if (imageUrl != null) {
                         when {
                             isLottieUrl(imageUrl) -> {
                                 val composition by rememberLottieComposition(
@@ -900,8 +902,11 @@ internal fun StoryScreenContent(
                             text = currentSlide.buttonText ?: "",
                             config = ctaButtonConfig,
                             onClick = {
+                                val link = currentSlide.link
                                 try {
-                                    uriHandler.openUri(currentSlide.link)
+                                    if (!link.isNullOrEmpty()) {
+                                        uriHandler.openUri(link)
+                                    }
                                 } catch (e: Exception) {
                                     Log.e("StoryScreen", "Failed to open link: ${e.message}")
                                 }
@@ -1238,10 +1243,11 @@ internal fun StoryScreenWrapper(
                 },
                 label = "StoryGroupTransition"
             ) { storyGroup ->
-                if (!storyGroup.slides.isNullOrEmpty()) {
+                val slides = storyGroup.slides
+                if (!slides.isNullOrEmpty()) {
                     StoryScreenContent(
                         storyGroup = storyGroup,
-                        slides = storyGroup.slides,
+                        slides = slides,
                         sheetState = sheetState,
                         onDismiss = {
                             scope.launch {

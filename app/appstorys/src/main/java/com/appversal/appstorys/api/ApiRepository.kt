@@ -1,8 +1,35 @@
+/*
+DEPRECATED: This file contains the old Retrofit-based ApiRepository implementation.
+It has been replaced by the new Ktor-based ApiClient in shared-core.
+See com.appversal.appstorys.core.api.ApiClient for the new implementation.
+
+Old code below (kept for reference):
+
 package com.appversal.appstorys.api
 
 import android.content.Context
 import android.util.Log
 import androidx.core.content.edit
+import com.appversal.appstorys.core.model.BannerDetails
+import com.appversal.appstorys.core.model.BottomSheetDetails
+import com.appversal.appstorys.core.model.Campaign
+import com.appversal.appstorys.core.model.CampaignDetails
+import com.appversal.appstorys.core.model.CampaignVariant
+import com.appversal.appstorys.core.model.CSATDetails
+import com.appversal.appstorys.core.model.MilestoneDetails
+import com.appversal.appstorys.core.model.ScratchCardDetails
+import com.appversal.appstorys.core.model.TrackUserWebSocketRequest
+import com.appversal.appstorys.core.model.ValidateAccountRequest
+import com.appversal.appstorys.core.model.VariantCampaignDetails
+import com.appversal.appstorys.core.model.FloaterDetails
+import com.appversal.appstorys.core.model.WidgetDetails
+import com.appversal.appstorys.core.model.ReelsDetails
+import com.appversal.appstorys.core.model.PipDetails
+import com.appversal.appstorys.core.model.ModalDetails
+import com.appversal.appstorys.core.model.SpinTheWheelDetails
+import com.appversal.appstorys.core.model.StoriesDetails
+import com.appversal.appstorys.core.model.SurveyDetails
+import com.appversal.appstorys.core.model.TooltipsDetails
 import com.appversal.appstorys.utils.SdkJson
 import com.appversal.appstorys.utils.getDeviceInfo
 import com.appversal.appstorys.utils.toJsonElementMap
@@ -232,6 +259,7 @@ internal class ApiRepository(
                 "STR" -> SdkJson.decodeFromJsonElement(StoriesDetails.serializer(), variantData)
                 "SCRT" -> SdkJson.decodeFromJsonElement(ScratchCardDetails.serializer(), variantData)
                 "MIL" -> SdkJson.decodeFromJsonElement(MilestoneDetails.serializer(), variantData)
+                "STW" -> SdkJson.decodeFromJsonElement(SpinTheWheelDetails.serializer(), variantData)
                 else -> {
                     Log.w("ApiRepository", "Campaign type ${campaign.campaignType} does not support variants yet")
                     null
@@ -475,3 +503,5 @@ internal class ApiRepository(
         }
     }
 }
+
+*/

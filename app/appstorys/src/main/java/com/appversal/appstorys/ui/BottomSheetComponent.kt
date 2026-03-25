@@ -51,9 +51,9 @@ import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.appversal.appstorys.R
-import com.appversal.appstorys.api.BottomSheetDetails
-import com.appversal.appstorys.api.BottomSheetElement
-import com.appversal.appstorys.api.TextStyling
+import com.appversal.appstorys.core.model.BottomSheetDetails
+import com.appversal.appstorys.core.model.BottomSheetElement
+import com.appversal.appstorys.core.model.TextStyling
 import com.appversal.appstorys.ui.common_components.CommonText
 import com.appversal.appstorys.ui.common_components.CrossButton
 import com.appversal.appstorys.ui.common_components.createCrossButtonConfig
@@ -189,19 +189,21 @@ internal fun BottomSheetComponent(
                                         // If this is the first left or right CTA and both exist, render them together
                                         if ((element == leftCTA || element == rightCTA) && leftCTA != null && rightCTA != null) {
                                             if (element == leftCTA) {
+                                                val leftCtaLocal = leftCTA
+                                                val rightCtaLocal = rightCTA
                                                 Row(
                                                     modifier = Modifier.fillMaxWidth(),
                                                     content = {
                                                         Box(
                                                             modifier = Modifier.weight(1f),
                                                             content = {
-                                                                CTAElement(leftCTA) { onClick(leftCTA.ctaLink) }
+                                                                CTAElement(leftCtaLocal) { onClick(leftCtaLocal.ctaLink) }
                                                             }
                                                         )
                                                         Box(
                                                             modifier = Modifier.weight(1f),
                                                             content = {
-                                                                CTAElement(rightCTA) { onClick(rightCTA.ctaLink) }
+                                                                CTAElement(rightCtaLocal) { onClick(rightCtaLocal.ctaLink) }
                                                             }
                                                         )
                                                     }
@@ -376,13 +378,14 @@ private fun BodyElement(element: BottomSheetElement) {
             ),
         horizontalAlignment = alignment,
         content = {
-            if (!element.titleText.isNullOrBlank()) {
+            val titleText = element.titleText
+            if (!titleText.isNullOrBlank()) {
                 // Parse fontSize from JsonElement (can be String or Int)
                 val titleFontSizeValue = element.titleFontStyle?.fontSize?.asInt(element.titleFontSize ?: 16) ?: element.titleFontSize ?: 16
 
                 CommonText(
                     modifier = Modifier.fillMaxWidth(),
-                    text = element.titleText,
+                    text = titleText,
                     lineHeight = ((element.titleLineHeight ?: 1f) * titleFontSizeValue),
                     styling = TextStyling(
                         color = element.titleFontStyle?.colour,
@@ -394,7 +397,8 @@ private fun BodyElement(element: BottomSheetElement) {
                 )
             }
 
-            if (!element.descriptionText.isNullOrBlank()) {
+            val descriptionText = element.descriptionText
+            if (!descriptionText.isNullOrBlank()) {
                 Spacer(
                     modifier = Modifier.height(
                         (element.spacingBetweenTitleDesc?.toInt() ?: 0).dp
@@ -406,7 +410,7 @@ private fun BodyElement(element: BottomSheetElement) {
 
                 CommonText(
                     modifier = Modifier.fillMaxWidth(),
-                    text = element.descriptionText,
+                    text = descriptionText,
                     lineHeight = ((element.descriptionLineHeight ?: 1f) * descFontSizeValue),
                     styling = TextStyling(
                         color = element.descriptionFontStyle?.colour,

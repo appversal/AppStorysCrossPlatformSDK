@@ -1,8 +1,8 @@
 package com.appversal.appstorys.ui.modals
 
-import com.appversal.appstorys.api.Modal
-import com.appversal.appstorys.api.ModalContent
-import com.appversal.appstorys.api.ModalMedia
+import com.appversal.appstorys.core.model.Modal
+import com.appversal.appstorys.core.model.ModalContent
+import com.appversal.appstorys.core.model.ModalMedia
 
 fun Modal.resolveMediaUrl(): String? {
     // Priority 1: Content-level media

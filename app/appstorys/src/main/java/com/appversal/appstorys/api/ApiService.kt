@@ -1,6 +1,17 @@
+/*
+DEPRECATED: This file has been replaced by the new Ktor-based ApiClient in shared-core.
+See com.appversal.appstorys.core.api.ApiClient for the new implementation.
+
+Old Retrofit-based interface definitions below (kept for reference):
+
 package com.appversal.appstorys.api
 
 import androidx.annotation.Nullable
+import com.appversal.appstorys.core.model.Campaign
+import com.appversal.appstorys.core.model.EligibleCampaignsResponse
+import com.appversal.appstorys.core.model.TrackUserWebSocketRequest
+import com.appversal.appstorys.core.model.ValidateAccountRequest
+import com.appversal.appstorys.core.model.ValidateAccountResponse
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import retrofit2.HttpException
@@ -91,3 +102,4 @@ internal suspend fun <T> safeApiCall(apiCall: suspend () -> T): ApiResult<T> {
         ApiResult.Error("Unexpected error occurred.")
     }
 }
+*/

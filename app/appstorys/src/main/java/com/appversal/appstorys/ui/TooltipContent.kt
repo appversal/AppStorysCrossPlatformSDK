@@ -60,8 +60,8 @@ import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.appversal.appstorys.AppStorys.dismissTooltip
 import com.appversal.appstorys.AppStorys.handleTooltipAction
-import com.appversal.appstorys.api.TextStyling
-import com.appversal.appstorys.api.Tooltip
+import com.appversal.appstorys.core.model.TextStyling
+import com.appversal.appstorys.core.model.Tooltip
 import com.appversal.appstorys.ui.common_components.CommonText
 import com.appversal.appstorys.ui.xml.toDp
 import com.appversal.appstorys.utils.AppStorysCoordinates
@@ -252,8 +252,8 @@ private fun ImageContent(tooltip: Tooltip, modifier: Modifier = Modifier) {
     Box(
         modifier =
             modifier.then(
-                tooltip.styling?.let { padding ->
-                    Modifier.background(color = tooltip.styling.appearance?.colors?.tooltip.toColor(Color.Transparent), shape = cornerRadius)
+                tooltip.styling?.let { styling ->
+                    Modifier.background(color = styling.appearance?.colors?.tooltip.toColor(Color.Transparent), shape = cornerRadius)
                         .clip(cornerRadius)
                         .noRippleClickable(
                             onClick = {
@@ -390,6 +390,9 @@ private fun TextContent(tooltip: Tooltip, modifier: Modifier = Modifier) {
         "end", "right" -> Alignment.End
         else -> Alignment.CenterHorizontally
     }
+    val titleText = tooltip.titleText
+    val subtitleText = tooltip.subtitleText
+    val ctaText = tooltip.ctaText
 
     Box(
         modifier = modifier
@@ -412,7 +415,7 @@ private fun TextContent(tooltip: Tooltip, modifier: Modifier = Modifier) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Title text with margin
-                if (!tooltip.titleText.isNullOrEmpty()) {
+                if (!titleText.isNullOrEmpty()) {
                     CommonText(
                         modifier = Modifier.padding(
                             top = (titleMargin?.top ?: 0).dp,
@@ -420,7 +423,7 @@ private fun TextContent(tooltip: Tooltip, modifier: Modifier = Modifier) {
                             start = (titleMargin?.left ?: 0).dp,
                             end = (titleMargin?.right ?: 0).dp
                         ),
-                        text = tooltip.titleText,
+                        text = titleText,
                         styling = TextStyling(
                             color = titleStyling?.color,
                             fontSize = titleStyling?.fontSize ?: 14,
@@ -432,7 +435,7 @@ private fun TextContent(tooltip: Tooltip, modifier: Modifier = Modifier) {
                 }
 
                 // Subtitle text with margin
-                if (!tooltip.subtitleText.isNullOrEmpty()) {
+                if (!subtitleText.isNullOrEmpty()) {
                     CommonText(
                         modifier = Modifier.padding(
                             top = (subtitleMargin?.top ?: 0).dp,
@@ -440,7 +443,7 @@ private fun TextContent(tooltip: Tooltip, modifier: Modifier = Modifier) {
                             start = (subtitleMargin?.left ?: 0).dp,
                             end = (subtitleMargin?.right ?: 0).dp
                         ),
-                        text = tooltip.subtitleText,
+                        text = subtitleText,
                         styling = TextStyling(
                             color = subtitleStyling?.color,
                             fontSize = subtitleStyling?.fontSize ?: 12,
@@ -452,7 +455,7 @@ private fun TextContent(tooltip: Tooltip, modifier: Modifier = Modifier) {
                 }
 
                 // CTA button
-                if (!tooltip.ctaText.isNullOrEmpty()) {
+                if (!ctaText.isNullOrEmpty()) {
                     Box(
                         modifier = Modifier
                             .align(ctaAlignment)
@@ -492,7 +495,7 @@ private fun TextContent(tooltip: Tooltip, modifier: Modifier = Modifier) {
                         contentAlignment = Alignment.Center
                     ) {
                         CommonText(
-                            text = tooltip.ctaText,
+                            text = ctaText,
                             styling = TextStyling(
                                 color = ctaStyling?.text?.color,
                                 fontSize = ctaStyling?.text?.fontSize,

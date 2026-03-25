@@ -65,7 +65,7 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.appversal.appstorys.AppStorys
-import com.appversal.appstorys.api.PipStyling
+import com.appversal.appstorys.core.model.PipStyling
 import com.appversal.appstorys.ui.common_components.CrossButton
 import com.appversal.appstorys.ui.common_components.CrossButtonConfig
 import com.appversal.appstorys.ui.common_components.CTAButton

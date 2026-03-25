@@ -30,7 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
-import com.appversal.appstorys.api.WheelSlice
+import com.appversal.appstorys.core.model.WheelSlice
 import kotlin.math.min
 
 /**

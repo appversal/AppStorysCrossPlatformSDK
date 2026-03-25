@@ -1,7 +1,8 @@
 package com.appversal.appstorys.utils
 
-import com.appversal.appstorys.api.Campaign
-import com.appversal.appstorys.api.TriggerEvent
+import com.appversal.appstorys.core.engine.TriggerEventMatcher
+import com.appversal.appstorys.core.model.Campaign
+import com.appversal.appstorys.core.model.TriggerEvent
 
 /**
  * Centralized campaign filtering and eligibility logic for the AppStorys SDK.
@@ -164,7 +165,10 @@ internal class CampaignEngine {
                     else {
                         val matchingEvents = currentEvents.filter { it.eventName == trigger.event }
                         matchingEvents.any { tracked ->
-                            TriggerEventMatcher.matchesAllConditions(realConditions, tracked.metadata)
+                            TriggerEventMatcher.matchesAllConditions(
+                                realConditions,
+                                tracked.metadata
+                            )
                         }
                     }
                 }
@@ -173,4 +177,3 @@ internal class CampaignEngine {
         }
     }
 }
-

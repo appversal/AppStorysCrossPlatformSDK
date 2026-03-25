@@ -12,8 +12,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.appversal.appstorys.api.ModalContent
-import com.appversal.appstorys.api.ModalDetails
 import com.appversal.appstorys.ui.AutoSlidingCarousel
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -21,8 +19,10 @@ import androidx.compose.foundation.layout.Arrangement
 import com.appversal.appstorys.ui.common_components.CrossButton
 import com.appversal.appstorys.ui.common_components.createCrossButtonConfig
 import com.appversal.appstorys.ui.common_components.parseColorString
-import com.appversal.appstorys.api.TextStyling
-import com.appversal.appstorys.api.WidgetDetails
+import com.appversal.appstorys.core.model.TextStyling
+import com.appversal.appstorys.core.model.ModalContent
+import com.appversal.appstorys.core.model.ModalDetails
+import com.appversal.appstorys.core.model.WidgetDetails
 import com.appversal.appstorys.ui.DotsIndicator
 import com.appversal.appstorys.ui.common_components.CommonText
 

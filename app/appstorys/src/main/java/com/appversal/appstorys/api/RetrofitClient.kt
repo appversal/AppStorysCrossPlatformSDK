@@ -1,3 +1,4 @@
+/*
 package com.appversal.appstorys.api
 
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
@@ -47,3 +48,8 @@ internal object RetrofitClient {
             .create(ApiService::class.java)
     }
 }
+
+DEPRECATED: This file has been replaced by the new Ktor-based ApiClient in shared-core.
+See com.appversal.appstorys.core.api.ApiClient for the new implementation.
+*/
+

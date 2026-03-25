@@ -29,8 +29,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.appversal.appstorys.api.MilestoneItem
-import com.appversal.appstorys.api.MilestoneStyling
+import com.appversal.appstorys.core.model.MilestoneItem
+import com.appversal.appstorys.core.model.MilestoneStyling
 
 @Composable
 internal fun MilestoneBanner(

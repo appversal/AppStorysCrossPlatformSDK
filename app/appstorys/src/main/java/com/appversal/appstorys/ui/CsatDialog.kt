@@ -28,8 +28,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.appversal.appstorys.AppStorys.trackEvents
-import com.appversal.appstorys.api.CSATDetails
-import com.appversal.appstorys.api.CsatTextStyle
 import com.appversal.appstorys.ui.common_components.CrossButton
 import com.appversal.appstorys.ui.common_components.createCrossButtonConfig
 import com.appversal.appstorys.utils.toColor
@@ -37,7 +35,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.graphics.graphicsLayer
-import com.appversal.appstorys.api.TextStyling
+import com.appversal.appstorys.core.model.CSATDetails
+import com.appversal.appstorys.core.model.Margin
+import com.appversal.appstorys.core.model.CsatTextStyle
+import com.appversal.appstorys.core.model.TextStyling
 import com.appversal.appstorys.ui.common_components.CommonText
 import com.appversal.appstorys.utils.noRippleClickable
 
@@ -147,8 +148,9 @@ internal fun CsatDialog(
     }
 
     val feedbackOptions = remember {
-        if (csatDetails.feedbackOption?.toList()?.isNotEmpty() == true) {
-            csatDetails.feedbackOption.toList()
+        val feedbackOption = csatDetails.feedbackOption
+        if (feedbackOption?.toList()?.isNotEmpty() == true) {
+            feedbackOption.toList()
         } else {
             null
         }
@@ -230,7 +232,8 @@ internal fun CsatDialog(
                     )
                 }
 
-                if (csatDetails.thankyouImage != null) {
+                val thankyouImage = csatDetails.thankyouImage
+                if (thankyouImage != null) {
                     AnimatedVisibility(
                         visible = showThanks,
                         enter = fadeIn(),
@@ -240,7 +243,7 @@ internal fun CsatDialog(
                             localContent = localContent,
                             styling = styling,
                             onDone = onDismiss,
-                            image = csatDetails.thankyouImage,
+                            image = thankyouImage,
                             csatDetails = csatDetails,
                             selectedStars = selectedStars
                         )
@@ -288,7 +291,7 @@ private fun MainContent(
     onCommentsChanged: (String) -> Unit,
     onSubmit: () -> Unit,
     csatDetails: CSATDetails,
-    containerPadding: com.appversal.appstorys.api.Margin?
+    containerPadding: Margin?
 ) {
 
 
