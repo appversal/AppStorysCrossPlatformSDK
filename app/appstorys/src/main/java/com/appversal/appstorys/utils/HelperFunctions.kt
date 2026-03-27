@@ -9,14 +9,9 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonNull
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.intOrNull
-import org.json.JSONArray
-import org.json.JSONObject
 
 fun isGifUrl(url: String): Boolean {
     return url.lowercase().endsWith(".gif")
@@ -39,7 +34,10 @@ fun String?.toColor(defaultColor: Color): Color {
     }
 }
 
+/*
+// Unused right now; kept commented for phased migration.
 fun String.removeDoubleQuotes(): String = this.replace("\"", "")
+*/
 
 fun Modifier.noRippleClickable(onClick: () -> Unit): Modifier = composed {
     clickable(
@@ -54,6 +52,8 @@ fun Context.pxToDp(px: Float): Dp {
     return (px / resources.displayMetrics.density).dp
 }
 
+/*
+// Unused right now; kept commented for phased migration.
 fun JSONObject.toMap(): Map<String, Any> {
     return try {
         val map = mutableMapOf<String, Any>()
@@ -75,6 +75,7 @@ fun JSONObject.toMap(): Map<String, Any> {
     }
 }
 
+// Unused right now; kept commented for phased migration.
 fun JSONArray.toList(): List<Any> {
     return try {
         val list = mutableListOf<Any>()
@@ -95,6 +96,7 @@ fun JSONArray.toList(): List<Any> {
         emptyList()
     }
 }
+*/
 
 fun JsonElement?.asInt(default: Int = 0): Int =
     (this as? JsonPrimitive)?.intOrNull ?: default

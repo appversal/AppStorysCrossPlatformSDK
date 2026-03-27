@@ -4,7 +4,6 @@ import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.content.Intent
-import android.content.res.Configuration
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.util.Log
@@ -34,12 +33,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,8 +57,9 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
+import com.appversal.appstorys.core.AppStorysCore
 import com.appversal.appstorys.core.api.ApiClient
-import com.appversal.appstorys.core.api.ApiResult
+import com.appversal.appstorys.core.platform.PlatformStorage
 import com.appversal.appstorys.ui.AutoSlidingCarousel
 import com.appversal.appstorys.ui.BottomSheetComponent
 import com.appversal.appstorys.ui.CardScratch
@@ -89,20 +87,14 @@ import com.appversal.appstorys.ui.reels.saveLikedReels
 import com.appversal.appstorys.ui.saveScratchedCampaigns
 import com.appversal.appstorys.ui.spinwheel.getSpinCount
 import com.appversal.appstorys.ui.spinwheel.saveSpinCount
-import com.appversal.appstorys.utils.AppStorysSdkState
-import com.appversal.appstorys.utils.CampaignEngine
-import com.appversal.appstorys.core.engine.TriggerEventMatcher
 import com.appversal.appstorys.core.model.BannerDetails
 import com.appversal.appstorys.core.model.BottomSheetDetails
-import com.appversal.appstorys.core.model.Campaign
-import com.appversal.appstorys.core.model.CampaignVariant
 import com.appversal.appstorys.core.model.CSATDetails
 import com.appversal.appstorys.core.model.CsatFeedbackPostRequest
 import com.appversal.appstorys.core.model.FloaterDetails
 import com.appversal.appstorys.core.model.MilestoneDetails
 import com.appversal.appstorys.core.model.ModalDetails
 import com.appversal.appstorys.core.model.PipDetails
-import com.appversal.appstorys.core.model.ReconcileUserRequest
 import com.appversal.appstorys.core.model.ReelStatusRequest
 import com.appversal.appstorys.core.model.ReelsDetails
 import com.appversal.appstorys.core.model.ScratchCardDetails
@@ -111,35 +103,23 @@ import com.appversal.appstorys.core.model.StoriesDetails
 import com.appversal.appstorys.core.model.SurveyDetails
 import com.appversal.appstorys.core.model.Tooltip
 import com.appversal.appstorys.core.model.TooltipsDetails
-import com.appversal.appstorys.core.model.TriggerEvent
-import com.appversal.appstorys.core.model.UpdateUserPropertiesRequest
-import com.appversal.appstorys.core.model.ValidateAccountRequest
-import com.appversal.appstorys.core.model.TrackUserWebSocketRequest
 import com.appversal.appstorys.core.model.WidgetDetails
 import com.appversal.appstorys.core.model.WidgetImage
 import com.appversal.appstorys.utils.ViewTreeAnalyzer
-import com.appversal.appstorys.utils.UserManager
 import com.appversal.appstorys.utils.getDeviceInfo
-import com.appversal.appstorys.utils.toJsonElementMap
-import com.appversal.appstorys.utils.toMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import com.appversal.appstorys.core.engine.TriggerEventMatcher.TrackedEventData
-import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONObject
 import kotlin.collections.plus
 import kotlin.toString
@@ -147,23 +127,15 @@ import kotlin.toString
 object AppStorys {
     private lateinit var context: Application
 
-    private lateinit var appId: String
-
-    private lateinit var accountId: String
-
-    private var userId: String = ""
-
-    private var isAnonymousUser: Boolean = true
-
-    private lateinit var userManager: UserManager
-
     internal lateinit var navigateToScreen: (String) -> Unit
 
     internal lateinit var apiClient: ApiClient
 
-    private val campaigns = MutableStateFlow<List<Campaign>>(emptyList())
+    private lateinit var core: AppStorysCore
 
-    private val disabledCampaigns = MutableStateFlow<List<String>>(emptyList())
+    private val campaigns get() = core.campaigns
+    private val disabledCampaigns get() = core.disabledCampaigns
+    private val trackedEventNames get() = core.trackedEvents
 
     private val impressions = MutableStateFlow<List<String>>(emptyList())
 
@@ -183,12 +155,6 @@ object AppStorys {
      // In-memory spin count per campaign — keyed by campaign ID, value = remaining spins
      private val spinCountByCampaign = mutableStateMapOf<String, Int>()
 
-     private val campaignEngine = CampaignEngine()
-
-     private var accessToken = ""
-
-    private var currentScreen = ""
-
     private var isScreenCaptureEnabled by mutableStateOf(false)
 
     private var showCsat by mutableStateOf(false)
@@ -199,23 +165,11 @@ object AppStorys {
 
     private var backPressCampaignConsumed = false
 
-    internal var sdkState = AppStorysSdkState.Uninitialized
-        private set
-
     private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-
-    private var campaignsJob: Job? = null
-
-    private val _trackedEventNames = MutableStateFlow<Set<TrackedEventData>>(emptySet())
-    private val trackedEventNames = _trackedEventNames.asStateFlow()
 
     private var widgetPositionList = listOf<String>()
 
     private val viewedTooltips = MutableStateFlow<Set<String>>(emptySet())
-
-    private val campaignVariants = MutableStateFlow<List<CampaignVariant>>(emptyList())
-
-    private var personalizationData: Map<String, String>? = null
 
     /**
      * Tells the SDK whether the sdk components are visible to the user,
@@ -228,12 +182,7 @@ object AppStorys {
     private var showMilestone by mutableStateOf(true)
 
      private fun isBackPressCampaignReady(): Boolean {
-         return campaignEngine.isBackPressCampaignReady(
-             campaigns = campaigns.value,
-             disabledIds = disabledCampaigns.value,
-             currentEvents = _trackedEventNames.value,
-             backPressCampaignConsumed = backPressCampaignConsumed
-         )
+         return core.isBackPressCampaignReady(backPressCampaignConsumed)
      }
 
     fun initialize(
@@ -249,88 +198,51 @@ object AppStorys {
         }
 
         this.context = context
-        this.appId = appId
-        this.accountId = accountId
         this.navigateToScreen = navigateToScreen
-        this.userManager = UserManager(context)
-
-        if (userId.isNotEmpty()) {
-            // User provided an ID
-            this.userId = userId
-            this.isAnonymousUser = false
-            userManager.setIdentifiedUser(userId)
-        } else {
-            // Generate or retrieve anonymous user ID
-            this.userId = userManager.getOrCreateAnonymousId()
-            this.isAnonymousUser = userManager.isAnonymous
-        }
-
-        // Initialize ApiClient from shared-core (Ktor-based)
         this.apiClient = ApiClient()
 
-        if (sdkState == AppStorysSdkState.Initialized || sdkState == AppStorysSdkState.Initializing) {
-            return
-        }
+        // Create and initialize shared core facade.
+        // Business logic/state/networking live in core.
+        core = AppStorysCore(PlatformStorage())
+        core.initialize(appId = appId, accountId = accountId, userId = userId)
 
-        sdkState = AppStorysSdkState.Initializing
-
+        // Android-specific: lifecycle observer stays in wrapper.
         ProcessLifecycleOwner.get().lifecycle.addObserver(
             object : DefaultLifecycleObserver {
                 override fun onResume(owner: LifecycleOwner) {
                     super.onResume(owner)
-                    if (sdkState == AppStorysSdkState.Paused && currentScreen.isNotBlank()) {
-                        sdkState = AppStorysSdkState.Initialized
-                        getScreenCampaigns(currentScreen, emptyList())
-                    }
+                    core.onAppResumed()
                 }
 
                 override fun onStop(owner: LifecycleOwner) {
-                    sdkState = AppStorysSdkState.Paused
-                    campaigns.update { emptyList() }
-//                    tooltipViewed.update { emptyList() }
+                    core.onAppStopped()
                     showModal = true
                     showCsat = false
                     showBottomSheet = true
                     backPressCampaignConsumed = false
-                    _trackedEventNames.update { emptySet() }
-                    campaignsJob?.cancel()
-                    campaignsJob = null
                 }
             }
         )
-        coroutineScope.launch {
-            try {
-                val accessToken = apiClient.validateAccount(
-                    appId,
-                    ValidateAccountRequest(
-                        app_id = appId,
-                        account_id = accountId,
-                        user_id = this@AppStorys.userId,
-                        attributes = getDeviceInfo(context = AppStorys.context).toJsonElementMap()
-                    )
-                )
-                if (accessToken is ApiResult.Success && !accessToken.data.access_token.isNullOrBlank()) {
-                    this@AppStorys.accessToken = accessToken.data.access_token!!
-                    sdkState = AppStorysSdkState.Initialized
-                    val savedScratchedCampaigns = getScratchedCampaigns(
-                        context.getSharedPreferences("AppStory", Context.MODE_PRIVATE)
-                    )
-                    scratchedCampaigns.emit(savedScratchedCampaigns)
 
-                    // Restore persisted spin counts into in-memory map
-                    val spinPrefs =
-                        context.getSharedPreferences("appstorys_spin_counts", Context.MODE_PRIVATE)
-                    spinPrefs.all.forEach { (key, value) ->
-                        if (value is Int) spinCountByCampaign[key] = value
-                    }
-                    if (campaignsJob?.isActive != true) {
-                        getScreenCampaigns("Home Screen", emptyList())
-                    }
-                }
-            } catch (exception: Exception) {
-                Log.e("AppStorys", exception.message ?: "Error Fetch Data")
-                sdkState = AppStorysSdkState.Error
+        // Android-specific: restore persisted UI/game state after init.
+        coroutineScope.launch {
+            while (core.sdkState == AppStorysCore.SdkState.Initializing) {
+                delay(100)
             }
+
+            if (core.sdkState == AppStorysCore.SdkState.Initialized) {
+                val savedScratchedCampaigns = getScratchedCampaigns(
+                    context.getSharedPreferences("AppStory", Context.MODE_PRIVATE)
+                )
+                scratchedCampaigns.emit(savedScratchedCampaigns)
+
+                val spinPrefs =
+                    context.getSharedPreferences("appstorys_spin_counts", Context.MODE_PRIVATE)
+                spinPrefs.all.forEach { (key, value) ->
+                    if (value is Int) spinCountByCampaign[key] = value
+                }
+            }
+
             showCaseInformation()
         }
     }
@@ -339,96 +251,16 @@ object AppStorys {
         screenName: String,
         positionList: List<String> = emptyList()
     ) {
-        campaignsJob?.cancel()
-        campaignsJob = coroutineScope.launch {
-            if (!checkIfInitialized()) {
-                return@launch
-            }
-            ensureActive()
-            try {
-                if (currentScreen != screenName) {
-                    disabledCampaigns.emit(emptyList())
-                    impressions.emit(emptyList())
-                    campaigns.emit(emptyList())
-                    _trackedEventNames.emit(emptySet())
-                    currentScreen = screenName
-                    backPressCampaignConsumed = false
-                    delay(100)
-                }
-
-                ensureActive()
-
-                widgetPositionList = positionList
-
-                ensureActive()
-
-                // Fetch eligible campaigns for this screen
-                val eligibleResult = apiClient.getEligibleCampaigns(
-                    accountId = accountId,
-                    accessToken = accessToken,
-                    request = TrackUserWebSocketRequest(
-                        user_id = userId,
-                        screenName = currentScreen
-                    )
-                )
-
-                if (eligibleResult !is ApiResult.Success) {
-                    Log.e("AppStorys", "Failed to get eligible campaigns")
-                    return@launch
-                }
-
-                val eligibleData = eligibleResult.data
-                val eligibleCampaignIds = eligibleData.eligibleCampaignList ?: emptyList()
-
-                // Fetch campaigns.json from CDN with ETag caching
-                val campaignsJsonResult = apiClient.fetchCampaignsJson(accountId = accountId)
-
-                if (campaignsJsonResult !is ApiResult.Success) {
-                    Log.e("AppStorys", "Failed to fetch campaigns.json")
-                    return@launch
-                }
-
-                var allCampaigns = campaignsJsonResult.data
-
-                // Load missing campaigns if needed
-                val cachedIds = allCampaigns.mapNotNull { it.id }.toSet()
-                val missingIds = eligibleCampaignIds.filter { it !in cachedIds }
-
-                if (missingIds.isNotEmpty()) {
-                    val missingResult = apiClient.loadMissingCampaigns(
-                        accessToken = accessToken,
-                        campaignIds = missingIds
-                    )
-                    if (missingResult is ApiResult.Success) {
-                        allCampaigns = allCampaigns + missingResult.data
-                    }
-                }
-
-                // Filter campaigns for this screen and apply variants
-                val campaignsList = allCampaigns.filter { campaign ->
-                    campaign.id in eligibleCampaignIds && campaign.screen?.equals(currentScreen, ignoreCase = true) == true
-                }
-
-                val variants = eligibleData.variants ?: emptyList()
-                val personalizationResponse = eligibleData.personalization_data ?: emptyMap()
-                val isTestUser = eligibleData.test_user
-
-                isScreenCaptureEnabled = isTestUser ?: false
-                personalizationData = personalizationResponse
-
-                ensureActive()
-
-                campaigns.emit(campaignsList)
-                campaignVariants.emit(variants)
-                Log.e("AppStorys", "Campaign: ${campaigns.value}")
-            } catch (exception: Exception) {
-                Log.e("AppStorys", "Error getting campaigns for $screenName", exception)
-            }
-        }
+        // Android-specific UI/session resets; campaign loading is delegated to core.
+        widgetPositionList = positionList
+        impressions.update { emptyList() }
+        backPressCampaignConsumed = false
+        core.getScreenCampaigns(screenName, positionList)
+        isScreenCaptureEnabled = core.isTestUser
     }
 
     fun getPersonalizationData(): Map<String, String> {
-        return personalizationData ?: emptyMap()
+        return core.getPersonalizationData()
     }
 
     fun trackEvents(
@@ -436,176 +268,48 @@ object AppStorys {
         event: String,
         metadata: Map<String, Any>? = null
     ) {
-        coroutineScope.launch {
-            if (accessToken.isNotEmpty()) {
-                if (
-                    event != "viewed"
-                    && event != "clicked"
-                    && event != "csat captured"
-                    && event != "survey captured"
-                    && event != "shared"
-                    && event != "SurveySubmitted"
-                    && event != "SurveyDismissed"
-                    && event != "ThankYouCTAClicked"
-                ) {
-                    _trackedEventNames.update { it + TrackedEventData(event, metadata) }
-                }
-                try {
-                    val variantId = campaign_id?.let { campId ->
-                        campaignVariants.value.find { it.id == campId }?.v_id
-                    }
-
-                    val updatedMetadata = if (variantId != null) {
-                        (metadata ?: emptyMap()) + mapOf("variant_id" to variantId)
-                    } else {
-                        metadata ?: emptyMap()
-                    }
-
-                    val deviceInfo = getDeviceInfo(context)
-
-                    val mergedMetadata =
-                        if (
-                            event != "viewed"
-                            && event != "clicked"
-                            && event != "csat captured"
-                            && event != "survey captured"
-                            && event != "shared"
-                            && event != "SurveySubmitted"
-                            && event != "SurveyDismissed"
-                            && event != "ThankYouCTAClicked"
-                        ) {
-                            updatedMetadata + deviceInfo
-                        } else {
-                            updatedMetadata
-                        }
-                    apiClient.captureEvent(
-                        accessToken = accessToken,
-                        userId = userId,
-                        campaignId = campaign_id,
-                        event = event,
-                        metadata = mergedMetadata
-                    )
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
+        // Android-specific: merge device info for non-system events.
+        // Core handles variant lookup + API call.
+        val mergedMetadata = if (
+            event !in setOf(
+                "viewed",
+                "clicked",
+                "csat captured",
+                "survey captured",
+                "shared",
+                "SurveySubmitted",
+                "SurveyDismissed",
+                "ThankYouCTAClicked"
+            )
+        ) {
+            (metadata ?: emptyMap()) + getDeviceInfo(context)
+        } else {
+            metadata
         }
+        core.trackEvent(campaign_id, event, mergedMetadata)
     }
 
     fun viaAppStorys(
         event: String,
     ) {
-        coroutineScope.launch {
-            _trackedEventNames.update { currentSet ->
-                currentSet + TrackedEventData(eventName = event, metadata = null)
-            }
-        }
+        core.viaAppStorys(event)
     }
 
     fun setUserProperties(attributes: Map<String, Any>) {
-        coroutineScope.launch {
-            if (userId.isBlank() || !checkIfInitialized()) {
-                Log.e(
-                    "AppStorys",
-                    "Cannot set user properties: SDK not initialized or user ID not available"
-                )
-                return@launch
-            }
-
-            Log.d("AppStorys", "Setting user properties: ${attributes.keys.joinToString(", ")}")
-
-            val deviceInfo = getDeviceInfo(context)
-
-            val mergedMetadata = attributes + deviceInfo
-
-            val result = apiClient.updateUserProperties(
-                accessToken = accessToken,
-                request = UpdateUserPropertiesRequest(
-                    user_id = userId,
-                    attributes = mergedMetadata.toJsonElementMap()
-                )
-            )
-            when (result) {
-                is ApiResult.Success -> {
-                    Log.i(
-                        "AppStorys",
-                        "User properties updated successfully: ${attributes.keys.joinToString(", ")}"
-                    )
-                }
-
-                is ApiResult.Error -> {
-                    Log.e("AppStorys", "Error updating user properties: ${result.message}")
-                }
-            }
-        }
+        // Android-specific: merge device info before forwarding to core.
+        val mergedAttributes = attributes + getDeviceInfo(context)
+        core.setUserProperties(mergedAttributes)
     }
 
     fun setUserId(newUserId: String) {
-        if (newUserId.isEmpty()) {
-            Log.w("AppStorys", "Cannot set empty user ID")
-            return
-        }
-
-        coroutineScope.launch {
-            if (!::context.isInitialized) {
-                Log.e("AppStorys", "SDK not initialized. Call initialize() first")
-                return@launch
-            }
-
-            val previousUserId = userId
-            val wasAnonymous = isAnonymousUser
-
-            // If already using this identified user ID, no need to reconcile
-            if (!wasAnonymous && previousUserId == newUserId) {
-                Log.d("AppStorys", "User ID already set to: $newUserId")
-                return@launch
-            }
-
-            try {
-                // Only call reconcile endpoint if we're transitioning from anonymous to identified
-                if (wasAnonymous) {
-                    Log.d(
-                        "AppStorys",
-                        "Reconciling anonymous user $previousUserId with identified user $newUserId"
-                    )
-
-                    val result = apiClient.reconcileAnonymousUser(
-                        accessToken = accessToken,
-                        request = ReconcileUserRequest(
-                            anonymous_user_id = previousUserId,
-                            identified_user_id = newUserId
-                        )
-                    )
-
-                    when (result) {
-                        else -> {
-                            Log.i(
-                                "AppStorys",
-                                "Successfully reconciled anonymous user with identified user"
-                            )
-                        }
-                    }
-                }
-
-                // Update user ID
-                userId = newUserId
-                isAnonymousUser = false
-                userManager.setIdentifiedUser(newUserId)
-
-                Log.i("AppStorys", "User ID updated to: $newUserId")
-
-            } catch (e: Exception) {
-                Log.e("AppStorys", "Error setting user ID: ${e.message}", e)
-            }
-        }
+        core.setUserId(newUserId)
     }
 
     fun handleBackPress(onNavigate: () -> Unit) {
         if (isBackPressCampaignReady()) {
             backPressCampaignConsumed = true
-            coroutineScope.launch {
-                _trackedEventNames.update { it + TrackedEventData(TriggerEventMatcher.BACK_PRESS_SENTINEL) }
-            }
+            // Inject back-press sentinel in core tracked events.
+            core.injectBackPressSentinel()
             // Don't call onNavigate — stay on screen, campaign will show
         } else {
             onNavigate()
@@ -627,10 +331,8 @@ object AppStorys {
         BackHandler(enabled = true) {
             if (isBackPressCampaignReady()) {
                 backPressCampaignConsumed = true
-                // Inject sentinel — unlocks back_press campaigns in TriggerEventMatcher.
-                // Conditions are evaluated against metadata already stored from
-                // the client's prior trackEvents() calls. Nothing else needed.
-                _trackedEventNames.update { it + TrackedEventData(TriggerEventMatcher.BACK_PRESS_SENTINEL) }
+                // Same back-press sentinel path for composable back handling.
+                core.injectBackPressSentinel()
             } else {
                 (activity as? androidx.activity.ComponentActivity)
                     ?.onBackPressedDispatcher
@@ -659,8 +361,8 @@ object AppStorys {
         ViewTreeAnalyzer.analyzeViewRoot(
             root = root,
             screenName = screenName,
-            user_id = userId,
-            accessToken = accessToken,
+            user_id = core.userId,
+            accessToken = core.accessToken,
             activity = activity,
             context = context
         ).also {
@@ -681,12 +383,7 @@ object AppStorys {
              val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
              val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-             val filtered = campaignEngine.filterCampaigns(
-                 campaigns = campaignsData.value,
-                 campaignType = "CSAT",
-                 trackedEvents = trackedEventsData.value,
-                 disabledCampaignIds = disabledData.value
-             )
+             val filtered = core.getFilteredCampaigns("CSAT", disabledData.value)
 
              val campaign = filtered.firstOrNull()
              val csatDetails = when (val details = campaign?.details) {
@@ -743,9 +440,9 @@ object AppStorys {
                             onSubmitFeedback = { feedback ->
                                 coroutineScope.launch {
                                     apiClient.sendCSATResponse(
-                                        accessToken,
+                                        core.accessToken,
                                         CsatFeedbackPostRequest(
-                                            user_id = userId,
+                                            user_id = core.userId,
                                             csat = csatDetails.id,
                                             rating = feedback.rating,
                                             additional_comments = feedback.additionalComments,
@@ -781,12 +478,7 @@ object AppStorys {
          val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
          val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = campaignEngine.filterCampaigns(
-             campaigns = campaignsData.value,
-             campaignType = "FLT",
-             trackedEvents = trackedEventsData.value,
-             disabledCampaignIds = disabledData.value
-         )
+         val filtered = core.getFilteredCampaigns("FLT", disabledData.value)
 
          val campaign = filtered.firstOrNull { it.details is FloaterDetails }
 
@@ -858,12 +550,7 @@ object AppStorys {
          val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
          val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = campaignEngine.filterCampaigns(
-             campaigns = campaignsData.value,
-             campaignType = "PIP",
-             trackedEvents = trackedEventsData.value,
-             disabledCampaignIds = disabledData.value
-         )
+         val filtered = core.getFilteredCampaigns("PIP", disabledData.value)
 
          val campaign = filtered.firstOrNull { it.details is PipDetails }
 
@@ -902,17 +589,8 @@ object AppStorys {
                             },
                             onClose = {
                                 showPip = false
-                                campaign?.triggerEvent?.let { trigger ->
-                                    val eventName = when (trigger) {
-                                        is TriggerEvent.StringTrigger -> trigger.event
-                                        is TriggerEvent.ObjectTrigger -> trigger.event
-                                    }
-                                    _trackedEventNames.update { currentSet ->
-                                        currentSet.filterNot {
-                                            it.eventName == eventName
-                                        }.toSet()
-                                    }
-                                }
+                                // Clear trigger event in core so dismissed item does not re-qualify.
+                                core.clearTrackedEventForTrigger(campaign?.triggerEvent)
                             },
                             height = pipHeight,
                             width = pipWidth,
@@ -1076,12 +754,7 @@ object AppStorys {
          val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
          val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = campaignEngine.filterCampaigns(
-             campaigns = campaignsData.value,
-             campaignType = "STR",
-             trackedEvents = trackedEventsData.value,
-             disabledCampaignIds = disabledData.value
-         )
+         val filtered = core.getFilteredCampaigns("STR", disabledData.value)
 
          val campaign = filtered.firstOrNull()
          val storiesDetails = campaign?.details as? StoriesDetails
@@ -1108,12 +781,7 @@ object AppStorys {
          val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
          val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = campaignEngine.filterCampaigns(
-             campaigns = campaignsData.value,
-             campaignType = "REL",
-             trackedEvents = trackedEventsData.value,
-             disabledCampaignIds = disabledData.value
-         )
+         val filtered = core.getFilteredCampaigns("REL", disabledData.value)
 
          val campaign = filtered.firstOrNull()
          val reelsDetails = campaign?.details as? ReelsDetails
@@ -1222,9 +890,9 @@ object AppStorys {
                             }
 
                             apiClient.sendReelLikeStatus(
-                                accessToken = accessToken,
+                                accessToken = core.accessToken,
                                 request = ReelStatusRequest(
-                                    user_id = userId,
+                                    user_id = core.userId,
                                     action = it.second,
                                     reel = it.first.id
                                 )
@@ -1281,7 +949,7 @@ object AppStorys {
 
     @Composable
     fun getUserId(): String {
-        return userId
+        return core.userId
     }
 
      @Composable
@@ -1295,12 +963,7 @@ object AppStorys {
          val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
          val disabledCampaignsFlow = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = campaignEngine.filterCampaigns(
-             campaigns = campaignsData.value,
-             campaignType = "BAN",
-             trackedEvents = trackedEventsData.value,
-             disabledCampaignIds = disabledCampaignsFlow.value
-         )
+         val filtered = core.getFilteredCampaigns("BAN", disabledCampaignsFlow.value)
 
          val campaign = filtered.firstOrNull { it.details is BannerDetails }
          val bannerDetails = campaign?.details as? BannerDetails
@@ -1359,13 +1022,7 @@ object AppStorys {
                     //width = bannerDetails.width?.dp ?: screenWidth,
                     exitIcon = (style?.crossButton?.enabled ?: style?.enableCloseButton) != false,
                     exitUnit = {
-                        val ids: ArrayList<String> = ArrayList(disabledCampaigns.value)
-                        campaign.id?.let {
-                            ids.add(it)
-                            coroutineScope.launch {
-                                this@AppStorys.disabledCampaigns.emit(ids.toList())
-                            }
-                        }
+                        campaign.id?.let { core.disableCampaign(it) }
                     },
                     shape = RoundedCornerShape(
                         topStart = style?.topLeftRadius?.toIntOrNull()?.dp ?: 0.dp,
@@ -1425,12 +1082,7 @@ object AppStorys {
          val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
          val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = campaignEngine.filterCampaigns(
-             campaigns = campaignsData.value,
-             campaignType = "WID",
-             trackedEvents = trackedEventsData.value,
-             disabledCampaignIds = disabledData.value
-         )
+         val filtered = core.getFilteredCampaigns("WID", disabledData.value)
 
          val campaign = filtered.firstOrNull {
              if (position == null) {
@@ -1808,12 +1460,7 @@ object AppStorys {
          val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
          val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = campaignEngine.filterCampaigns(
-             campaigns = campaignsData.value,
-             campaignType = "BTS",
-             trackedEvents = trackedEventsData.value,
-             disabledCampaignIds = disabledData.value
-         )
+         val filtered = core.getFilteredCampaigns("BTS", disabledData.value)
 
          val campaign = filtered.firstOrNull { it.details is BottomSheetDetails }
 
@@ -1833,17 +1480,8 @@ object AppStorys {
             BottomSheetComponent(
                 onDismissRequest = {
                     showBottomSheet = false
-                    campaign?.triggerEvent?.let { trigger ->
-                        val eventName = when (trigger) {
-                            is TriggerEvent.StringTrigger -> trigger.event
-                            is TriggerEvent.ObjectTrigger -> trigger.event
-                        }
-                        _trackedEventNames.update { currentSet ->
-                            currentSet.filterNot {
-                                it.eventName == eventName
-                            }.toSet()
-                        }
-                    }
+                    // Clear trigger event in core so dismissed item does not re-qualify.
+                    core.clearTrackedEventForTrigger(campaign?.triggerEvent)
                 },
                 bottomSheetDetails = bottomSheetDetails,
                 onClick = { ctaLink ->
@@ -1866,12 +1504,7 @@ object AppStorys {
          val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
          val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = campaignEngine.filterCampaigns(
-             campaigns = campaignsData.value,
-             campaignType = "SUR",
-             trackedEvents = trackedEventsData.value,
-             disabledCampaignIds = disabledData.value
-         )
+         val filtered = core.getFilteredCampaigns("SUR", disabledData.value)
 
          val campaign = filtered.firstOrNull { it.details is SurveyDetails }
 
@@ -1904,12 +1537,7 @@ object AppStorys {
          val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
          val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = campaignEngine.filterCampaigns(
-             campaigns = campaignsData.value,
-             campaignType = "MOD",
-             trackedEvents = trackedEventsData.value,
-             disabledCampaignIds = disabledData.value
-         )
+         val filtered = core.getFilteredCampaigns("MOD", disabledData.value)
 
          val campaign = filtered.firstOrNull { it.details is ModalDetails }
 
@@ -1974,12 +1602,7 @@ object AppStorys {
          val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
          val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = campaignEngine.filterCampaigns(
-             campaigns = campaignsData.value,
-             campaignType = "SCRT",
-             trackedEvents = trackedEventsData.value,
-             disabledCampaignIds = disabledData.value
-         )
+         val filtered = core.getFilteredCampaigns("SCRT", disabledData.value)
 
          val campaign = filtered.firstOrNull { it.details is ScratchCardDetails }
 
@@ -2032,17 +1655,8 @@ object AppStorys {
                 isPresented = isPresented,
                 onDismiss = {
                     isPresented = false
-                    campaign?.triggerEvent?.let { trigger ->
-                        val eventName = when (trigger) {
-                            is TriggerEvent.StringTrigger -> trigger.event
-                            is TriggerEvent.ObjectTrigger -> trigger.event
-                        }
-                        _trackedEventNames.update { currentSet ->
-                            currentSet.filterNot {
-                                it.eventName == eventName
-                            }.toSet()
-                        }
-                    }
+                    // Clear trigger event in core so dismissed item does not re-qualify.
+                    core.clearTrackedEventForTrigger(campaign?.triggerEvent)
                 },
                 onConfettiTrigger = {
                     confettiTrigger++
@@ -2113,12 +1727,7 @@ object AppStorys {
          val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
          val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = campaignEngine.filterCampaigns(
-             campaigns = campaignsData.value,
-             campaignType = "STW",
-             trackedEvents = trackedEventsData.value,
-             disabledCampaignIds = disabledData.value
-         )
+         val filtered = core.getFilteredCampaigns("STW", disabledData.value)
 
          val campaign = filtered.firstOrNull { it.details is SpinTheWheelDetails }
 
@@ -2162,17 +1771,8 @@ object AppStorys {
                     isPresented = isPresented,
                     onDismiss = {
                         isPresented = false
-                        campaign?.triggerEvent?.let { trigger ->
-                            val eventName = when (trigger) {
-                                is TriggerEvent.StringTrigger -> trigger.event
-                                is TriggerEvent.ObjectTrigger -> trigger.event
-                            }
-                            _trackedEventNames.update { currentSet ->
-                                currentSet.filterNot {
-                                    it.eventName == eventName
-                                }.toSet()
-                            }
-                        }
+                        // Clear trigger event in core so dismissed item does not re-qualify.
+                        core.clearTrackedEventForTrigger(campaign?.triggerEvent)
                     },
                     spinTheWheelDetails = spinTheWheelDetails,
                     spinsLeft = spinsLeft,
@@ -2219,12 +1819,7 @@ object AppStorys {
          val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
          val disabledCampaignsFlow = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = campaignEngine.filterCampaigns(
-             campaigns = campaignsData.value,
-             campaignType = "MIL",
-             trackedEvents = trackedEventsData.value,
-             disabledCampaignIds = disabledCampaignsFlow.value
-         )
+         val filtered = core.getFilteredCampaigns("MIL", disabledCampaignsFlow.value)
 
          val campaign = filtered.firstOrNull { it.details is MilestoneDetails }
 
@@ -2233,7 +1828,7 @@ object AppStorys {
          val currentIndex by currentMilestoneIndex.collectAsStateWithLifecycle()
 
          // Track events and update milestone index
-         LaunchedEffect(trackedEventNames.value.size, milestoneDetails) {
+         LaunchedEffect(trackedEventsData.value.size, milestoneDetails) {
              milestoneDetails?.milestoneItems?.let { items ->
                  val sortedItems = items.sortedBy { it.order }
 
@@ -2277,11 +1872,7 @@ object AppStorys {
                         bottomPadding = bottomPadding,
                         onClose = {
                             showMilestone = false
-                            val ids = ArrayList(disabledCampaigns.value)
-                            campaign.id?.let { ids.add(it) }
-                            coroutineScope.launch {
-                                this@AppStorys.disabledCampaigns.emit(ids.toList())
-                            }
+                            campaign.id?.let { core.disableCampaign(it) }
                         },
                         onClick = {
 //                        campaign.id?.let { campaignId ->
@@ -2296,11 +1887,7 @@ object AppStorys {
                         bottomPadding = bottomPadding,
                         onClose = {
                             showMilestone = false
-                            val ids = ArrayList(disabledCampaigns.value)
-                            campaign.id?.let { ids.add(it) }
-                            coroutineScope.launch {
-                                this@AppStorys.disabledCampaigns.emit(ids.toList())
-                            }
+                            campaign.id?.let { core.disableCampaign(it) }
                         },
                         onClick = {
 //                        campaign.id?.let { campaignId ->
@@ -2353,7 +1940,7 @@ object AppStorys {
                 val rootView = activity?.window?.decorView?.rootView
                 Log.i(TAG, "Root view acquired: $rootView")
                 rootView?.let {
-                    val screenToAnalyze = screenName ?: currentScreen
+                    val screenToAnalyze = screenName ?: core.currentScreen
                     Log.i(TAG, "Screen to analyze: $screenToAnalyze")
 
                     Log.i(TAG, "Calling analyzeViewRoot()")
@@ -2372,9 +1959,9 @@ object AppStorys {
                     coroutineScope.launch {
                         Log.i(TAG, "Calling apiClient.identifyPositions()")
                         apiClient.identifyPositions(
-                            accessToken = accessToken,
+                            accessToken = core.accessToken,
                             positionList = widgetPositionList,
-                            screenName = currentScreen
+                            screenName = core.currentScreen
                         )
                     }
                 }
@@ -2491,11 +2078,9 @@ object AppStorys {
         }
     }
 
-    private fun handleDeepLink(json: JSONObject, campaignId: String, widgetImageId: String?) {
+    private fun handleDeepLink(json: JSONObject, _campaignId: String, _widgetImageId: String?) {
         try {
-            val value = json.optString("value", null)
-            val type = json.optString("type", null)
-            val deepLinkContext = json.optJSONObject("context")?.toMap()
+            val value = json.optString("value").takeIf { it.isNotBlank() }
 
             if (value != null) {
                 if (value.contains("://")) {
@@ -2526,12 +2111,6 @@ object AppStorys {
         return widgetImagePairs
     }
 
-    private suspend fun checkIfInitialized(): Boolean {
-        while (sdkState == AppStorysSdkState.Initializing) {
-            delay(100)
-        }
-        return !(sdkState != AppStorysSdkState.Initialized || accessToken.isBlank())
-    }
 
     internal fun isValidUrl(url: String?): Boolean {
         if (url.isNullOrEmpty()) return false
@@ -2566,5 +2145,4 @@ object AppStorys {
     @JvmStatic
     fun getInstance() = this
 }
-
 

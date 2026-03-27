@@ -44,6 +44,8 @@ object VideoCache {
         return cacheDataSourceFactory!!
     }
 
+    // Migration note: currently not called inside the SDK codebase.
+    // Kept for optional lifecycle cleanup by host apps.
     fun releaseCache() {
         try {
             simpleCache?.release()

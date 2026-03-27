@@ -62,6 +62,9 @@ import com.appversal.appstorys.core.model.TriggerEvent
  * @see com.appversal.appstorys.AppStorys for SDK integration points
  * @see TriggerEventMatcher for the underlying trigger matching logic
  */
+// Migration note: no in-repo usages after AppStorysCore delegation.
+// Kept (not deleted) for phased cleanup and easy rollback.
+/*
 internal class CampaignEngine {
     /**
      * Filters campaigns by type, trigger eligibility, and disabled status.
@@ -177,3 +180,4 @@ internal class CampaignEngine {
         }
     }
 }
+*/

@@ -33,6 +33,32 @@ object CampaignDeserializer : KSerializer<Campaign> {
             value.campaignType?.let { put("campaign_type", it) }
             value.position?.let { put("position", it) }
             value.screen?.let { put("screen", it) }
+            value.details?.let { details ->
+                val detailsElement = when (details) {
+                    is BannerDetails -> jsonEncoder.json.encodeToJsonElement(serializer<BannerDetails>(), details)
+                    is FloaterDetails -> jsonEncoder.json.encodeToJsonElement(serializer<FloaterDetails>(), details)
+                    is CSATDetails -> jsonEncoder.json.encodeToJsonElement(serializer<CSATDetails>(), details)
+                    is WidgetDetails -> jsonEncoder.json.encodeToJsonElement(serializer<WidgetDetails>(), details)
+                    is ReelsDetails -> jsonEncoder.json.encodeToJsonElement(serializer<ReelsDetails>(), details)
+                    is TooltipsDetails -> jsonEncoder.json.encodeToJsonElement(serializer<TooltipsDetails>(), details)
+                    is PipDetails -> jsonEncoder.json.encodeToJsonElement(serializer<PipDetails>(), details)
+                    is BottomSheetDetails -> jsonEncoder.json.encodeToJsonElement(serializer<BottomSheetDetails>(), details)
+                    is SurveyDetails -> jsonEncoder.json.encodeToJsonElement(serializer<SurveyDetails>(), details)
+                    is ModalDetails -> jsonEncoder.json.encodeToJsonElement(serializer<ModalDetails>(), details)
+                    is StoriesDetails -> jsonEncoder.json.encodeToJsonElement(serializer<StoriesDetails>(), details)
+                    is ScratchCardDetails -> jsonEncoder.json.encodeToJsonElement(serializer<ScratchCardDetails>(), details)
+                    is MilestoneDetails -> jsonEncoder.json.encodeToJsonElement(serializer<MilestoneDetails>(), details)
+                    is SpinTheWheelDetails -> jsonEncoder.json.encodeToJsonElement(serializer<SpinTheWheelDetails>(), details)
+                    is VariantCampaignDetails -> jsonEncoder.json.encodeToJsonElement(serializer<VariantCampaignDetails>(), details)
+                    else -> {
+                        logError("CampaignDeserializer", "Unsupported details subtype during serialize: ${details::class.simpleName}")
+                        null
+                    }
+                }
+                if (detailsElement != null) {
+                    put("details", detailsElement)
+                }
+            }
             value.triggerEvent?.let { trigger ->
                 when (trigger) {
                     is TriggerEvent.StringTrigger -> put("trigger_event", trigger.event)
@@ -197,4 +223,3 @@ object CampaignResponseDeserializer : KSerializer<CampaignResponse> {
         )
     }
 }
-

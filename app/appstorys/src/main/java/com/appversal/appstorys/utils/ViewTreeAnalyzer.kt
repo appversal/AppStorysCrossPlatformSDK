@@ -44,7 +44,8 @@ internal object ViewTreeAnalyzer {
     // Bitmap to store the captured screenshot
     private var screenBitmap: Bitmap? = null
 
-    // Getter for the screenshot
+    // Migration note: currently not called inside the SDK codebase.
+    // Kept for optional debugging/inspection workflows.
     fun getScreenshot(): Bitmap? = screenBitmap
 
     private val semanticsOwnerField: Field? by lazy {

@@ -1,6 +1,6 @@
 package com.appversal.appstorys.core.platform
 
-expect class PlatformStorage {
+expect class PlatformStorage() {
     fun getString(key: String): String?
     fun putString(key: String, value: String)
     fun getBoolean(key: String, default: Boolean): Boolean

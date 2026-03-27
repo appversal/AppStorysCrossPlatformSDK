@@ -4,9 +4,9 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-abstract class CampaignDetails
+sealed class CampaignDetails
 
-@Serializable
+@Serializable(with = CampaignDeserializer::class)
 data class Campaign(
     val id: String?,
     @SerialName("campaign_type") val campaignType: String?,
@@ -15,4 +15,3 @@ data class Campaign(
     val screen: String?,
     @SerialName("trigger_event") val triggerEvent: TriggerEvent?
 )
-

@@ -182,9 +182,8 @@ object FontCache {
         }
     }
 
-    /**
-     * Clear all cached fonts from disk
-     */
+    // Migration note: currently not called inside the SDK codebase.
+    // Kept for optional diagnostics/maintenance usage.
     fun clearCache(context: Context) {
         try {
             val cacheDir = getFontCacheDir(context)
@@ -196,9 +195,8 @@ object FontCache {
         }
     }
 
-    /**
-     * Get cache size in bytes
-     */
+    // Migration note: currently not called inside the SDK codebase.
+    // Kept for optional diagnostics/maintenance usage.
     fun getCacheSize(context: Context): Long {
         return try {
             val cacheDir = getFontCacheDir(context)
@@ -209,9 +207,8 @@ object FontCache {
         }
     }
 
-    /**
-     * Check if font is cached
-     */
+    // Migration note: currently not called inside the SDK codebase.
+    // Kept for optional diagnostics/maintenance usage.
     fun isFontCached(context: Context, fontUrl: String): Boolean {
         val cacheDir = getFontCacheDir(context)
         val fontFile = getFontFile(cacheDir, fontUrl)

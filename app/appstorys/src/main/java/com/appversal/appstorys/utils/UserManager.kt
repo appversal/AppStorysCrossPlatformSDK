@@ -48,6 +48,9 @@ import android.os.Build
  *
  * @see com.appversal.appstorys.AppStorys.initialize for SDK-level user setup integration
  */
+// Migration note: no in-repo usages after user handling moved to AppStorysCore.
+// Kept (not deleted) for phased cleanup and compatibility checks.
+/*
 internal class UserManager(context: Context) {
 	private val prefs = context.getSharedPreferences("AppStory", Context.MODE_PRIVATE)
 
@@ -130,3 +133,4 @@ internal class UserManager(context: Context) {
 		}
 	}
 }
+*/

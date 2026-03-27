@@ -58,6 +58,9 @@ import org.json.JSONObject
  *
  * @see com.appversal.appstorys.AppStorys.trackEvents for SDK-level integration
  */
+// Migration note: no in-repo usages after AppStorysCore.trackEvent() adoption.
+// Kept (not deleted) for phased cleanup and reference.
+/*
 internal class EventTracker {
     /**
      * Captures and sends an event to the AppStorys tracking endpoint.
@@ -123,4 +126,4 @@ internal class EventTracker {
         }
     }
 }
-
+*/
