@@ -332,6 +332,53 @@ class AppStorysCore(private val storage: PlatformStorage) {
                     )
                 )
                 sdkLogDebug("User properties updated: ${attributes.keys}")
+
+                    fun captureCsatResponse(
+                        csatId: String,
+                        userId: String,
+                        rating: Double,
+                        feedbackOption: String?,
+                        additionalComments: String?
+                    ) {
+                        scope.launch {
+                            apiClient.sendCsatResponse(
+                                accessToken = accessToken,
+                                csatId = csatId,
+                                userId = userId,
+                                rating = rating,
+                                feedbackOption = feedbackOption,
+                                additionalComments = additionalComments
+                            )
+                        }
+                    }
+
+                    fun captureSurveyResponse(
+                        surveyId: String,
+                        userId: String,
+                        responseOptions: List<String>,
+                        comment: String?
+                    ) {
+                        scope.launch {
+                            apiClient.sendSurveyResponse(
+                                accessToken = accessToken,
+                                surveyId = surveyId,
+                                userId = userId,
+                                responseOptions = responseOptions,
+                                comment = comment
+                            )
+                        }
+                    }
+
+                    fun sendReelLikeStatus(campaignId: String, userId: String, isLiked: Boolean) {
+                        scope.launch {
+                            apiClient.sendReelLikeStatus(
+                                accessToken = accessToken,
+                                campaignId = campaignId,
+                                userId = userId,
+                                isLiked = isLiked
+                            )
+                        }
+                    }
             } catch (e: Exception) {
                 sdkLogError("Error updating user properties: ${e.message}")
             }

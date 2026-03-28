@@ -33,10 +33,17 @@ class AppstorysFlutterPlugin :
             "getScreenCampaigns" -> handleGetScreenCampaigns(call, result)
             "getBannerJson" -> handleGetBannerJson(result)
             "getCampaignsJson" -> handleGetCampaignsJson(result)
+            "getCampaignsByTypeJson" -> handleGetCampaignsByTypeJson(call, result)
             "getPersonalizationDataJson" -> handleGetPersonalizationDataJson(result)
             "setUserId" -> handleSetUserId(call, result)
+            "getUserId" -> handleGetUserId(result)
+            "isReady" -> handleIsReady(result)
             "setUserProperties" -> handleSetUserProperties(call, result)
             "trackEvent" -> handleTrackEvent(call, result)
+            "dismissCampaign" -> handleDismissCampaign(call, result)
+            "captureCsatResponse" -> handleCaptureCsatResponse(call, result)
+            "captureSurveyResponse" -> handleCaptureSurveyResponse(call, result)
+            "sendReelLikeStatus" -> handleSendReelLikeStatus(call, result)
             else -> result.notImplemented()
         }
     }
@@ -85,6 +92,13 @@ class AppstorysFlutterPlugin :
         }
     }
 
+    private fun handleGetCampaignsByTypeJson(call: MethodCall, result: Result) {
+        val type = call.argument<String>("type").orEmpty()
+        runBridgeCall(result) {
+            core.getCampaignsByTypeJson(type)
+        }
+    }
+
     private fun handleGetPersonalizationDataJson(result: Result) {
         runBridgeCall(result) {
             core.getPersonalizationDataJson()
@@ -101,6 +115,14 @@ class AppstorysFlutterPlugin :
             core.setUserId(newUserId = userId)
             null
         }
+    }
+
+    private fun handleGetUserId(result: Result) {
+        runBridgeCall(result) { core.userId }
+    }
+
+    private fun handleIsReady(result: Result) {
+        runBridgeCall(result) { core.sdkState == AppStorysCore.SdkState.Initialized }
     }
 
     private fun handleSetUserProperties(call: MethodCall, result: Result) {
@@ -131,6 +153,54 @@ class AppstorysFlutterPlugin :
 
         runBridgeCall(result) {
             core.trackEvent(campaignId = campaignId, event = event, metadata = metadata)
+            null
+        }
+    }
+
+    private fun handleDismissCampaign(call: MethodCall, result: Result) {
+        val campaignId = call.argument<String>("campaignId")
+        if (campaignId.isNullOrBlank()) {
+            return missingArgument(result, "campaignId")
+        }
+
+        runBridgeCall(result) {
+            core.disableCampaign(campaignId)
+            null
+        }
+    }
+
+    private fun handleCaptureCsatResponse(call: MethodCall, result: Result) {
+        val csatId = call.argument<String>("csatId").orEmpty()
+        val userId = call.argument<String>("userId").orEmpty()
+        val rating = call.argument<Double>("rating") ?: 0.0
+        val feedbackOption = call.argument<String>("feedbackOption")
+        val additionalComments = call.argument<String>("additionalComments")
+
+        runBridgeCall(result) {
+            core.captureCsatResponse(csatId, userId, rating, feedbackOption, additionalComments)
+            null
+        }
+    }
+
+    private fun handleCaptureSurveyResponse(call: MethodCall, result: Result) {
+        val surveyId = call.argument<String>("surveyId").orEmpty()
+        val userId = call.argument<String>("userId").orEmpty()
+        val responseOptions = call.argument<List<String>>("responseOptions") ?: emptyList()
+        val comment = call.argument<String>("comment")
+
+        runBridgeCall(result) {
+            core.captureSurveyResponse(surveyId, userId, responseOptions, comment)
+            null
+        }
+    }
+
+    private fun handleSendReelLikeStatus(call: MethodCall, result: Result) {
+        val campaignId = call.argument<String>("campaignId").orEmpty()
+        val userId = call.argument<String>("userId").orEmpty()
+        val isLiked = call.argument<Boolean>("isLiked") ?: false
+
+        runBridgeCall(result) {
+            core.sendReelLikeStatus(campaignId, userId, isLiked)
             null
         }
     }

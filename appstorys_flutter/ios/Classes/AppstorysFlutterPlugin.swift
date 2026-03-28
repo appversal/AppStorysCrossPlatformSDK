@@ -18,14 +18,28 @@ public class AppstorysFlutterPlugin: NSObject, FlutterPlugin {
       handleGetBannerJson(result)
     case "getCampaignsJson":
       handleGetCampaignsJson(result)
+    case "getCampaignsByTypeJson":
+      handleGetCampaignsByTypeJson(call, result: result)
     case "getPersonalizationDataJson":
       handleGetPersonalizationDataJson(result)
+    case "getUserId":
+      handleGetUserId(result)
+    case "isReady":
+      handleIsReady(result)
     case "setUserId":
       handleSetUserId(call, result: result)
     case "setUserProperties":
       handleSetUserProperties(call, result: result)
     case "trackEvent":
       handleTrackEvent(call, result: result)
+    case "dismissCampaign":
+      handleDismissCampaign(call, result: result)
+    case "captureCsatResponse":
+      handleCaptureCsatResponse(call, result: result)
+    case "captureSurveyResponse":
+      handleCaptureSurveyResponse(call, result: result)
+    case "sendReelLikeStatus":
+      handleSendReelLikeStatus(call, result: result)
     default:
       result(FlutterMethodNotImplemented)
     }
@@ -53,9 +67,24 @@ public class AppstorysFlutterPlugin: NSObject, FlutterPlugin {
     result("[]")
   }
 
+  private func handleGetCampaignsByTypeJson(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+    // Phase 6: Implement iOS bridge to shared-core .xcframework
+    result("[]")
+  }
+
   private func handleGetPersonalizationDataJson(_ result: @escaping FlutterResult) {
     // Phase 6: Implement iOS bridge to shared-core .xcframework
     result("{}")
+  }
+
+  private func handleGetUserId(_ result: @escaping FlutterResult) {
+    // Phase 6: Implement iOS bridge to shared-core .xcframework
+    result("")
+  }
+
+  private func handleIsReady(_ result: @escaping FlutterResult) {
+    // Phase 6: Implement iOS bridge to shared-core .xcframework
+    result(false)
   }
 
   private func handleSetUserId(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -69,6 +98,26 @@ public class AppstorysFlutterPlugin: NSObject, FlutterPlugin {
   }
 
   private func handleTrackEvent(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+    // Phase 6: Implement iOS bridge to shared-core .xcframework
+    result(nil)
+  }
+
+  private func handleDismissCampaign(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+    // Phase 6: Implement iOS bridge to shared-core .xcframework
+    result(nil)
+  }
+
+  private func handleCaptureCsatResponse(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+    // Phase 6: Implement iOS bridge to shared-core .xcframework
+    result(nil)
+  }
+
+  private func handleCaptureSurveyResponse(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+    // Phase 6: Implement iOS bridge to shared-core .xcframework
+    result(nil)
+  }
+
+  private func handleSendReelLikeStatus(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
     // Phase 6: Implement iOS bridge to shared-core .xcframework
     result(nil)
   }

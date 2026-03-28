@@ -303,6 +303,72 @@ class ApiClient(
         }
     }
 
+    suspend fun sendCsatResponse(
+        accessToken: String,
+        csatId: String,
+        userId: String,
+        rating: Double,
+        feedbackOption: String?,
+        additionalComments: String?
+    ): ApiResult<Unit> {
+        return try {
+            val response = httpClient.post("${usersBaseUrl}api/v1/campaigns/capture-csat-response/") {
+                contentType(ContentType.Application.Json)
+                header(HttpHeaders.Authorization, bearerToken(accessToken))
+                setBody(
+                    buildJsonObject {
+                        put("csat", csatId)
+                        put("user_id", userId)
+                        put("rating", rating)
+                        feedbackOption?.let { put("feedback_option", it) }
+                        additionalComments?.let { put("additional_comments", it) }
+                    }
+                )
+            }
+            if (!response.status.isSuccess()) {
+                platformLogError(TAG, "sendCsatResponse failed: HTTP ${response.status.value}")
+                ApiResult.Error("Request failed with code ${response.status.value}", response.status.value)
+            } else {
+                ApiResult.Success(Unit)
+            }
+        } catch (e: Exception) {
+            platformLogError(TAG, "sendCsatResponse failed: ${e.message}")
+            ApiResult.Error(message = e.message ?: "Unexpected error")
+        }
+    }
+
+    suspend fun sendSurveyResponse(
+        accessToken: String,
+        surveyId: String,
+        userId: String,
+        responseOptions: List<String>,
+        comment: String?
+    ): ApiResult<Unit> {
+        return try {
+            val response = httpClient.post("${usersBaseUrl}api/v1/campaigns/capture-survey-response/") {
+                contentType(ContentType.Application.Json)
+                header(HttpHeaders.Authorization, bearerToken(accessToken))
+                setBody(
+                    buildJsonObject {
+                        put("survey", surveyId)
+                        put("user_id", userId)
+                        put("responseOptions", JsonArray(responseOptions.map { JsonPrimitive(it) }))
+                        comment?.let { put("comment", it) }
+                    }
+                )
+            }
+            if (!response.status.isSuccess()) {
+                platformLogError(TAG, "sendSurveyResponse failed: HTTP ${response.status.value}")
+                ApiResult.Error("Request failed with code ${response.status.value}", response.status.value)
+            } else {
+                ApiResult.Success(Unit)
+            }
+        } catch (e: Exception) {
+            platformLogError(TAG, "sendSurveyResponse failed: ${e.message}")
+            ApiResult.Error(message = e.message ?: "Unexpected error")
+        }
+    }
+
     suspend fun sendReelLikeStatus(
         accessToken: String,
         request: ReelStatusRequest
@@ -312,6 +378,36 @@ class ApiClient(
                 contentType(ContentType.Application.Json)
                 header(HttpHeaders.Authorization, bearerToken(accessToken))
                 setBody(request)
+            }
+            if (!response.status.isSuccess()) {
+                platformLogError(TAG, "sendReelLikeStatus failed: HTTP ${response.status.value}")
+                ApiResult.Error("Request failed with code ${response.status.value}", response.status.value)
+            } else {
+                ApiResult.Success(Unit)
+            }
+        } catch (e: Exception) {
+            platformLogError(TAG, "sendReelLikeStatus failed: ${e.message}")
+            ApiResult.Error(message = e.message ?: "Unexpected error")
+        }
+    }
+
+    suspend fun sendReelLikeStatus(
+        accessToken: String,
+        campaignId: String,
+        userId: String,
+        isLiked: Boolean
+    ): ApiResult<Unit> {
+        return try {
+            val response = httpClient.post("${usersBaseUrl}api/v1/campaigns/reel-like/") {
+                contentType(ContentType.Application.Json)
+                header(HttpHeaders.Authorization, bearerToken(accessToken))
+                setBody(
+                    buildJsonObject {
+                        put("campaign_id", campaignId)
+                        put("user_id", userId)
+                        put("is_liked", isLiked)
+                    }
+                )
             }
             if (!response.status.isSuccess()) {
                 platformLogError(TAG, "sendReelLikeStatus failed: HTTP ${response.status.value}")
