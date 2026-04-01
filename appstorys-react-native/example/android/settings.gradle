@@ -1,0 +1,4 @@
+include ':app'
+include ':appstorys-react-native'
+project(':appstorys-react-native').projectDir = new File(rootProject.projectDir, '../../android')
+
