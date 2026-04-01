@@ -38,12 +38,11 @@ export default function App() {
 			try {
 				// Step 1: initialize SDK
 				setStatus('Calling initialize...');
-				setStatus('Calling initialize...');
-		await AppStorys.initialize(
-		  'f69bdccf-b20f-4938-b39e-7075d76db791',
-		  '12a9eac5-94ee-4735-9aa6-b8a94cb8fbbb',
-		  'yash1'
-		);
+				await AppStorys.initialize(
+					'f69bdccf-b20f-4938-b39e-7075d76db791',
+					'12a9eac5-94ee-4735-9aa6-b8a94cb8fbbb',
+					'yash1'
+				);
 				setStatus('Initialized. Getting user ID...');
 
 				const uid = await AppStorys.getUserId();
