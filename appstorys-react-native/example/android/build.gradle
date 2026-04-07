@@ -8,9 +8,9 @@ buildscript {
         reactNativeVersion = "0.73.0"
     }
     repositories {
-        mavenLocal()
         google()
         mavenCentral()
+        maven { url 'https://jitpack.io' }
         // react-native AAR lives inside node_modules after npm install
         maven { url "$rootDir/../../node_modules/react-native/android" }
     }
@@ -22,9 +22,9 @@ buildscript {
 
 allprojects {
     repositories {
-        mavenLocal()
         google()
         mavenCentral()
+        maven { url 'https://jitpack.io' }
         maven { url "$rootDir/../../node_modules/react-native/android" }
         maven { url "$rootDir/../../node_modules/jsc-android/dist" }
     }
