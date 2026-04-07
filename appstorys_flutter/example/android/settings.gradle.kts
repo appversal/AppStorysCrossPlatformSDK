@@ -24,6 +24,7 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven("https://storage.googleapis.com/download.flutter.io")
+        maven("https://jitpack.io")
     }
 }
 

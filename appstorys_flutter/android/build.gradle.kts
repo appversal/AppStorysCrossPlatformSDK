@@ -16,9 +16,9 @@ buildscript {
 
 allprojects {
     repositories {
-        mavenLocal()
         google()
         mavenCentral()
+        maven { url = uri("https://jitpack.io") }
     }
 }
 
@@ -73,7 +73,7 @@ android {
 
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-    implementation("com.appversal:appstorys-core-android:4.0.0-alpha02-local")
+    implementation("com.github.appversal.AppStorysCrossPlatformSDK:appstorys-core-android:v4.0.0-alpha02")
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.mockito:mockito-core:5.0.0")
 }
