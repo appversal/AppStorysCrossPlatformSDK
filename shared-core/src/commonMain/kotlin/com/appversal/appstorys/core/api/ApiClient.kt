@@ -220,7 +220,7 @@ class ApiClient(
             position_list = positionList
         )
         return try {
-            val response = httpClient.post("${usersBaseUrl}api/v2/appinfo/identify-positions/") {
+            val response = httpClient.post("${backendBaseUrl}api/v2/appinfo/identify-positions/") {
                 contentType(ContentType.Application.Json)
                 header(HttpHeaders.Authorization, bearerToken(accessToken))
                 setBody(request)
