@@ -90,10 +90,30 @@ class _AppStorysBannerState extends State<AppStorysBanner> {
             ? Map<String, dynamic>.from(rawCampaign['details'] as Map)
             : <String, dynamic>{};
 
+        // Campaign details can be variant-based: details.variants.{id}.{image,link,...}
+        // Flatten first variant fields so BannerCampaign.fromJson can render media.
+        final variantsRaw = details['variants'];
+        Map<String, dynamic> firstVariant = const <String, dynamic>{};
+        if (variantsRaw is Map) {
+          final variantValues = variantsRaw.values
+              .whereType<Map>()
+              .map((value) => Map<String, dynamic>.from(value))
+              .toList();
+          if (variantValues.isNotEmpty) {
+            firstVariant = variantValues.first;
+          }
+        }
+
         // Normalize payload to banner-details shape expected by the Dart widget.
         final normalized = <String, dynamic>{
           ...details,
-          'id': (rawCampaign['id'] ?? details['id'])?.toString() ?? '',
+          ...firstVariant,
+          'image': details['image'] ?? firstVariant['image'],
+          'link': details['link'] ?? firstVariant['link'],
+          'width': details['width'] ?? firstVariant['width'],
+          'height': details['height'] ?? firstVariant['height'],
+          'styling': details['styling'] ?? firstVariant['styling'],
+          'id': (rawCampaign['id'] ?? details['id'] ?? firstVariant['id'])?.toString() ?? '',
         };
 
         debugPrint('🔵 [BANNER] Campaign data: $rawCampaign');
@@ -236,68 +256,76 @@ class _AppStorysBannerState extends State<AppStorysBanner> {
     final marginRight = _currentBanner!.styling?.marginRight ?? widget.margin.right;
     final marginBottom = _currentBanner!.styling?.marginBottom ?? widget.margin.bottom;
 
-    return Positioned(
-      bottom: marginBottom,
-      left: marginLeft,
-      right: marginRight,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Material(
-            color: Colors.transparent,
-            elevation: widget.elevation,
-            child: GestureDetector(
-              onTap: _handleBannerTap,
-              child: Container(
-                height: bannerHeight,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.transparent,
-                  borderRadius: borderRadius,
-                  image: isImage
-                      ? DecorationImage(
-                          image: NetworkImage(_currentBanner!.image!),
-                          fit: BoxFit.cover,
-                        )
-                      : null,
-                ),
-                child: isLottie
-                    ? ClipRRect(
-                        borderRadius: borderRadius,
-                        child: Container(
-                          color: Colors.grey[200],
-                          child: Center(
-                            child: Text(
-                              'Lottie: ${_currentBanner!.lottieData}',
-                              textAlign: TextAlign.center,
+    return SafeArea(
+      top: false,
+      left: false,
+      right: false,
+      minimum: EdgeInsets.only(
+        left: marginLeft,
+        right: marginRight,
+        bottom: marginBottom,
+      ),
+      child: Align(
+        alignment: Alignment.bottomCenter,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Material(
+              color: Colors.transparent,
+              elevation: widget.elevation,
+              child: GestureDetector(
+                onTap: _handleBannerTap,
+                child: Container(
+                  height: bannerHeight,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    borderRadius: borderRadius,
+                    image: isImage
+                        ? DecorationImage(
+                            image: NetworkImage(_currentBanner!.image!),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                  ),
+                  child: isLottie
+                      ? ClipRRect(
+                          borderRadius: borderRadius,
+                          child: Container(
+                            color: Colors.grey[200],
+                            child: Center(
+                              child: Text(
+                                'Lottie: ${_currentBanner!.lottieData}',
+                                textAlign: TextAlign.center,
+                              ),
                             ),
                           ),
-                        ),
-                      )
-                    : const SizedBox.shrink(),
+                        )
+                      : const SizedBox.shrink(),
+                ),
               ),
             ),
-          ),
-          if (_currentBanner!.styling?.crossButton?.enabled == true)
-            Positioned(
-              top: 0,
-              right: 0,
-              child: CrossButton(
-                onTap: () {
-                  setState(() {
-                    _showBanner = false;
-                  });
-                  widget.onDismissed?.call();
-                },
-                iconSize: _currentBanner!.styling?.crossButton?.size ?? 18,
-                styling: _currentBanner!.styling?.crossButton != null
-                    ? {
-                        'color': _currentBanner!.styling!.crossButton!.colorObj,
-                      }
-                    : null,
+            if (_currentBanner!.styling?.crossButton?.enabled == true)
+              Positioned(
+                top: 0,
+                right: 0,
+                child: CrossButton(
+                  onTap: () {
+                    setState(() {
+                      _showBanner = false;
+                    });
+                    widget.onDismissed?.call();
+                  },
+                  iconSize: _currentBanner!.styling?.crossButton?.size ?? 18,
+                  styling: _currentBanner!.styling?.crossButton != null
+                      ? {
+                          'color': _currentBanner!.styling!.crossButton!.colorObj,
+                        }
+                      : null,
+                ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

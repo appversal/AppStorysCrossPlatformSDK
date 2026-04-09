@@ -44,8 +44,17 @@ android {
     }
 }
 
+// ── Read the switch property from gradle.properties ──
+val useJitpackSharedCore = (project.findProperty("useJitpackSharedCore") as? String ?: "false").toBoolean()
+val sharedCoreVersion = project.findProperty("sharedCoreVersion") as? String ?: "v4.0.0-alpha02"
+
 dependencies {
-    implementation(project(":shared-core"))
+    // ── Conditional shared-core dependency ──
+    if (useJitpackSharedCore) {
+        implementation("com.github.appversal.AppStorysCrossPlatformSDK:appstorys-core-android:$sharedCoreVersion")
+    } else {
+        implementation(project(":shared-core"))
+    }
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.material3)
     implementation(libs.coil.compose)

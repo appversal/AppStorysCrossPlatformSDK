@@ -383,7 +383,9 @@ object AppStorys {
              val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
              val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-             val filtered = core.getFilteredCampaigns("CSAT", disabledData.value)
+             val filtered = remember(campaignsData.value, trackedEventsData.value, disabledData.value) {
+                 core.getFilteredCampaigns("CSAT", disabledData.value)
+             }
 
              val campaign = filtered.firstOrNull()
              val csatDetails = when (val details = campaign?.details) {
@@ -478,7 +480,9 @@ object AppStorys {
          val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
          val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = core.getFilteredCampaigns("FLT", disabledData.value)
+         val filtered = remember(campaignsData.value, trackedEventsData.value, disabledData.value) {
+             core.getFilteredCampaigns("FLT", disabledData.value)
+         }
 
          val campaign = filtered.firstOrNull { it.details is FloaterDetails }
 
@@ -550,7 +554,9 @@ object AppStorys {
          val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
          val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = core.getFilteredCampaigns("PIP", disabledData.value)
+         val filtered = remember(campaignsData.value, trackedEventsData.value, disabledData.value) {
+             core.getFilteredCampaigns("PIP", disabledData.value)
+         }
 
          val campaign = filtered.firstOrNull { it.details is PipDetails }
 
@@ -754,7 +760,9 @@ object AppStorys {
          val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
          val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = core.getFilteredCampaigns("STR", disabledData.value)
+         val filtered = remember(campaignsData.value, trackedEventsData.value, disabledData.value) {
+             core.getFilteredCampaigns("STR", disabledData.value)
+         }
 
          val campaign = filtered.firstOrNull()
          val storiesDetails = campaign?.details as? StoriesDetails
@@ -781,7 +789,9 @@ object AppStorys {
          val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
          val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = core.getFilteredCampaigns("REL", disabledData.value)
+         val filtered = remember(campaignsData.value, trackedEventsData.value, disabledData.value) {
+             core.getFilteredCampaigns("REL", disabledData.value)
+         }
 
          val campaign = filtered.firstOrNull()
          val reelsDetails = campaign?.details as? ReelsDetails
@@ -963,7 +973,9 @@ object AppStorys {
          val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
          val disabledCampaignsFlow = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = core.getFilteredCampaigns("BAN", disabledCampaignsFlow.value)
+         val filtered = remember(campaignsData.value, trackedEventsData.value, disabledCampaignsFlow.value) {
+             core.getFilteredCampaigns("BAN", disabledCampaignsFlow.value)
+         }
 
          val campaign = filtered.firstOrNull { it.details is BannerDetails }
          val bannerDetails = campaign?.details as? BannerDetails
@@ -1082,7 +1094,9 @@ object AppStorys {
          val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
          val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = core.getFilteredCampaigns("WID", disabledData.value)
+         val filtered = remember(campaignsData.value, trackedEventsData.value, disabledData.value) {
+             core.getFilteredCampaigns("WID", disabledData.value)
+         }
 
          val campaign = filtered.firstOrNull {
              if (position == null) {
@@ -1460,7 +1474,9 @@ object AppStorys {
          val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
          val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = core.getFilteredCampaigns("BTS", disabledData.value)
+         val filtered = remember(campaignsData.value, trackedEventsData.value, disabledData.value) {
+             core.getFilteredCampaigns("BTS", disabledData.value)
+         }
 
          val campaign = filtered.firstOrNull { it.details is BottomSheetDetails }
 
@@ -1504,7 +1520,9 @@ object AppStorys {
          val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
          val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = core.getFilteredCampaigns("SUR", disabledData.value)
+         val filtered = remember(campaignsData.value, trackedEventsData.value, disabledData.value) {
+             core.getFilteredCampaigns("SUR", disabledData.value)
+         }
 
          val campaign = filtered.firstOrNull { it.details is SurveyDetails }
 
@@ -1537,7 +1555,9 @@ object AppStorys {
          val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
          val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = core.getFilteredCampaigns("MOD", disabledData.value)
+         val filtered = remember(campaignsData.value, trackedEventsData.value, disabledData.value) {
+             core.getFilteredCampaigns("MOD", disabledData.value)
+         }
 
          val campaign = filtered.firstOrNull { it.details is ModalDetails }
 
@@ -1598,11 +1618,13 @@ object AppStorys {
      fun ScratchCard() {
 
          var confettiTrigger by remember { mutableStateOf(0) }
-         val campaignsData = campaigns.collectAsStateWithLifecycle()
-         val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+          val campaignsData = campaigns.collectAsStateWithLifecycle()
+          val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
          val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = core.getFilteredCampaigns("SCRT", disabledData.value)
+         val filtered = remember(campaignsData.value, trackedEventsData.value, disabledData.value) {
+             core.getFilteredCampaigns("SCRT", disabledData.value)
+         }
 
          val campaign = filtered.firstOrNull { it.details is ScratchCardDetails }
 
@@ -1723,11 +1745,13 @@ object AppStorys {
      @RequiresApi(Build.VERSION_CODES.M)
      @Composable
      fun SpinTheWheel() {
-         val campaignsData = campaigns.collectAsStateWithLifecycle()
-         val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+          val campaignsData = campaigns.collectAsStateWithLifecycle()
+          val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
          val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = core.getFilteredCampaigns("STW", disabledData.value)
+         val filtered = remember(campaignsData.value, trackedEventsData.value, disabledData.value) {
+             core.getFilteredCampaigns("STW", disabledData.value)
+         }
 
          val campaign = filtered.firstOrNull { it.details is SpinTheWheelDetails }
 
@@ -1819,7 +1843,9 @@ object AppStorys {
          val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
          val disabledCampaignsFlow = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = core.getFilteredCampaigns("MIL", disabledCampaignsFlow.value)
+         val filtered = remember(campaignsData.value, trackedEventsData.value, disabledCampaignsFlow.value) {
+             core.getFilteredCampaigns("MIL", disabledCampaignsFlow.value)
+         }
 
          val campaign = filtered.firstOrNull { it.details is MilestoneDetails }
 

@@ -27,9 +27,15 @@ dependencyResolutionManagement {
     }
 }
 
-
-
-
 include(":app")
 include(":app:appstorys")
-include(":shared-core")
+
+
+// ── Conditionally include shared-core based on the switch in gradle.properties ──
+val useJitpack = (settings.providers.gradleProperty("useJitpackSharedCore").orNull ?: "false").toBoolean()
+if (!useJitpack) {
+    include(":shared-core")
+    println("📦 shared-core: using LOCAL module")
+} else {
+    println("📦 shared-core: using JitPack version")
+}

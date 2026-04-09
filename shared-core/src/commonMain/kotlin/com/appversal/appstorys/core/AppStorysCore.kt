@@ -127,7 +127,6 @@ class AppStorysCore(private val storage: PlatformStorage) {
                         attributes = null
                     )
                 )
-
                 if (tokenResult is ApiResult.Success && !tokenResult.data.access_token.isNullOrBlank()) {
                     accessToken = tokenResult.data.access_token!!
                     sdkState = SdkState.Initialized
