@@ -237,7 +237,7 @@ internal class ApiRepository(
 
             // Get the specific variant data from the variants object
             val variantData = details.variants[variantId]?.jsonObject
-            if (variantData == null) {
+            if (variantData == null) {tooltipIdentify()
                 Log.e("ApiRepository", "Variant $variantId not found in campaign ${campaign.id}")
                 return campaign
             }

@@ -144,4 +144,13 @@ class AppStorysModule(reactContext: ReactApplicationContext) :
         try { invokeCoreMethodOrThrow("sendReelLikeStatus", campaignId, userId, isLiked); promise.resolve(true) }
         catch (e: Exception) { promise.reject("ERROR", e.message) }
     }
+
+    @ReactMethod
+    fun personalizeText(text: String, promise: Promise) {
+        try {
+            promise.resolve(core.personalizeText(text))
+        } catch (e: Exception) {
+            promise.reject("ERROR", e.message)
+        }
+    }
 }

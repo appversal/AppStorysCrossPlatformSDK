@@ -164,5 +164,10 @@ class AppstorysFlutter {
     }
     return false;
   }
+
+  Future<String> personalizeText(String text) {
+    return AppstorysFlutterPlatform.instance.personalizeText(text);
+  }
+
 }
 

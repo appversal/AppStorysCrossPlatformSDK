@@ -82,6 +82,9 @@ export const AppStorys = {
   sendReelLikeStatus: (campaignId: string, isLiked: boolean): Promise<boolean> =>
     AppStorysReactNative.sendReelLikeStatus(campaignId, '', isLiked),
 
+    personalizeText: (text: string): Promise<string> =>
+        AppStorysReactNative.personalizeText(text),
+
   handleNavigation: async (link: string): Promise<void> => {
     // Navigation is handled by the host app for deep links and internal routes.
     if (!link) return;

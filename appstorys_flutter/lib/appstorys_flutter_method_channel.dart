@@ -108,4 +108,11 @@ class MethodChannelAppstorysFlutter extends AppstorysFlutterPlatform {
       throw AppstorysException.fromPlatformException(error);
     }
   }
+
+  Future<String> personalizeText(String text) async {
+    return await methodChannel.invokeMethod<String>(
+        'personalizeText', {'text': text}
+    ) ?? text;
+  }
+
 }

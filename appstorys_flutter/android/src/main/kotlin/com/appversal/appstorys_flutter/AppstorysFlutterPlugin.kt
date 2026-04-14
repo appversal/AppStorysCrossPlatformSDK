@@ -44,6 +44,7 @@ class AppstorysFlutterPlugin :
             "captureCsatResponse" -> handleCaptureCsatResponse(call, result)
             "captureSurveyResponse" -> handleCaptureSurveyResponse(call, result)
             "sendReelLikeStatus" -> handleSendReelLikeStatus(call, result)
+            "personalizeText" -> handlePersonalizeText(call, result)
             else -> result.notImplemented()
         }
     }
@@ -220,4 +221,10 @@ class AppstorysFlutterPlugin :
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         channel.setMethodCallHandler(null)
     }
+
+    private fun handlePersonalizeText(call: MethodCall, result: Result) {
+        val text = call.argument<String>("text").orEmpty()
+        runBridgeCall(result) { core.personalizeText(text) }
+    }
+
 }

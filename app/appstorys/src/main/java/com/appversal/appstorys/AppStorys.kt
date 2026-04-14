@@ -441,15 +441,13 @@ object AppStorys {
                             },
                             onSubmitFeedback = { feedback ->
                                 coroutineScope.launch {
-                                    apiClient.sendCSATResponse(
-                                        core.accessToken,
-                                        CsatFeedbackPostRequest(
-                                            user_id = core.userId,
-                                            csat = csatDetails.id,
-                                            rating = feedback.rating,
-                                            additional_comments = feedback.additionalComments,
-                                            feedback_option = feedback.feedbackOption
-                                        )
+                                    apiClient.sendCsatResponse(
+                                        accessToken = core.accessToken,
+                                        csatId = csatDetails.id ?: "",
+                                        userId = core.userId,
+                                        rating = feedback.rating.toDouble(),
+                                        feedbackOption = feedback.feedbackOption,
+                                        additionalComments = feedback.additionalComments
                                     )
                                     trackEvents(
                                         campaign_id = campaign?.id,
@@ -901,11 +899,9 @@ object AppStorys {
 
                             apiClient.sendReelLikeStatus(
                                 accessToken = core.accessToken,
-                                request = ReelStatusRequest(
-                                    user_id = core.userId,
-                                    action = it.second,
-                                    reel = it.first.id
-                                )
+                                campaignId = it.first.id ?: "",
+                                userId = core.userId,
+                                isLiked = it.second == "like"
                             )
                         }
                     },

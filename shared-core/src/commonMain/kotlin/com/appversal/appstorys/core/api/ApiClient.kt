@@ -49,6 +49,7 @@ private const val DEFAULT_USERS_BASE_URL = "https://users.appstorys.co/"
 private const val DEFAULT_WEBSOCKET_BASE_URL = "https://users.appstorys.co/"  // WebSocket endpoint (same host, different protocol)
 private const val DEFAULT_BACKEND_BASE_URL = "https://backend.appstorys.co/"
 private const val DEFAULT_CDN_BASE_URL = "https://dev-cdn-campaign-appstorys.s3.ap-south-1.amazonaws.com"
+//private const val DEFAULT_CDN_BASE_URL = "https://s3.ap-south-1.amazonaws.com/cdn-campaigns.appstorys.com"
 private const val DEFAULT_TRACKING_BASE_URL = "https://tracking.appstorys.co/"
 private const val PREF_CAMPAIGNS_JSON_PREFIX = "campaigns_json_"
 private const val PREF_ETAG_PREFIX = "campaigns_etag_"
@@ -76,6 +77,7 @@ class ApiClient(
 
     private fun getStorage(): KeyValueStore = storageDelegate
 
+    //getAccessToken() - // Called once during SDK init — exchanges appId/accountId/userId for a Bearer access token used in all subsequent requests.
     suspend fun validateAccount(
         accountId: String,
         request: ValidateAccountRequest
@@ -86,6 +88,11 @@ class ApiClient(
         }
     }
 
+    //Eligible Campaigns - // Called on every getScreenCampaigns() — asks the server which campaign IDs this user is eligible to see on this screen, also returns variants and personalization data.
+    //getScreenCampaignsData() → split into:
+    //getEligibleCampaigns()
+    //fetchCampaignsJson()
+    //loadMissingCampaigns()
     suspend fun getEligibleCampaigns(
         accountId: String,
         accessToken: String,
@@ -98,6 +105,7 @@ class ApiClient(
         }
     }
 
+    // Called after getEligibleCampaigns() — downloads the full campaign definitions JSON from S3 CDN; uses ETag to skip re-download if nothing changed (304), and falls back to local cache on failure.
     suspend fun fetchCampaignsJson(
         accountId: String,
         cdnBaseUrl: String = DEFAULT_CDN_BASE_URL
@@ -144,6 +152,7 @@ class ApiClient(
         }
     }
 
+    //// Called when some eligible campaign IDs are missing from the CDN cache — fetches those specific campaigns by ID directly from the backend.
     suspend fun loadMissingCampaigns(
         accessToken: String,
         campaignIds: List<String>
@@ -171,6 +180,7 @@ class ApiClient(
         }
     }
 
+    // Called on every user interaction with a campaign (viewed, clicked, shared, etc.) — posts the event + metadata to the tracking service for analytics.
     suspend fun captureEvent(
         accessToken: String,
         userId: String,
@@ -210,6 +220,7 @@ class ApiClient(
         }
     }
 
+    //sendWidgetPositions() - // Called only for test users — sends the list of widget position names on the current screen to the backend so the dashboard can map positions to campaigns.
     suspend fun identifyPositions(
         accessToken: String,
         positionList: List<String>,
@@ -237,6 +248,7 @@ class ApiClient(
         }
     }
 
+    // Called when setUserId() is used after an anonymous session — merges the anonymous user's campaign history into the new identified user account.
     suspend fun reconcileAnonymousUser(
         accessToken: String,
         request: ReconcileUserRequest
@@ -259,6 +271,7 @@ class ApiClient(
         }
     }
 
+    // Called when the brand app sets user attributes (name, email, plan, etc.) — pushes those properties to the backend for campaign targeting/personalization.
     suspend fun updateUserProperties(
         accessToken: String,
         request: UpdateUserPropertiesRequest
@@ -281,28 +294,7 @@ class ApiClient(
         }
     }
 
-    suspend fun sendCSATResponse(
-        accessToken: String,
-        request: CsatFeedbackPostRequest
-    ): ApiResult<Unit> {
-        return try {
-            val response = httpClient.post("${usersBaseUrl}api/v1/campaigns/capture-csat-response/") {
-                contentType(ContentType.Application.Json)
-                header(HttpHeaders.Authorization, bearerToken(accessToken))
-                setBody(request)
-            }
-            if (!response.status.isSuccess()) {
-                platformLogError(TAG, "sendCSATResponse failed: HTTP ${response.status.value}")
-                ApiResult.Error("Request failed with code ${response.status.value}", response.status.value)
-            } else {
-                ApiResult.Success(Unit)
-            }
-        } catch (e: Exception) {
-            platformLogError(TAG, "sendCSATResponse failed: ${e.message}")
-            ApiResult.Error(message = e.message ?: "Unexpected error")
-        }
-    }
-
+    // Overload of sendCSATResponse — same purpose but takes individual parameters instead of a request object; used by Flutter/RN bridges which pass fields separately.
     suspend fun sendCsatResponse(
         accessToken: String,
         csatId: String,
@@ -337,6 +329,7 @@ class ApiClient(
         }
     }
 
+    // Called when a Survey campaign response is submitted — posts the selected options and optional comment.
     suspend fun sendSurveyResponse(
         accessToken: String,
         surveyId: String,
@@ -369,28 +362,7 @@ class ApiClient(
         }
     }
 
-    suspend fun sendReelLikeStatus(
-        accessToken: String,
-        request: ReelStatusRequest
-    ): ApiResult<Unit> {
-        return try {
-            val response = httpClient.post("${usersBaseUrl}api/v1/campaigns/reel-like/") {
-                contentType(ContentType.Application.Json)
-                header(HttpHeaders.Authorization, bearerToken(accessToken))
-                setBody(request)
-            }
-            if (!response.status.isSuccess()) {
-                platformLogError(TAG, "sendReelLikeStatus failed: HTTP ${response.status.value}")
-                ApiResult.Error("Request failed with code ${response.status.value}", response.status.value)
-            } else {
-                ApiResult.Success(Unit)
-            }
-        } catch (e: Exception) {
-            platformLogError(TAG, "sendReelLikeStatus failed: ${e.message}")
-            ApiResult.Error(message = e.message ?: "Unexpected error")
-        }
-    }
-
+    // Overload of sendReelLikeStatus — same purpose but takes individual parameters; used by Flutter/RN bridges.
     suspend fun sendReelLikeStatus(
         accessToken: String,
         campaignId: String,
@@ -421,6 +393,7 @@ class ApiClient(
         }
     }
 
+    //tooltipIdentify() - // Called only for test users viewing tooltip campaigns — uploads a screenshot + UI element tree so the backend can visually map tooltip anchor positions.
     suspend fun tooltipIdentify(
         accessToken: String,
         userId: String,
@@ -464,12 +437,14 @@ class ApiClient(
         }
     }
 
+    // Parses a raw JSON string from CDN or cache into a typed List<Campaign> using the custom CampaignDeserializer.
     private fun decodeCampaigns(payload: String): List<Campaign> {
         val element = apiJson.decodeFromString<JsonElement>(payload)
         val array = element.jsonArray
         return array.map { campaignElement -> apiJson.decodeFromJsonElement(CampaignDeserializer, campaignElement) }
     }
 
+    // Called when CDN fetch fails or returns an unexpected status — tries to serve the last successfully cached campaigns.json from storage instead of failing hard.
     private fun fallbackToCachedCampaigns(
         accountId: String,
         campaignsKey: String,
@@ -491,11 +466,13 @@ class ApiClient(
     }
 }
 
+// Wrapper around ApiResult — every API call returns either Success<T> with data, or Error with a message and optional HTTP status code.
 sealed class ApiResult<out T> {
     data class Success<T>(val data: T) : ApiResult<T>()
     data class Error(val message: String, val code: Int? = null) : ApiResult<Nothing>()
 }
 
+// Platform-agnostic key-value storage interface — implemented differently on Android (SharedPreferences) and iOS (NSUserDefaults) but called the same way everywhere in shared-core.
 interface KeyValueStore {
     fun getString(key: String): String?
     fun putString(key: String, value: String)
@@ -503,6 +480,7 @@ interface KeyValueStore {
     fun putBoolean(key: String, value: Boolean)
 }
 
+// Thin adapter that wraps PlatformStorage (the expect/actual KMP class) and makes it usable as a KeyValueStore inside ApiClient.
 private class PlatformKeyValueStore(
     private val platformStorage: PlatformStorage
 ) : KeyValueStore {
@@ -520,6 +498,7 @@ private class PlatformKeyValueStore(
     }
 }
 
+// Builds the Ktor HttpClient with JSON serialization, 30s timeouts on connect/request/socket, and request/response logging.
 private fun createDefaultHttpClient(): HttpClient {
     return HttpClient {
         install(ContentNegotiation) {
@@ -541,6 +520,7 @@ private fun createDefaultHttpClient(): HttpClient {
     }
 }
 
+// Generic try/catch wrapper used by simple request/response API calls — handles HTTP error codes and exceptions uniformly so each function doesn't repeat the same boilerplate.
 private suspend inline fun <reified T> safeCall(
     operation: String,
     call: () -> HttpResponse
@@ -563,10 +543,12 @@ private suspend inline fun <reified T> safeCall(
     }
 }
 
+// Ensures the token always has the "Bearer " prefix before being put into the Authorization header — guards against double-prefixing.
 private fun bearerToken(token: String): String {
     return if (token.startsWith("Bearer ", ignoreCase = true)) token else "Bearer $token"
 }
 
+// Converts a Map<String, Any> (used for event metadata) into a kotlinx JsonObject that can be safely serialized into the request body.
 private fun Map<String, Any>.toJsonObject(): JsonObject {
     return buildJsonObject {
         for ((key, value) in this@toJsonObject) {
@@ -575,6 +557,7 @@ private fun Map<String, Any>.toJsonObject(): JsonObject {
     }
 }
 
+// Recursively converts any Kotlin value (String, Number, Boolean, Map, List, null) into a JsonElement — used by toJsonObject() for nested metadata values.
 private fun Any?.toJsonElement(): JsonElement {
     return when (this) {
         null -> JsonNull

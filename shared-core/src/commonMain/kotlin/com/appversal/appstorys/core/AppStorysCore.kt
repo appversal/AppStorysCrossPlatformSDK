@@ -35,6 +35,26 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
+import com.appversal.appstorys.core.model.BannerDetails
+import com.appversal.appstorys.core.model.BottomSheetDetails
+import com.appversal.appstorys.core.model.CSATDetails
+import com.appversal.appstorys.core.model.FloaterDetails
+import com.appversal.appstorys.core.model.MilestoneDetails
+import com.appversal.appstorys.core.model.ModalDetails
+import com.appversal.appstorys.core.model.PipDetails
+import com.appversal.appstorys.core.model.ReelsDetails
+import com.appversal.appstorys.core.model.ScratchCardDetails
+import com.appversal.appstorys.core.model.SpinTheWheelDetails
+import com.appversal.appstorys.core.model.StoriesDetails
+import com.appversal.appstorys.core.model.StoryGroup
+import com.appversal.appstorys.core.model.SurveyDetails
+import com.appversal.appstorys.core.model.TooltipsDetails
+import com.appversal.appstorys.core.model.VariantCampaignDetails
+import com.appversal.appstorys.core.model.WidgetDetails
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.serializer
+import com.appversal.appstorys.core.utils.personalizeText
+
 
 class AppStorysCore(private val storage: PlatformStorage) {
     // ══════════════════════════════════════════════════════════════
@@ -147,6 +167,59 @@ class AppStorysCore(private val storage: PlatformStorage) {
     }
 
     // ══════════════════════════════════════════════════════════════
+    // VARIANT EXTRACTION
+    // Resolves a campaign's VariantCampaignDetails into the concrete
+    // typed details for the assigned variant. Called before emitting
+    // campaigns so all platforms (Android, Flutter, RN) receive
+    // already-resolved campaign objects.
+    // ══════════════════════════════════════════════════════════════
+    private fun extractVariantFromCampaign(campaign: Campaign, variantId: String): Campaign {
+        return try {
+            val details = campaign.details
+
+            if (details !is VariantCampaignDetails) {
+                sdkLogDebug("Campaign ${campaign.id} has no variants, returning as-is")
+                return campaign
+            }
+
+            val variantData = details.variants[variantId]?.jsonObject
+            if (variantData == null) {
+                sdkLogError("Variant $variantId not found in campaign ${campaign.id}")
+                return campaign
+            }
+
+            sdkLogDebug("Extracting variant $variantId from campaign ${campaign.id}")
+
+            val variantDetails = when (campaign.campaignType) {
+                "BAN"  -> SdkJson.decodeFromJsonElement(serializer<BannerDetails>(), variantData)
+                "FLT"  -> SdkJson.decodeFromJsonElement(serializer<FloaterDetails>(), variantData)
+                "CSAT" -> SdkJson.decodeFromJsonElement(serializer<CSATDetails>(), variantData)
+                "WID"  -> SdkJson.decodeFromJsonElement(serializer<WidgetDetails>(), variantData)
+                "REL"  -> SdkJson.decodeFromJsonElement(serializer<ReelsDetails>(), variantData)
+                "TTP"  -> SdkJson.decodeFromJsonElement(serializer<TooltipsDetails>(), variantData)
+                "PIP"  -> SdkJson.decodeFromJsonElement(serializer<PipDetails>(), variantData)
+                "BTS"  -> SdkJson.decodeFromJsonElement(serializer<BottomSheetDetails>(), variantData)
+                "SUR"  -> SdkJson.decodeFromJsonElement(serializer<SurveyDetails>(), variantData)
+                "MOD"  -> SdkJson.decodeFromJsonElement(serializer<ModalDetails>(), variantData)
+                "STR"  -> StoriesDetails(SdkJson.decodeFromJsonElement(serializer<List<StoryGroup>>(), variantData))
+                "SCRT" -> SdkJson.decodeFromJsonElement(serializer<ScratchCardDetails>(), variantData)
+                "MIL"  -> SdkJson.decodeFromJsonElement(serializer<MilestoneDetails>(), variantData)
+                "STW"  -> SdkJson.decodeFromJsonElement(serializer<SpinTheWheelDetails>(), variantData)
+                else -> {
+                    sdkLogError("Campaign type ${campaign.campaignType} does not support variants")
+                    null
+                }
+            }
+
+            if (variantDetails != null) campaign.copy(details = variantDetails) else campaign
+
+        } catch (e: Exception) {
+            sdkLogError("Error extracting variant from campaign ${campaign.id}: ${e.message}")
+            campaign
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════
     // SCREEN CAMPAIGNS
     // Fetches eligible campaigns, merges missing cache entries, and updates
     // shared flows consumed by wrappers/bridges.
@@ -206,9 +279,31 @@ class AppStorysCore(private val storage: PlatformStorage) {
                     }
                 }
 
-                val campaignsList = allCampaigns.filter { campaign ->
-                    campaign.id in eligibleCampaignIds && campaign.screen?.equals(currentScreen, ignoreCase = true) == true
-                }
+//                val campaignsList = allCampaigns.filter { campaign ->
+//                    campaign.id in eligibleCampaignIds && campaign.screen?.equals(currentScreen, ignoreCase = true) == true
+//                }
+//
+//                isTestUser = eligibleData.test_user ?: false
+//                personalizationData = eligibleData.personalization_data
+//
+//                ensureActive()
+//
+//                _campaigns.emit(campaignsList)
+//                _campaignVariants.emit(eligibleData.variants ?: emptyList())
+
+                // AFTER:
+                val variants = eligibleData.variants ?: emptyList()
+
+                val campaignsList = allCampaigns
+                    .filter { campaign ->
+                        campaign.id in eligibleCampaignIds &&
+                                campaign.screen?.equals(currentScreen, ignoreCase = true) == true
+                    }
+                    .map { campaign ->
+                        val variant = variants.find { it.id == campaign.id }
+                        if (variant != null) extractVariantFromCampaign(campaign, variant.v_id)
+                        else campaign
+                    }
 
                 isTestUser = eligibleData.test_user ?: false
                 personalizationData = eligibleData.personalization_data
@@ -216,7 +311,7 @@ class AppStorysCore(private val storage: PlatformStorage) {
                 ensureActive()
 
                 _campaigns.emit(campaignsList)
-                _campaignVariants.emit(eligibleData.variants ?: emptyList())
+                _campaignVariants.emit(variants)  // kept for Android wrapper back-compat
 
                 if (isTestUser && positionList.isNotEmpty()) {
                     apiClient.identifyPositions(
@@ -525,6 +620,14 @@ class AppStorysCore(private val storage: PlatformStorage) {
         }
         return sdkState == SdkState.Initialized
     }
+
+    fun personalizeText(text: String): String {
+        return com.appversal.appstorys.core.utils.personalizeText(
+            text,
+            getPersonalizationData()
+        )
+    }
+
 }
 
 // Thin adapter so ApiClient can reuse PlatformStorage through KeyValueStore.
@@ -593,6 +696,5 @@ private fun sdkLogError(message: String) {
 private fun randomAnonymousSuffix(): Long {
     return kotlin.random.Random.nextLong(1_000_000_000_000L, 9_999_999_999_999L)
 }
-
 
 
