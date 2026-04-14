@@ -17,9 +17,11 @@ class AppstorysFlutterPlugin :
     // This local reference serves to register the plugin with the Flutter Engine and unregister it
     // when the Flutter Engine is detached from the Activity
     private lateinit var channel: MethodChannel
+    private lateinit var flutterPluginBinding: FlutterPlugin.FlutterPluginBinding
     private val core: AppStorysCore by lazy { AppStorysCore(PlatformStorage()) }
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+        this.flutterPluginBinding = flutterPluginBinding
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "appstorys_flutter")
         channel.setMethodCallHandler(this)
     }
@@ -50,16 +52,18 @@ class AppstorysFlutterPlugin :
     }
 
     private fun handleInitialize(call: MethodCall, result: Result) {
-        val appId = call.argument<String>("appId")
-        val accountId = call.argument<String>("accountId")
-        if (appId.isNullOrBlank()) {
-            return missingArgument(result, "appId")
-        }
-        if (accountId.isNullOrBlank()) {
-            return missingArgument(result, "accountId")
-        }
+        val appId = call.argument<String>("appId") ?: return missingArgument(result, "appId")
+        val accountId = call.argument<String>("accountId") ?: return missingArgument(result, "accountId")
+        val userId = call.argument<String>("userId") ?: ""
 
-        val userId = call.argument<String>("userId").orEmpty()
+        val storage = PlatformStorage()
+        val packageInfo = runCatching {
+            flutterPluginBinding.applicationContext.packageManager
+                .getPackageInfo(flutterPluginBinding.applicationContext.packageName, 0)
+        }.getOrNull()
+        storage.putString("app_version", packageInfo?.versionName ?: "")
+        storage.putString("package_name", flutterPluginBinding.applicationContext.packageName)
+
         runBridgeCall(result) {
             core.initialize(appId = appId, accountId = accountId, userId = userId)
             null

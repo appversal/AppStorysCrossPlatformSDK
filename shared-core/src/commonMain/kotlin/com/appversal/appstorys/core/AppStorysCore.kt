@@ -106,6 +106,7 @@ class AppStorysCore(private val storage: PlatformStorage) {
         "viewed", "clicked", "csat captured", "survey captured",
         "shared", "SurveySubmitted", "SurveyDismissed", "ThankYouCTAClicked"
     )
+    private val deviceInfo: Map<String, Any> = com.appversal.appstorys.core.platform.getDeviceInfo()
 
     // ══════════════════════════════════════════════════════════════
     // INITIALIZE
@@ -344,8 +345,14 @@ class AppStorysCore(private val storage: PlatformStorage) {
                     _campaignVariants.value.find { it.id == campId }?.v_id
                 }
 
+                val mergedMetadata = if (event !in systemEvents) {
+                    (metadata ?: emptyMap()) + deviceInfo
+                } else {
+                    metadata ?: emptyMap()
+                }
+
                 val updatedMetadata = buildMap<String, Any> {
-                    metadata?.forEach { (key, value) -> put(key, value) }
+                    mergedMetadata.forEach { (key, value) -> put(key, value) }
                     if (variantId != null) put("variant_id", variantId)
                 }
 
@@ -418,14 +425,15 @@ class AppStorysCore(private val storage: PlatformStorage) {
             }
 
             try {
+                val enrichedAttributes = attributes + deviceInfo
                 apiClient.updateUserProperties(
                     accessToken = accessToken,
                     request = UpdateUserPropertiesRequest(
                         user_id = userId,
-                        attributes = attributes.toJsonElementMap()
+                        attributes = enrichedAttributes.toJsonElementMap()
                     )
                 )
-                sdkLogDebug("User properties updated: ${attributes.keys}")
+                sdkLogDebug("User properties updated: ${enrichedAttributes.keys}")
             } catch (e: Exception) {
                 sdkLogError("Error updating user properties: ${e.message}")
             }
@@ -628,6 +636,8 @@ class AppStorysCore(private val storage: PlatformStorage) {
         )
     }
 
+    fun getDeviceInfo(): Map<String, Any> = deviceInfo
+
 }
 
 // Thin adapter so ApiClient can reuse PlatformStorage through KeyValueStore.
@@ -696,5 +706,3 @@ private fun sdkLogError(message: String) {
 private fun randomAnonymousSuffix(): Long {
     return kotlin.random.Random.nextLong(1_000_000_000_000L, 9_999_999_999_999L)
 }
-
-

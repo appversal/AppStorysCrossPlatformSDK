@@ -20,7 +20,8 @@ import androidx.compose.ui.semantics.SemanticsOwner
 import androidx.compose.ui.semantics.SemanticsPropertyKey
 import androidx.compose.ui.semantics.SemanticsPropertyReceiver
 import androidx.compose.ui.semantics.getOrNull
-import com.appversal.appstorys.AppStorys.apiClient
+import com.appversal.appstorys.core.api.ApiClient
+import com.appversal.appstorys.core.api.SdkJson
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.JsonElement
@@ -74,7 +75,8 @@ internal object ViewTreeAnalyzer {
         user_id: String,
         accessToken: String,
         activity: Activity,
-        context: Context
+        context: Context,
+        apiClient: ApiClient
     ): kotlinx.serialization.json.JsonObject {
         Log.i("ViewTreeAnalyzer", "===== analyzeViewRoot() START =====")
         val children = buildJsonArray {

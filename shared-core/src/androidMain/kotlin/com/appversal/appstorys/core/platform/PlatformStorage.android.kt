@@ -2,6 +2,7 @@ package com.appversal.appstorys.core.platform
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.Build
 import android.util.Log
 
 private const val PREFS_NAME = "appstorys_core"
@@ -38,6 +39,23 @@ actual fun logDebug(tag: String, message: String) {
 
 actual fun logError(tag: String, message: String) {
     Log.e(tag, message)
+}
+
+actual fun getDeviceInfo(): Map<String, Any> {
+    val prefs = resolveApplicationContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    return mapOf(
+        "platform" to "android",
+        "os_version" to Build.VERSION.RELEASE,
+        "api_level" to Build.VERSION.SDK_INT,
+        "model" to Build.MODEL,
+        "manufacturer" to Build.MANUFACTURER,
+        "device_type" to "mobile",
+        "app_version" to (prefs.getString("app_version", "") ?: ""),
+        "package_name" to (prefs.getString("package_name", "") ?: ""),
+        "language" to java.util.Locale.getDefault().language,
+        "locale" to java.util.Locale.getDefault().toString(),
+        "timezone" to java.util.TimeZone.getDefault().id
+    )
 }
 
 private fun resolveApplicationContext(): Context {

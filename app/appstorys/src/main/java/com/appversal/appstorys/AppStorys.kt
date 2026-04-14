@@ -106,7 +106,6 @@ import com.appversal.appstorys.core.model.TooltipsDetails
 import com.appversal.appstorys.core.model.WidgetDetails
 import com.appversal.appstorys.core.model.WidgetImage
 import com.appversal.appstorys.utils.ViewTreeAnalyzer
-import com.appversal.appstorys.utils.getDeviceInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -201,9 +200,17 @@ object AppStorys {
         this.navigateToScreen = navigateToScreen
         this.apiClient = ApiClient()
 
+        // Persist app identifiers once so shared-core device payload can include them.
+        val platformStorage = PlatformStorage()
+        val packageInfo = runCatching {
+            context.packageManager.getPackageInfo(context.packageName, 0)
+        }.getOrNull()
+        platformStorage.putString("app_version", packageInfo?.versionName ?: "")
+        platformStorage.putString("package_name", context.packageName)
+
         // Create and initialize shared core facade.
         // Business logic/state/networking live in core.
-        core = AppStorysCore(PlatformStorage())
+        core = AppStorysCore(platformStorage)
         core.initialize(appId = appId, accountId = accountId, userId = userId)
 
         // Android-specific: lifecycle observer stays in wrapper.
@@ -268,25 +275,7 @@ object AppStorys {
         event: String,
         metadata: Map<String, Any>? = null
     ) {
-        // Android-specific: merge device info for non-system events.
-        // Core handles variant lookup + API call.
-        val mergedMetadata = if (
-            event !in setOf(
-                "viewed",
-                "clicked",
-                "csat captured",
-                "survey captured",
-                "shared",
-                "SurveySubmitted",
-                "SurveyDismissed",
-                "ThankYouCTAClicked"
-            )
-        ) {
-            (metadata ?: emptyMap()) + getDeviceInfo(context)
-        } else {
-            metadata
-        }
-        core.trackEvent(campaign_id, event, mergedMetadata)
+        core.trackEvent(campaign_id, event, metadata)
     }
 
     fun viaAppStorys(
@@ -296,9 +285,7 @@ object AppStorys {
     }
 
     fun setUserProperties(attributes: Map<String, Any>) {
-        // Android-specific: merge device info before forwarding to core.
-        val mergedAttributes = attributes + getDeviceInfo(context)
-        core.setUserProperties(mergedAttributes)
+        core.setUserProperties(attributes)
     }
 
     fun setUserId(newUserId: String) {
@@ -364,7 +351,8 @@ object AppStorys {
             user_id = core.userId,
             accessToken = core.accessToken,
             activity = activity,
-            context = context
+            context = context,
+            apiClient = apiClient
         ).also {
             Log.i(TAG, "ViewTreeAnalyzer.analyzeViewRoot() completed successfully")
         }

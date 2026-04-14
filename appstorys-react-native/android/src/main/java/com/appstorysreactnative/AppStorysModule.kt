@@ -32,10 +32,18 @@ class AppStorysModule(reactContext: ReactApplicationContext) :
     @ReactMethod
     fun initialize(appId: String, accountId: String, userId: String, promise: Promise) {
         try {
-            core.initialize(appId, accountId, userId)
+            val storage = PlatformStorage()
+            val packageInfo = runCatching {
+                reactApplicationContext.packageManager
+                    .getPackageInfo(reactApplicationContext.packageName, 0)
+            }.getOrNull()
+            storage.putString("app_version", packageInfo?.versionName ?: "")
+            storage.putString("package_name", reactApplicationContext.packageName)
+
+            core.initialize(appId = appId, accountId = accountId, userId = userId)
             promise.resolve(true)
         } catch (e: Exception) {
-            promise.reject("INIT_ERROR", e.message)
+            promise.reject("ERROR", e.message)
         }
     }
 

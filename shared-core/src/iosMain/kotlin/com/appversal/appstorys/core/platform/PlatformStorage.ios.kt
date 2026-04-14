@@ -4,6 +4,7 @@ import platform.Foundation.NSDate
 import platform.Foundation.NSLog
 import platform.Foundation.NSUserDefaults
 import platform.Foundation.timeIntervalSince1970
+import platform.UIKit.UIDevice
 
 actual class PlatformStorage {
     private val defaults = NSUserDefaults.standardUserDefaults
@@ -39,5 +40,19 @@ actual fun logDebug(tag: String, message: String) {
 
 actual fun logError(tag: String, message: String) {
     NSLog("E/$tag: $message")
+}
+
+actual fun getDeviceInfo(): Map<String, Any> {
+    val device = UIDevice.currentDevice
+    return mapOf(
+        "platform" to "ios",
+        "os_version" to device.systemVersion,
+        "model" to device.model,
+        "manufacturer" to "Apple",
+        "device_type" to "mobile",
+        "language" to (platform.Foundation.NSLocale.currentLocale.languageCode ?: ""),
+        "locale" to platform.Foundation.NSLocale.currentLocale.localeIdentifier,
+        "timezone" to platform.Foundation.NSTimeZone.defaultTimeZone.name
+    )
 }
 
