@@ -1,8 +1,10 @@
 // AppStorys Banner widget for displaying campaign banners in Flutter.
-// This widget fetches banner campaigns from AppStorys using the plugin API
-// and renders them with support for images, Lottie animations, and custom styling.
+// Subscribes to the AppstorysFlutter.campaignsStream EventChannel and renders
+// BAN-type campaigns. No polling — native pushes data the moment the CDN fetch
+// completes via the AppStorysCore StateFlow → EventChannel pipeline.
 
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import '../../appstorys_flutter.dart';
@@ -57,117 +59,104 @@ class _AppStorysBannerState extends State<AppStorysBanner> {
   BannerCampaign? _currentBanner;
   bool _showBanner = true;
   bool _isLoading = true;
-  Timer? _retryTimer;
-  int _retryCount = 0;
-  static const int _maxRetries = 10;
-  static const Duration _retryInterval = Duration(milliseconds: 500);
+  // Stream subscription replaces the old Timer-based retry loop.
+  // Cancelled in dispose() to prevent setState after unmount.
+  StreamSubscription<String>? _campaignsSubscription;
 
   @override
   void initState() {
     super.initState();
-    _loadBanners();
+    _subscribeToCampaigns();
   }
 
   @override
   void dispose() {
-    _retryTimer?.cancel();
+    _campaignsSubscription?.cancel();
     super.dispose();
   }
 
-  Future<void> _loadBanners() async {
+  void _subscribeToCampaigns() {
+    // campaignsStream is a broadcast stream cached on the AppstorysFlutter instance.
+    // StateFlow semantics guarantee the current value arrives immediately — no delay needed.
+    _campaignsSubscription = widget.appStorys.campaignsStream.listen(
+      _onCampaignsUpdate,
+      onError: (Object error) {
+        debugPrint('❌ [BANNER] Stream error: $error');
+        if (mounted) setState(() => _isLoading = false);
+      },
+    );
+  }
+
+  void _onCampaignsUpdate(String json) {
+    final List<dynamic> allCampaigns;
     try {
+      allCampaigns = jsonDecode(json) as List<dynamic>;
+    } catch (e) {
+      debugPrint('❌ [BANNER] Failed to parse campaigns JSON: $e');
+      if (mounted) setState(() => _isLoading = false);
+      return;
+    }
+
+    // Filter to BAN-type only — the stream carries all campaign types.
+    final bannerCampaigns = allCampaigns
+        .whereType<Map>()
+        .where((c) => c['campaign_type'] == 'BAN')
+        .map((c) => c.map((k, v) => MapEntry('$k', v)))
+        .toList();
+
+    if (bannerCampaigns.isEmpty) {
+      // Empty emission means either no campaigns yet or screen changed.
+      // Stay in loading state; next non-empty emission will render.
+      if (mounted) setState(() => _isLoading = false);
+      return;
+    }
+
+    final rawCampaign = bannerCampaigns.first;
+    final details = rawCampaign['details'] is Map
+        ? Map<String, dynamic>.from(rawCampaign['details'] as Map)
+        : <String, dynamic>{};
+
+    // Defensive variant flattening — shared-core resolves variants before emitting,
+    // but kept here for forward compatibility with any legacy campaign payloads.
+    final variantsRaw = details['variants'];
+    Map<String, dynamic> firstVariant = const <String, dynamic>{};
+    if (variantsRaw is Map) {
+      final variantValues = variantsRaw.values
+          .whereType<Map>()
+          .map((v) => Map<String, dynamic>.from(v))
+          .toList();
+      if (variantValues.isNotEmpty) firstVariant = variantValues.first;
+    }
+
+    final normalized = <String, dynamic>{
+      ...details,
+      ...firstVariant,
+      'image': details['image'] ?? firstVariant['image'],
+      'link': details['link'] ?? firstVariant['link'],
+      'width': details['width'] ?? firstVariant['width'],
+      'height': details['height'] ?? firstVariant['height'],
+      'styling': details['styling'] ?? firstVariant['styling'],
+      'id': (rawCampaign['id'] ?? details['id'] ?? firstVariant['id'])?.toString() ?? '',
+    };
+
+    debugPrint('🔵 [BANNER] Received campaign via stream: id=${normalized['id']}');
+
+    final banner = BannerCampaign.fromJson(normalized);
+
+    if (mounted) {
       setState(() {
-        _isLoading = true;
-      });
-
-      debugPrint('🔵 [BANNER] Starting to load banners...');
-      final campaigns = await widget.appStorys.getBannerCampaigns();
-      debugPrint('🔵 [BANNER] Got ${campaigns.length} campaigns');
-
-      if (campaigns.isNotEmpty) {
-        final rawCampaign = campaigns.first.raw;
-        final details = rawCampaign['details'] is Map
-            ? Map<String, dynamic>.from(rawCampaign['details'] as Map)
-            : <String, dynamic>{};
-
-        // Campaign details can be variant-based: details.variants.{id}.{image,link,...}
-        // Flatten first variant fields so BannerCampaign.fromJson can render media.
-        final variantsRaw = details['variants'];
-        Map<String, dynamic> firstVariant = const <String, dynamic>{};
-        if (variantsRaw is Map) {
-          final variantValues = variantsRaw.values
-              .whereType<Map>()
-              .map((value) => Map<String, dynamic>.from(value))
-              .toList();
-          if (variantValues.isNotEmpty) {
-            firstVariant = variantValues.first;
-          }
-        }
-
-        // Normalize payload to banner-details shape expected by the Dart widget.
-        final normalized = <String, dynamic>{
-          ...details,
-          ...firstVariant,
-          'image': details['image'] ?? firstVariant['image'],
-          'link': details['link'] ?? firstVariant['link'],
-          'width': details['width'] ?? firstVariant['width'],
-          'height': details['height'] ?? firstVariant['height'],
-          'styling': details['styling'] ?? firstVariant['styling'],
-          'id': (rawCampaign['id'] ?? details['id'] ?? firstVariant['id'])?.toString() ?? '',
-        };
-
-        debugPrint('🔵 [BANNER] Campaign data: $rawCampaign');
-        debugPrint('🔵 [BANNER] Normalized details: $normalized');
-
-        final banner = BannerCampaign.fromJson(normalized);
-        debugPrint('🔵 [BANNER] Parsed banner: id=${banner.id}, image=${banner.image}');
-
-        setState(() {
-          _currentBanner = banner;
-          _isLoading = false;
-          _retryCount = 0;
-        });
-
-        debugPrint('✅ [BANNER] Banner loaded and set to state');
-
-        if (banner.id.isNotEmpty) {
-          try {
-            await widget.appStorys.trackEvent(
-              event: 'viewed',
-              campaignId: banner.id,
-            );
-            debugPrint('✅ [BANNER] Viewed event tracked');
-          } catch (e) {
-            debugPrint('❌ [BANNER] Error tracking viewed event: $e');
-          }
-        }
-      } else {
-        debugPrint('⚠️ [BANNER] No campaigns found');
-        setState(() {
-          _isLoading = false;
-          _currentBanner = null;
-        });
-
-        if (_retryCount < _maxRetries) {
-          _retryCount++;
-          debugPrint('🔄 [BANNER] Retrying in 500ms (attempt $_retryCount/$_maxRetries)');
-          _retryTimer = Timer(_retryInterval, _loadBanners);
-        } else {
-          debugPrint('⏹️ [BANNER] Max retries reached');
-        }
-      }
-    } catch (e, st) {
-      debugPrint('❌ [BANNER] Error loading banners: $e');
-      debugPrint('❌ [BANNER] Stack trace: $st');
-      setState(() {
+        _currentBanner = banner;
         _isLoading = false;
       });
+    }
 
-      if (_retryCount < _maxRetries) {
-        _retryCount++;
-        debugPrint('🔄 [BANNER] Retrying in 500ms after error (attempt $_retryCount/$_maxRetries)');
-        _retryTimer = Timer(_retryInterval, _loadBanners);
-      }
+    if (banner.id.isNotEmpty) {
+      widget.appStorys
+          .trackEvent(event: 'viewed', campaignId: banner.id)
+          .catchError((Object e) {
+        debugPrint('❌ [BANNER] Error tracking viewed event: $e');
+        return null;
+      });
     }
   }
 

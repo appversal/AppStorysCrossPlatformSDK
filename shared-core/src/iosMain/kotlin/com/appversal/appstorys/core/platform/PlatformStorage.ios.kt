@@ -5,6 +5,8 @@ import platform.Foundation.NSLog
 import platform.Foundation.NSUserDefaults
 import platform.Foundation.timeIntervalSince1970
 import platform.UIKit.UIDevice
+import platform.UIKit.UIDeviceOrientation
+import platform.UIKit.UIScreen
 
 actual class PlatformStorage {
     private val defaults = NSUserDefaults.standardUserDefaults
@@ -44,6 +46,17 @@ actual fun logError(tag: String, message: String) {
 
 actual fun getDeviceInfo(): Map<String, Any> {
     val device = UIDevice.currentDevice
+    val screen = UIScreen.mainScreen
+    val scale = screen.scale
+    val bounds = screen.bounds
+    val widthPx = (bounds.useContents { size.width } * scale).toInt()
+    val heightPx = (bounds.useContents { size.height } * scale).toInt()
+    val densityDpi = (scale * 160).toInt()
+    val orientation = when (device.orientation) {
+        UIDeviceOrientation.UIDeviceOrientationLandscapeLeft,
+        UIDeviceOrientation.UIDeviceOrientationLandscapeRight -> "landscape"
+        else -> "portrait"
+    }
     return mapOf(
         "platform" to "ios",
         "os_version" to device.systemVersion,
@@ -52,7 +65,11 @@ actual fun getDeviceInfo(): Map<String, Any> {
         "device_type" to "mobile",
         "language" to (platform.Foundation.NSLocale.currentLocale.languageCode ?: ""),
         "locale" to platform.Foundation.NSLocale.currentLocale.localeIdentifier,
-        "timezone" to platform.Foundation.NSTimeZone.defaultTimeZone.name
+        "timezone" to platform.Foundation.NSTimeZone.defaultTimeZone.name,
+        "screen_width_px" to widthPx,
+        "screen_height_px" to heightPx,
+        "screen_density" to densityDpi,
+        "orientation" to orientation
     )
 }
 

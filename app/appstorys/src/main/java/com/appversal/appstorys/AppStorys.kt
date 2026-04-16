@@ -207,6 +207,15 @@ object AppStorys {
         }.getOrNull()
         platformStorage.putString("app_version", packageInfo?.versionName ?: "")
         platformStorage.putString("package_name", context.packageName)
+        val metrics = context.resources.displayMetrics
+        val configuration = context.resources.configuration
+        platformStorage.putString("screen_width", metrics.widthPixels.toString())
+        platformStorage.putString("screen_height", metrics.heightPixels.toString())
+        platformStorage.putString("screen_density", metrics.densityDpi.toString())
+        platformStorage.putString("orientation",
+            if (configuration.orientation == android.content.res.Configuration.ORIENTATION_PORTRAIT)
+                "portrait" else "landscape"
+        )
 
         // Create and initialize shared core facade.
         // Business logic/state/networking live in core.
@@ -266,8 +275,8 @@ object AppStorys {
         isScreenCaptureEnabled = core.isTestUser
     }
 
-    fun getPersonalizationData(): Map<String, String> {
-        return core.getPersonalizationData()
+    fun personalizeText(text: String): String {
+        return core.personalizeText(text)
     }
 
     fun trackEvents(

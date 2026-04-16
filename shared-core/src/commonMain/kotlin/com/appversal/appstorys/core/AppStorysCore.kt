@@ -54,7 +54,7 @@ import com.appversal.appstorys.core.model.WidgetDetails
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.serializer
 import com.appversal.appstorys.core.utils.personalizeText
-
+import com.appversal.appstorys.core.platform.getDeviceInfo
 
 class AppStorysCore(private val storage: PlatformStorage) {
     // ══════════════════════════════════════════════════════════════
@@ -92,6 +92,7 @@ class AppStorysCore(private val storage: PlatformStorage) {
     val campaignVariants: StateFlow<List<CampaignVariant>> = _campaignVariants.asStateFlow()
 
     private var personalizationData: Map<String, String>? = null
+
     var isTestUser: Boolean = false
         private set
 
@@ -106,8 +107,7 @@ class AppStorysCore(private val storage: PlatformStorage) {
         "viewed", "clicked", "csat captured", "survey captured",
         "shared", "SurveySubmitted", "SurveyDismissed", "ThankYouCTAClicked"
     )
-    private val deviceInfo: Map<String, Any> = com.appversal.appstorys.core.platform.getDeviceInfo()
-
+    private val deviceInfo: Map<String, Any> = getDeviceInfo()
     // ══════════════════════════════════════════════════════════════
     // INITIALIZE
     // ══════════════════════════════════════════════════════════════
@@ -568,8 +568,6 @@ class AppStorysCore(private val storage: PlatformStorage) {
         }
     }
 
-    fun getPersonalizationData(): Map<String, String> = personalizationData ?: emptyMap()
-
     // ══════════════════════════════════════════════════════════════
     // LIFECYCLE
     // ══════════════════════════════════════════════════════════════
@@ -632,7 +630,7 @@ class AppStorysCore(private val storage: PlatformStorage) {
     fun personalizeText(text: String): String {
         return com.appversal.appstorys.core.utils.personalizeText(
             text,
-            getPersonalizationData()
+            personalizationData ?: emptyMap()
         )
     }
 

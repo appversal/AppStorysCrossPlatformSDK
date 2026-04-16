@@ -17,9 +17,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.TextUnit
-import com.appversal.appstorys.utils.personalizeText
 import com.appversal.appstorys.utils.toColor
 import androidx.compose.ui.text.font.FontFamily
+import com.appversal.appstorys.AppStorys
 import kotlinx.coroutines.launch
 import com.appversal.appstorys.utils.FontCache
 
@@ -87,7 +87,7 @@ fun CommonText(
     }
 
     Text(
-        text = personalizeText(text),
+        text = AppStorys.personalizeText(text),
         modifier = modifier.then(
             Modifier.padding(
                 start = styling.margin?.left?.dp ?: 0.dp,

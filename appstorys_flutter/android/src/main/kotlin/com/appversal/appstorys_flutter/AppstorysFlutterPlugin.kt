@@ -3,27 +3,65 @@ package com.appversal.appstorys_flutter
 import com.appversal.appstorys.core.AppStorysCore
 import com.appversal.appstorys.core.platform.PlatformStorage
 import io.flutter.embedding.engine.plugins.FlutterPlugin
+import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /** AppstorysFlutterPlugin */
 class AppstorysFlutterPlugin :
     FlutterPlugin,
     MethodCallHandler {
-    // The MethodChannel that will the communication between Flutter and native Android
-    //
-    // This local reference serves to register the plugin with the Flutter Engine and unregister it
-    // when the Flutter Engine is detached from the Activity
     private lateinit var channel: MethodChannel
+    private lateinit var campaignsEventChannel: EventChannel
     private lateinit var flutterPluginBinding: FlutterPlugin.FlutterPluginBinding
     private val core: AppStorysCore by lazy { AppStorysCore(PlatformStorage()) }
+
+    // Coroutine scope owned by the plugin — cancelled when the engine detaches.
+    private val pluginScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    // Holds the active StateFlow collection job so it can be cancelled on stream cancel.
+    private var campaignsCollectionJob: Job? = null
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         this.flutterPluginBinding = flutterPluginBinding
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "appstorys_flutter")
         channel.setMethodCallHandler(this)
+
+        // EventChannel pushes campaigns JSON to Dart whenever AppStorysCore._campaigns
+        // StateFlow emits — this replaces all client-side polling in Dart widgets.
+        campaignsEventChannel = EventChannel(
+            flutterPluginBinding.binaryMessenger,
+            "appstorys_flutter/campaigns_stream"
+        )
+        campaignsEventChannel.setStreamHandler(object : EventChannel.StreamHandler {
+            override fun onListen(arguments: Any?, sink: EventChannel.EventSink) {
+                campaignsCollectionJob?.cancel()
+                campaignsCollectionJob = pluginScope.launch {
+                    // StateFlow.collect() replays the current value immediately to new
+                    // collectors, so widgets always get campaigns even if getScreenCampaigns()
+                    // was called before the widget subscribed.
+                    core.campaigns.collect { _ ->
+                        val json = core.getCampaignsJson()
+                        withContext(Dispatchers.Main) {
+                            sink.success(json)
+                        }
+                    }
+                }
+            }
+
+            override fun onCancel(arguments: Any?) {
+                campaignsCollectionJob?.cancel()
+                campaignsCollectionJob = null
+            }
+        })
     }
 
     override fun onMethodCall(
@@ -63,6 +101,15 @@ class AppstorysFlutterPlugin :
         }.getOrNull()
         storage.putString("app_version", packageInfo?.versionName ?: "")
         storage.putString("package_name", flutterPluginBinding.applicationContext.packageName)
+        val metrics = flutterPluginBinding.applicationContext.resources.displayMetrics
+        val configuration = flutterPluginBinding.applicationContext.resources.configuration
+        storage.putString("screen_width", metrics.widthPixels.toString())
+        storage.putString("screen_height", metrics.heightPixels.toString())
+        storage.putString("screen_density", metrics.densityDpi.toString())
+        storage.putString("orientation",
+            if (configuration.orientation == android.content.res.Configuration.ORIENTATION_PORTRAIT)
+                "portrait" else "landscape"
+        )
 
         runBridgeCall(result) {
             core.initialize(appId = appId, accountId = accountId, userId = userId)
@@ -224,6 +271,8 @@ class AppstorysFlutterPlugin :
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         channel.setMethodCallHandler(null)
+        campaignsCollectionJob?.cancel()
+        pluginScope.cancel()
     }
 
     private fun handlePersonalizeText(call: MethodCall, result: Result) {

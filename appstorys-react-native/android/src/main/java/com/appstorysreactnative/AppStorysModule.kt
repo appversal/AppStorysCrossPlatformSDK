@@ -39,6 +39,15 @@ class AppStorysModule(reactContext: ReactApplicationContext) :
             }.getOrNull()
             storage.putString("app_version", packageInfo?.versionName ?: "")
             storage.putString("package_name", reactApplicationContext.packageName)
+            val metrics = reactApplicationContext.resources.displayMetrics
+            val configuration = reactApplicationContext.resources.configuration
+            storage.putString("screen_width", metrics.widthPixels.toString())
+            storage.putString("screen_height", metrics.heightPixels.toString())
+            storage.putString("screen_density", metrics.densityDpi.toString())
+            storage.putString("orientation",
+                if (configuration.orientation == android.content.res.Configuration.ORIENTATION_PORTRAIT)
+                    "portrait" else "landscape"
+            )
 
             core.initialize(appId = appId, accountId = accountId, userId = userId)
             promise.resolve(true)

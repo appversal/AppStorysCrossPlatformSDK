@@ -12,6 +12,7 @@ class MockAppstorysFlutterPlatform
   bool trackEventCalled = false;
   bool setUserIdCalled = false;
   bool setUserPropertiesCalled = false;
+  bool personalizeTextCalled = false;
 
   @override
   Future<void> initialize({
@@ -59,6 +60,54 @@ class MockAppstorysFlutterPlatform
     trackEventCalled =
         event == 'clicked' && campaignId == 'cmp-1' && metadata?['source'] == 'flutter';
   }
+
+  @override
+  Future<String> personalizeText(String text) async {
+    personalizeTextCalled = text == 'Welcome, {first_name}!';
+    return 'Welcome, Ava!';
+  }
+
+  @override
+  Future<void> captureCsatResponse({required String csatId, required String userId, required double rating, String? feedbackOption, String? additionalComments}) {
+    // TODO: implement captureCsatResponse
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> captureSurveyResponse({required String surveyId, required String userId, required List<String> responseOptions, String? comment}) {
+    // TODO: implement captureSurveyResponse
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> dismissCampaign(String campaignId) {
+    // TODO: implement dismissCampaign
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<String> getCampaignsByTypeJson(String type) {
+    // TODO: implement getCampaignsByTypeJson
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<String?> getUserId() {
+    // TODO: implement getUserId
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<bool> isReady() {
+    // TODO: implement isReady
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> sendReelLikeStatus({required String campaignId, required String userId, required bool isLiked}) {
+    // TODO: implement sendReelLikeStatus
+    throw UnimplementedError();
+  }
 }
 
 void main() {
@@ -84,15 +133,18 @@ void main() {
       campaignId: 'cmp-1',
       metadata: <String, Object?>{'source': 'flutter'},
     );
+    final personalizedText = await plugin.personalizeText('Welcome, {first_name}!');
     await plugin.setUserId(userId: 'user-2');
     await plugin.setUserProperties(attributes: <String, Object?>{'tier': 'gold', 'age': 2});
 
     expect(fakePlatform.initializeCalled, isTrue);
     expect(fakePlatform.getScreenCampaignsCalled, isTrue);
     expect(fakePlatform.trackEventCalled, isTrue);
+    expect(fakePlatform.personalizeTextCalled, isTrue);
     expect(fakePlatform.setUserIdCalled, isTrue);
     expect(fakePlatform.setUserPropertiesCalled, isTrue);
     expect(bannerJson, '[{"id":"banner-1"}]');
+    expect(personalizedText, 'Welcome, Ava!');
   });
 
   test('getBannerCampaigns parses typed list', () async {

@@ -52,9 +52,23 @@ actual fun getDeviceInfo(): Map<String, Any> {
         "device_type" to "mobile",
         "app_version" to (prefs.getString("app_version", "") ?: ""),
         "package_name" to (prefs.getString("package_name", "") ?: ""),
-        "language" to java.util.Locale.getDefault().language,
-        "locale" to java.util.Locale.getDefault().toString(),
-        "timezone" to java.util.TimeZone.getDefault().id
+        "language" to if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            resolveApplicationContext().resources.configuration.locales[0].language
+        } else {
+            @Suppress("DEPRECATION")
+            resolveApplicationContext().resources.configuration.locale.language
+        },
+        "locale" to if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            resolveApplicationContext().resources.configuration.locales[0].toString()
+        } else {
+            @Suppress("DEPRECATION")
+            resolveApplicationContext().resources.configuration.locale.toString()
+        },
+        "timezone" to java.util.TimeZone.getDefault().id,
+        "screen_width_px" to (prefs.getString("screen_width", "0") ?: "0").toInt(),
+        "screen_height_px" to (prefs.getString("screen_height", "0") ?: "0").toInt(),
+        "screen_density" to (prefs.getString("screen_density", "0") ?: "0").toInt(),
+        "orientation" to (prefs.getString("orientation", "portrait") ?: "portrait")
     )
 }
 

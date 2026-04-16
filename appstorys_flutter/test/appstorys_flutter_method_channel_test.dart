@@ -25,6 +25,9 @@ void main() {
           if (methodCall.method == 'getPersonalizationDataJson') {
             return '{"first_name":"Ava"}';
           }
+          if (methodCall.method == 'personalizeText') {
+            return 'Welcome, Ava!';
+          }
           return null;
         });
   });
@@ -114,6 +117,14 @@ void main() {
     expect(latestCall?.arguments, <String, Object?>{
       'attributes': <String, Object?>{'tier': 'gold', 'age': 2},
     });
+  });
+
+  test('personalizeText forwards payload and returns native value', () async {
+    final response = await platform.personalizeText('Welcome, {first_name}!');
+
+    expect(latestCall?.method, 'personalizeText');
+    expect(latestCall?.arguments, <String, Object?>{'text': 'Welcome, {first_name}!'});
+    expect(response, 'Welcome, Ava!');
   });
 
   test('maps native platform error to AppstorysException', () async {
