@@ -73,7 +73,7 @@ android {
 
 dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-    implementation("com.github.appversal.AppStorysCrossPlatformSDK:appstorys-core-android:v4.0.0-alpha04")
+    implementation("com.github.appversal.AppStorysCrossPlatformSDK:appstorys-core-android:v4.0.0-alpha21")
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.mockito:mockito-core:5.0.0")
 }

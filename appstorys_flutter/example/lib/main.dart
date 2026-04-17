@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:appstorys_flutter/appstorys_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 void main() {
   runApp(const MyApp());
@@ -72,6 +73,13 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           _buildScreen(_selectedIndex),
           AppStorysBanner(appStorys: widget.appstorys, height: 120),
+          AppStorysFloater(
+            appStorys: widget.appstorys,
+            onTap: (link) async {
+              final uri = Uri.tryParse(link);
+              if (uri != null) await launchUrl(uri, mode: LaunchMode.externalApplication);
+            },
+          ),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(

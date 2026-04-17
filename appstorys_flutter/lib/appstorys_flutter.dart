@@ -5,7 +5,9 @@ import 'src/appstorys_api_models.dart';
 
 export 'src/appstorys_api_models.dart';
 export 'src/models/banner_models.dart';
+export 'src/models/floater_models.dart';
 export 'src/widgets/app_storys_banner.dart';
+export 'src/widgets/app_storys_floater.dart';
 export 'src/utils/common_widgets.dart';
 
 // This is the public API that Flutter developers actually use.

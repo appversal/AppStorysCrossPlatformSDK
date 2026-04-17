@@ -149,12 +149,12 @@ class AppStorysCore(private val storage: PlatformStorage) {
                     )
                 )
                 if (tokenResult is ApiResult.Success && !tokenResult.data.access_token.isNullOrBlank()) {
-                    accessToken = tokenResult.data.access_token!!
+                    accessToken = tokenResult.data.access_token
                     sdkState = SdkState.Initialized
                     sdkLogDebug("Initialized. User: ${this@AppStorysCore.userId}")
 
                     if (campaignsJob?.isActive != true) {
-                        getScreenCampaigns("Home Screen", emptyList())
+                        getScreenCampaigns(currentScreen, emptyList())
                     }
                 } else {
                     sdkLogError("Failed to get access token")
@@ -536,7 +536,6 @@ class AppStorysCore(private val storage: PlatformStorage) {
                             }
                         }
                     }
-
                     else -> false
                 }
         }
