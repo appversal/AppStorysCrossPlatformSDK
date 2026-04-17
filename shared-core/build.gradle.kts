@@ -83,7 +83,7 @@ afterEvaluate {
     publishing {
         publications.withType<MavenPublication>().configureEach {
             groupId = "com.github.appversal.AppStorysCrossPlatformSDK"
-            version = "4.0.0-alpha03"
+            version = "4.0.0-alpha04"
 
             when (name) {
                 "androidRelease" -> artifactId = "appstorys-core-android"
