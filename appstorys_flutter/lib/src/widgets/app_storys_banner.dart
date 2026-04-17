@@ -80,8 +80,7 @@ class _AppStorysBannerState extends State<AppStorysBanner> {
     // StateFlow semantics guarantee the current value arrives immediately — no delay needed.
     _campaignsSubscription = widget.appStorys.campaignsStream.listen(
       _onCampaignsUpdate,
-      onError: (Object error) {
-        debugPrint('❌ [BANNER] Stream error: $error');
+      onError: (Object _) {
         if (mounted) setState(() => _isLoading = false);
       },
     );
@@ -91,8 +90,7 @@ class _AppStorysBannerState extends State<AppStorysBanner> {
     final List<dynamic> allCampaigns;
     try {
       allCampaigns = jsonDecode(json) as List<dynamic>;
-    } catch (e) {
-      debugPrint('❌ [BANNER] Failed to parse campaigns JSON: $e');
+    } catch (_) {
       if (mounted) setState(() => _isLoading = false);
       return;
     }
@@ -105,9 +103,13 @@ class _AppStorysBannerState extends State<AppStorysBanner> {
         .toList();
 
     if (bannerCampaigns.isEmpty) {
-      // Empty emission means either no campaigns yet or screen changed.
-      // Stay in loading state; next non-empty emission will render.
-      if (mounted) setState(() => _isLoading = false);
+      // Empty emission = screen changed with no BAN campaign. Clear the banner
+      // and reset _showBanner so it reappears on the next screen that has one.
+      if (mounted) setState(() {
+        _currentBanner = null;
+        _showBanner = true;
+        _isLoading = false;
+      });
       return;
     }
 
@@ -139,8 +141,6 @@ class _AppStorysBannerState extends State<AppStorysBanner> {
       'id': (rawCampaign['id'] ?? details['id'] ?? firstVariant['id'])?.toString() ?? '',
     };
 
-    debugPrint('🔵 [BANNER] Received campaign via stream: id=${normalized['id']}');
-
     final banner = BannerCampaign.fromJson(normalized);
 
     if (mounted) {
@@ -153,10 +153,7 @@ class _AppStorysBannerState extends State<AppStorysBanner> {
     if (banner.id.isNotEmpty) {
       widget.appStorys
           .trackEvent(event: 'viewed', campaignId: banner.id)
-          .catchError((Object e) {
-        debugPrint('❌ [BANNER] Error tracking viewed event: $e');
-        return null;
-      });
+          .catchError((Object _) => null);
     }
   }
 
@@ -189,35 +186,16 @@ class _AppStorysBannerState extends State<AppStorysBanner> {
 
   Future<void> _handleBannerTap() async {
     final link = _currentBanner?.link;
-    debugPrint('🔵 [BANNER] Tapped | link: $link');
-
     if (link?.isNotEmpty == true) {
-      try {
-        await widget.appStorys.trackEvent(
-          event: 'clicked',
-          campaignId: _currentBanner!.id,
-        );
-        // TODO: Implement handleNavigation using url_launcher
-        // await launchUrl(Uri.parse(link!));
-      } catch (e) {
-        debugPrint('❌ [BANNER] Error tracking clicked event: $e');
-      }
-    } else {
-      debugPrint('❌ [BANNER] Link is null or empty — nothing to do');
+      await widget.appStorys
+          .trackEvent(event: 'clicked', campaignId: _currentBanner!.id)
+          .catchError((Object _) => null);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('🔵 [BANNER] Build called - loading=$_isLoading, shown=$_showBanner, hasBanner=${_currentBanner != null}');
-    
-    if (!_showBanner || _currentBanner == null) {
-      debugPrint('🔵 [BANNER] Returning shrink - shown=$_showBanner, hasBanner=${_currentBanner != null}');
-      return const SizedBox.shrink();
-    }
-
-    if (_isLoading) {
-      debugPrint('🔵 [BANNER] Still loading, showing shrink');
+    if (!_showBanner || _currentBanner == null || _isLoading) {
       return const SizedBox.shrink();
     }
 
@@ -229,14 +207,9 @@ class _AppStorysBannerState extends State<AppStorysBanner> {
     );
 
     final isLottie = isLottieUrl(_currentBanner!.lottieData);
-    final isImage =
-        !isLottie && (_currentBanner!.image?.isNotEmpty ?? false);
+    final isImage = !isLottie && (_currentBanner!.image?.isNotEmpty ?? false);
     final borderRadius = _getBorderRadius();
-    
-    debugPrint('🔵 [BANNER] Building banner - height=$bannerHeight, isLottie=$isLottie, isImage=$isImage');
 
-    // If used inside a Stack, return Positioned
-    // Otherwise, return Container with padding
     return _buildBannerContent(bannerHeight, isLottie, isImage, borderRadius);
   }
 
@@ -296,8 +269,8 @@ class _AppStorysBannerState extends State<AppStorysBanner> {
             ),
             if (_currentBanner!.styling?.crossButton?.enabled == true)
               Positioned(
-                top: 0,
-                right: 0,
+                top: _currentBanner!.styling?.crossButton?.margin?.top ?? 0,
+                right: _currentBanner!.styling?.crossButton?.margin?.right ?? 0,
                 child: CrossButton(
                   onTap: () {
                     setState(() {

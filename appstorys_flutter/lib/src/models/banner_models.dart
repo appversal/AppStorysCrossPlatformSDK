@@ -105,7 +105,7 @@ class CrossButtonStyling {
   final bool? enabled;
   final double? size;
   final Map<String, String>? colorObj;  // {cross, fill, stroke}
-  final String? margin;
+  final CrossButtonMargin? margin;
 
   CrossButtonStyling({
     this.enabled,
@@ -116,13 +116,16 @@ class CrossButtonStyling {
 
   factory CrossButtonStyling.fromJson(Map<String, dynamic> json) {
     final dynamic colorRaw = json['color'];
+    final dynamic marginRaw = json['margin'];
     return CrossButtonStyling(
       enabled: json['enabled'] as bool?,
       size: BannerStyling._toDouble(json['size']),
       colorObj: colorRaw is Map
           ? colorRaw.map((key, value) => MapEntry('$key', '${value ?? ''}'))
           : null,
-      margin: json['margin']?.toString(),
+      margin: marginRaw is Map
+          ? CrossButtonMargin.fromJson(Map<String, dynamic>.from(marginRaw))
+          : null,
     );
   }
 
@@ -130,6 +133,31 @@ class CrossButtonStyling {
         'enabled': enabled,
         'size': size,
         'color': colorObj,
-        'margin': margin,
+        'margin': margin?.toJson(),
       };
+}
+
+class CrossButtonMargin {
+  final double top;
+  final double right;
+  final double bottom;
+  final double left;
+
+  const CrossButtonMargin({
+    this.top = 0,
+    this.right = 0,
+    this.bottom = 0,
+    this.left = 0,
+  });
+
+  factory CrossButtonMargin.fromJson(Map<String, dynamic> json) {
+    return CrossButtonMargin(
+      top: BannerStyling._toDouble(json['top']) ?? 0,
+      right: BannerStyling._toDouble(json['right']) ?? 0,
+      bottom: BannerStyling._toDouble(json['bottom']) ?? 0,
+      left: BannerStyling._toDouble(json['left']) ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {'top': top, 'right': right, 'bottom': bottom, 'left': left};
 }
