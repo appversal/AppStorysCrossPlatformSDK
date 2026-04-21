@@ -9,6 +9,7 @@ export 'src/models/floater_models.dart';
 export 'src/widgets/app_storys_banner.dart';
 export 'src/widgets/app_storys_floater.dart';
 export 'src/utils/common_widgets.dart';
+export 'src/utils/campaigns_stream_mixin.dart';
 
 // This is the public API that Flutter developers actually use.
 // It validates and sanitizes inputs before delegating to the platform interface.

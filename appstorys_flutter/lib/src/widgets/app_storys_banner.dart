@@ -3,11 +3,11 @@
 // BAN-type campaigns. No polling — native pushes data the moment the CDN fetch
 // completes via the AppStorysCore StateFlow → EventChannel pipeline.
 
-import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import '../../appstorys_flutter.dart';
+import '../utils/campaigns_stream_mixin.dart';
 
 /// A widget that displays an AppStorys banner campaign.
 ///
@@ -55,34 +55,19 @@ class AppStorysBanner extends StatefulWidget {
   State<AppStorysBanner> createState() => _AppStorysBannerState();
 }
 
-class _AppStorysBannerState extends State<AppStorysBanner> {
+class _AppStorysBannerState extends State<AppStorysBanner>
+    with CampaignsStreamMixin {
   BannerCampaign? _currentBanner;
   bool _showBanner = true;
   bool _isLoading = true;
-  // Stream subscription replaces the old Timer-based retry loop.
-  // Cancelled in dispose() to prevent setState after unmount.
-  StreamSubscription<String>? _campaignsSubscription;
 
   @override
   void initState() {
     super.initState();
-    _subscribeToCampaigns();
-  }
-
-  @override
-  void dispose() {
-    _campaignsSubscription?.cancel();
-    super.dispose();
-  }
-
-  void _subscribeToCampaigns() {
-    // campaignsStream is a broadcast stream cached on the AppstorysFlutter instance.
-    // StateFlow semantics guarantee the current value arrives immediately — no delay needed.
-    _campaignsSubscription = widget.appStorys.campaignsStream.listen(
+    subscribeToCampaigns(
+      widget.appStorys.campaignsStream,
       _onCampaignsUpdate,
-      onError: (Object _) {
-        if (mounted) setState(() => _isLoading = false);
-      },
+      onError: () { if (mounted) setState(() => _isLoading = false); },
     );
   }
 
@@ -105,11 +90,13 @@ class _AppStorysBannerState extends State<AppStorysBanner> {
     if (bannerCampaigns.isEmpty) {
       // Empty emission = screen changed with no BAN campaign. Clear the banner
       // and reset _showBanner so it reappears on the next screen that has one.
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _currentBanner = null;
         _showBanner = true;
         _isLoading = false;
       });
+      }
       return;
     }
 
