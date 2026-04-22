@@ -1,7 +1,12 @@
 import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:flutter/material.dart';
 
 import 'appstorys_flutter_platform_interface.dart';
 import 'src/appstorys_api_models.dart';
+import 'src/widgets/capture_manager.dart';
+import 'src/widgets/tooltip_manager.dart';
 
 export 'src/appstorys_api_models.dart';
 export 'src/models/banner_models.dart';
@@ -10,6 +15,8 @@ export 'src/widgets/app_storys_banner.dart';
 export 'src/widgets/app_storys_floater.dart';
 export 'src/utils/common_widgets.dart';
 export 'src/utils/campaigns_stream_mixin.dart';
+export 'src/widgets/tooltip_manager.dart' show TooltipManager;
+export 'src/widgets/capture_manager.dart' show CaptureManager;
 
 // This is the public API that Flutter developers actually use.
 // It validates and sanitizes inputs before delegating to the platform interface.
@@ -326,6 +333,68 @@ class AppstorysFlutter {
   Future<String> getCampaignsByTypeJson(String type) {
     _requireNonBlank(type, 'type');
     return AppstorysFlutterPlatform.instance.getCampaignsByTypeJson(type.trim());
+  }
+
+  // ── Tooltips ────────────────────────────────────────────────────────────────
+
+  /// Processes a list of raw campaign maps (as returned by [getCampaigns] or
+  /// the campaigns stream) and shows tooltip overlays for any TTP campaigns.
+  ///
+  /// Call this after [getScreenCampaigns] completes, passing the [BuildContext]
+  /// of the screen that contains the tooltip target widgets. Target widgets
+  /// must have a [ValueKey<String>] matching the `target` field configured in
+  /// the AppStorys dashboard.
+  ///
+  /// Example:
+  /// ```dart
+  /// appstorys.campaignsStream.listen((json) {
+  ///   final campaigns = (jsonDecode(json) as List)
+  ///       .whereType<Map<String, Object?>>().toList();
+  ///   appstorys.processTooltips(context, campaigns);
+  /// });
+  /// ```
+  Future<void> processTooltips(
+    BuildContext context,
+    List<Map<String, Object?>> campaigns,
+  ) {
+    return TooltipManager.processTooltips(
+      campaigns,
+      context,
+      (event, {campaignId, metadata}) => trackEvent(
+        event: event,
+        campaignId: campaignId,
+        metadata: metadata,
+      ),
+    );
+  }
+
+  // ── Screen capture (test/dev tool) ──────────────────────────────────────────
+
+  /// Enables or disables the on-screen capture button.
+  /// Call with `true` in debug/test builds only.
+  void enableScreenCapture(bool enabled) => CaptureManager.setEnabled(enabled);
+
+  /// Returns a [Widget] that renders a small capture button when screen capture
+  /// is enabled via [enableScreenCapture]. Place it in a [Stack] above your
+  /// screen content.
+  ///
+  /// When tapped, it takes a screenshot of [screenContext], walks the widget
+  /// tree for [ValueKey<String>] elements, and posts the layout data to
+  /// AppStorys so the dashboard can map element positions to tooltip targets.
+  Widget captureScreenWidget({
+    required String screenName,
+    required BuildContext screenContext,
+  }) {
+    return CaptureManager.captureButton(
+      screenName: screenName,
+      screenContext: screenContext,
+      identifyElements: (sn, Uint8List screenshot, String childrenJson) =>
+          AppstorysFlutterPlatform.instance.identifyElements(
+        screenName: sn,
+        screenshot: screenshot,
+        childrenJson: childrenJson,
+      ),
+    );
   }
 
 }

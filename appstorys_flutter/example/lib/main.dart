@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:appstorys_flutter/appstorys_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -29,6 +32,8 @@ class _MyAppState extends State<MyApp> {
       accountId: '12a9eac5-94ee-4735-9aa6-b8a94cb8fbbb',
       userId: 'yash1',
     );
+    // Enable capture button for dev/test builds
+    _appstorys.enableScreenCapture(true);
     await _appstorys.getScreenCampaigns(screenName: 'Home Screen Flutter');
   }
 
@@ -53,6 +58,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  StreamSubscription<String>? _campaignsSub;
 
   static const _screenNames = [
     'Home Screen Flutter',
@@ -61,7 +67,35 @@ class _HomeScreenState extends State<HomeScreen> {
     'Settings',
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _campaignsSub = widget.appstorys.campaignsStream.listen((json) {
+      final decoded = jsonDecode(json);
+      if (decoded is! List) return;
+      final campaigns = decoded
+          .whereType<Map>()
+          .map((e) => Map<String, Object?>.from(e))
+          .toList();
+
+      final ttpCount = campaigns.where((c) => c['campaign_type'] == 'TTP').length;
+      debugPrint('[TooltipTest] campaigns received: ${campaigns.length}, TTP: $ttpCount');
+
+      if (ttpCount > 0 && mounted) {
+        widget.appstorys.processTooltips(context, campaigns);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _campaignsSub?.cancel();
+    TooltipManager.reset();
+    super.dispose();
+  }
+
   Future<void> _onTabTapped(int index) async {
+    TooltipManager.reset();
     setState(() => _selectedIndex = index);
     await widget.appstorys.getScreenCampaigns(screenName: _screenNames[index]);
   }
@@ -79,6 +113,10 @@ class _HomeScreenState extends State<HomeScreen> {
               final uri = Uri.tryParse(link);
               if (uri != null) await launchUrl(uri, mode: LaunchMode.externalApplication);
             },
+          ),
+          widget.appstorys.captureScreenWidget(
+            screenName: _screenNames[_selectedIndex],
+            screenContext: context,
           ),
         ],
       ),
@@ -138,7 +176,8 @@ class _HomeTab extends StatelessWidget {
           sliver: SliverList(
             delegate: SliverChildListDelegate([
               const SizedBox(height: 120), // space for banner
-              _SectionHeader(title: 'Featured Deals'),
+              // ValueKey tags must match the `target` field in the AppStorys dashboard
+              _SectionHeader(key: const ValueKey('featured_deals'), title: 'Featured Deals'),
               const SizedBox(height: 12),
               SizedBox(
                 height: 140,
@@ -152,9 +191,10 @@ class _HomeTab extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              _SectionHeader(title: 'Categories'),
+              _SectionHeader(key: const ValueKey('categories'), title: 'Categories'),
               const SizedBox(height: 12),
               Row(
+                key: const ValueKey('categories_row'),
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _CategoryChip(icon: Icons.phone_android, label: 'Electronics'),
@@ -164,7 +204,7 @@ class _HomeTab extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 24),
-              _SectionHeader(title: 'Trending Now'),
+              _SectionHeader(key: const ValueKey('trending_now'), title: 'Trending Now'),
               const SizedBox(height: 12),
               ..._trendingProducts.map((p) => _ProductListTile(product: p)),
             ]),
@@ -287,7 +327,7 @@ class _SectionHeader extends StatelessWidget {
   final String title;
   final EdgeInsets padding;
 
-  const _SectionHeader({required this.title, this.padding = EdgeInsets.zero});
+  const _SectionHeader({super.key, required this.title, this.padding = EdgeInsets.zero});
 
   @override
   Widget build(BuildContext context) {

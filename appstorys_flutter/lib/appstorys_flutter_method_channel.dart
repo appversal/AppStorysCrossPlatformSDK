@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -271,6 +273,26 @@ class MethodChannelAppstorysFlutter extends AppstorysFlutterPlatform {
         <String, Object?>{'type': type},
       );
       return response ?? '[]';
+    } on PlatformException catch (error) {
+      throw AppstorysException.fromPlatformException(error);
+    }
+  }
+
+  @override
+  Future<void> identifyElements({
+    required String screenName,
+    required Uint8List screenshot,
+    required String childrenJson,
+  }) async {
+    try {
+      await methodChannel.invokeMethod<void>(
+        'identifyElements',
+        <String, Object?>{
+          'screenName': screenName,
+          'screenshot': screenshot,
+          'children': childrenJson,
+        },
+      );
     } on PlatformException catch (error) {
       throw AppstorysException.fromPlatformException(error);
     }

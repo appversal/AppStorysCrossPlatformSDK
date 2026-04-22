@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 import 'appstorys_flutter_method_channel.dart';
@@ -136,5 +138,13 @@ abstract class AppstorysFlutterPlatform extends PlatformInterface {
 
   Future<String> getCampaignsByTypeJson(String type) {
     throw UnimplementedError('getCampaignsByTypeJson() has not been implemented.');
+  }
+
+  Future<void> identifyElements({
+    required String screenName,
+    required Uint8List screenshot,
+    required String childrenJson,
+  }) {
+    throw UnimplementedError('identifyElements() has not been implemented.');
   }
 }

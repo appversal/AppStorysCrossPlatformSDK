@@ -85,6 +85,7 @@ class AppstorysFlutterPlugin :
             "captureSurveyResponse" -> handleCaptureSurveyResponse(call, result)
             "sendReelLikeStatus" -> handleSendReelLikeStatus(call, result)
             "personalizeText" -> handlePersonalizeText(call, result)
+            "identifyElements" -> handleIdentifyElements(call, result)
             else -> result.notImplemented()
         }
     }
@@ -278,6 +279,22 @@ class AppstorysFlutterPlugin :
     private fun handlePersonalizeText(call: MethodCall, result: Result) {
         val text = call.argument<String>("text").orEmpty()
         runBridgeCall(result) { core.personalizeText(text) }
+    }
+
+    private fun handleIdentifyElements(call: MethodCall, result: Result) {
+        val screenName = call.argument<String>("screenName") ?: return missingArgument(result, "screenName")
+        val screenshot = call.argument<ByteArray>("screenshot") ?: return missingArgument(result, "screenshot")
+        val children = call.argument<String>("children") ?: return missingArgument(result, "children")
+        pluginScope.launch {
+            runCatching {
+                core.tooltipIdentify(
+                    screenName = screenName,
+                    childrenJson = children,
+                    screenshotBytes = screenshot,
+                )
+            }
+        }
+        result.success(null)
     }
 
 }
