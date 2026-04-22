@@ -635,6 +635,21 @@ class AppStorysCore(private val storage: PlatformStorage) {
 
     fun getDeviceInfo(): Map<String, Any> = deviceInfo
 
+    suspend fun tooltipIdentify(
+        screenName: String,
+        childrenJson: String,
+        screenshotBytes: ByteArray
+    ) {
+        if (accessToken.isEmpty() || userId.isEmpty()) return
+        apiClient.tooltipIdentify(
+            accessToken = accessToken,
+            userId = userId,
+            screenName = screenName,
+            childrenJson = childrenJson,
+            screenshotBytes = screenshotBytes
+        )
+    }
+
 }
 
 // Thin adapter so ApiClient can reuse PlatformStorage through KeyValueStore.
