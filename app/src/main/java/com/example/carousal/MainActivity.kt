@@ -332,6 +332,21 @@ fun HomeScreen(
         )
     }
 
+//    LaunchedEffect(Unit) {
+//        App.appStorys.tooltipTargetView.collect { tooltip ->
+//            if (tooltip != null) {
+//                android.util.Log.d("TooltipTest", "[OK] KMP chain working - tooltip ready")
+//                android.util.Log.d("TooltipTest", "  target   = '${tooltip.target}'")
+//                android.util.Log.d("TooltipTest", "  title    = '${tooltip.titleText}'")
+//                android.util.Log.d("TooltipTest", "  subtitle = '${tooltip.subtitleText}'")
+//                android.util.Log.d("TooltipTest", "  order    = ${tooltip.order}")
+//                android.util.Log.d("TooltipTest", "  type     = ${tooltip.type}")
+//            } else {
+//                android.util.Log.d("TooltipTest", "tooltip = null (dismissed or not yet shown)")
+//            }
+//        }
+//    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()

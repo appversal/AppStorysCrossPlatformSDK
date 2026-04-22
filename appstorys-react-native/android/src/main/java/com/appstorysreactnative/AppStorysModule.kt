@@ -8,11 +8,19 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.ReadableMap
+import com.facebook.react.modules.core.DeviceEventManagerModule
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 class AppStorysModule(reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext) {
 
     private val core: AppStorysCore
+    private val moduleScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var campaignsCollectorJob: Job? = null
 
     init {
         val storage = PlatformStorage()
@@ -20,6 +28,27 @@ class AppStorysModule(reactContext: ReactApplicationContext) :
     }
 
     override fun getName() = "AppStorysReactNative"
+
+    // Pushes the current campaigns JSON to JS whenever the StateFlow emits.
+    // Mirrors Flutter's EventChannel → campaignsStream pipeline.
+    private fun emitCampaigns() {
+        try {
+            reactApplicationContext
+                .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+                .emit("onCampaignsUpdate", core.getCampaignsJson())
+        } catch (_: Exception) { }
+    }
+
+    private fun startCampaignsEmitter() {
+        campaignsCollectorJob?.cancel()
+        campaignsCollectorJob = moduleScope.launch {
+            core.campaigns.collect { emitCampaigns() }
+        }
+    }
+
+    // Required stubs — RN warns if these are missing when NativeEventEmitter is used on JS side.
+    @ReactMethod fun addListener(eventName: String) {}
+    @ReactMethod fun removeListeners(count: Int) {}
 
     private fun invokeCoreMethodOrThrow(methodName: String, vararg args: Any?) {
         val method = core.javaClass.methods.firstOrNull {
@@ -50,6 +79,7 @@ class AppStorysModule(reactContext: ReactApplicationContext) :
             )
 
             core.initialize(appId = appId, accountId = accountId, userId = userId)
+            startCampaignsEmitter()
             promise.resolve(true)
         } catch (e: Exception) {
             promise.reject("ERROR", e.message)
