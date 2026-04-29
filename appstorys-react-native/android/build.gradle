@@ -1,0 +1,73 @@
+buildscript {
+  ext.AppstorysReactNative = [
+    kotlinVersion: "2.1.20",
+    reactNativeVersion: "0.73.0",
+    minSdkVersion: 22,
+    compileSdkVersion: 34,
+    targetSdkVersion: 34
+  ]
+
+  ext.getExtOrDefault = { prop ->
+    if (rootProject.ext.has(prop)) {
+      return rootProject.ext.get(prop)
+    }
+
+    return AppstorysReactNative[prop]
+  }
+
+  repositories {
+    google()
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+  }
+
+  dependencies {
+    classpath "com.android.tools.build:gradle:8.7.2"
+    // noinspection DifferentKotlinGradleVersion
+    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${getExtOrDefault('kotlinVersion')}"
+  }
+}
+
+
+apply plugin: "com.android.library"
+apply plugin: "kotlin-android"
+
+android {
+  namespace "com.appstorysreactnative"
+
+  compileSdkVersion getExtOrDefault("compileSdkVersion")
+
+  defaultConfig {
+    minSdkVersion getExtOrDefault("minSdkVersion")
+    targetSdkVersion getExtOrDefault("targetSdkVersion")
+  }
+
+  buildFeatures {
+    buildConfig true
+  }
+
+  buildTypes {
+    release {
+      minifyEnabled false
+    }
+  }
+
+  lint {
+    disable "GradleCompatible"
+  }
+
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_17
+    targetCompatibility JavaVersion.VERSION_17
+  }
+
+  kotlinOptions {
+    jvmTarget = "17"
+  }
+}
+
+dependencies {
+  compileOnly "com.facebook.react:react-android:${getExtOrDefault('reactNativeVersion')}"
+  implementation("com.github.appversal.AppStorysCrossPlatformSDK:appstorys-core-android:v4.0.0-alpha02")
+  implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+}

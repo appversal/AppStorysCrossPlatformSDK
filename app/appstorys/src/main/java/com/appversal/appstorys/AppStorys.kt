@@ -357,11 +357,9 @@ object AppStorys {
         ViewTreeAnalyzer.analyzeViewRoot(
             root = root,
             screenName = screenName,
-            user_id = core.userId,
-            accessToken = core.accessToken,
             activity = activity,
             context = context,
-            apiClient = apiClient
+            core = core
         ).also {
             Log.i(TAG, "ViewTreeAnalyzer.analyzeViewRoot() completed successfully")
         }

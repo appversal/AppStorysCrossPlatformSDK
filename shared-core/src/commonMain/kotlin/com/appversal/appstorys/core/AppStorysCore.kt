@@ -93,8 +93,13 @@ class AppStorysCore(private val storage: PlatformStorage) {
 
     private var personalizationData: Map<String, String>? = null
 
-    var isTestUser: Boolean = false
-        private set
+    // StateFlow so the Flutter plugin can combine it with campaigns — EventChannel
+    // fires when isTestUser changes even if campaigns list stays empty (0-campaign screens).
+    private val _isTestUser = MutableStateFlow(false)
+    val isTestUserFlow: StateFlow<Boolean> = _isTestUser.asStateFlow()
+    var isTestUser: Boolean
+        get() = _isTestUser.value
+        private set(value) { _isTestUser.value = value }
 
     enum class SdkState { Uninitialized, Initializing, Initialized, Paused, Error }
 
@@ -234,7 +239,7 @@ class AppStorysCore(private val storage: PlatformStorage) {
 
             try {
                 if (currentScreen != screenName) {
-                    _disabledCampaigns.emit(emptyList())
+                    isTestUser = false  // reset before emitting so EventChannel sends s:false during transition
                     _campaigns.emit(emptyList())
                     _trackedEvents.emit(emptySet())
                     currentScreen = screenName
@@ -549,6 +554,7 @@ class AppStorysCore(private val storage: PlatformStorage) {
 
     // Clears tracked entries for the trigger event once a dismissible campaign
     // is consumed, so it does not continuously re-qualify.
+    // Prevents a campaign from repeatedly re-appearing just because old trigger events are still stored.
     fun clearTrackedEventForTrigger(triggerEvent: TriggerEvent?) {
         val eventName = when (triggerEvent) {
             is TriggerEvent.StringTrigger -> triggerEvent.event
@@ -595,9 +601,10 @@ class AppStorysCore(private val storage: PlatformStorage) {
     // JSON BRIDGE METHODS
     // ══════════════════════════════════════════════════════════════
     fun getCampaignsJson(): String {
+        val disabled = _disabledCampaigns.value
         return SdkJson.encodeToString(
             ListSerializer(CampaignDeserializer),
-            _campaigns.value
+            _campaigns.value.filter { it.id == null || !disabled.contains(it.id) }
         )
     }
 

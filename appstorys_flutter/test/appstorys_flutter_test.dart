@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:appstorys_flutter/appstorys_flutter.dart';
 import 'package:appstorys_flutter/appstorys_flutter_method_channel.dart';
 import 'package:appstorys_flutter/appstorys_flutter_platform_interface.dart';
@@ -31,9 +33,6 @@ class MockAppstorysFlutterPlatform
     getScreenCampaignsCalled =
         screenName == 'Home Screen' && positionList.length == 2;
   }
-
-  @override
-  Future<String> getBannerJson() async => '[{"id":"banner-1"}]';
 
   @override
   Future<String> getCampaignsJson() async => '[{"id":"campaign-1"}]';
@@ -86,9 +85,11 @@ class MockAppstorysFlutterPlatform
   }
 
   @override
-  Future<String> getCampaignsByTypeJson(String type) {
-    // TODO: implement getCampaignsByTypeJson
-    throw UnimplementedError();
+  Future<String> getCampaignsByTypeJson(String type) async {
+    if (type == 'BAN') {
+      return '[{"id":"banner-1"}]';
+    }
+    return '[]';
   }
 
   @override
@@ -106,6 +107,16 @@ class MockAppstorysFlutterPlatform
   @override
   Future<void> sendReelLikeStatus({required String campaignId, required String userId, required bool isLiked}) {
     // TODO: implement sendReelLikeStatus
+    throw UnimplementedError();
+  }
+
+  @override
+  // TODO: implement campaignsStream
+  Stream<String> get campaignsStream => throw UnimplementedError();
+
+  @override
+  Future<void> identifyElements({required String screenName, required Uint8List screenshot, required String childrenJson}) {
+    // TODO: implement identifyElements
     throw UnimplementedError();
   }
 }
@@ -127,7 +138,7 @@ void main() {
       screenName: 'Home Screen',
       positionList: const <String>['top', 'mid'],
     );
-    final bannerJson = await plugin.getBannerJson();
+    final bannerJson = await plugin.getCampaignsByTypeJson('BAN');
     await plugin.trackEvent(
       event: 'clicked',
       campaignId: 'cmp-1',
@@ -147,15 +158,14 @@ void main() {
     expect(personalizedText, 'Welcome, Ava!');
   });
 
-  test('getBannerCampaigns parses typed list', () async {
+  test('getCampaignsByTypeJson returns filtered payload', () async {
     final plugin = AppstorysFlutter();
     final fakePlatform = MockAppstorysFlutterPlatform();
     AppstorysFlutterPlatform.instance = fakePlatform;
 
-    final campaigns = await plugin.getBannerCampaigns();
+    final campaignsJson = await plugin.getCampaignsByTypeJson('BAN');
 
-    expect(campaigns.length, 1);
-    expect(campaigns.first.id, 'banner-1');
+    expect(campaignsJson, '[{"id":"banner-1"}]');
   });
 
   test('initialize throws on blank appId', () {

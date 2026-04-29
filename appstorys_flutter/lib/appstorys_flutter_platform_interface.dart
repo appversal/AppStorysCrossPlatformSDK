@@ -65,10 +65,6 @@ abstract class AppstorysFlutterPlatform extends PlatformInterface {
     throw UnimplementedError('getScreenCampaigns() has not been implemented.');
   }
 
-  Future<String> getBannerJson() {
-    throw UnimplementedError('getBannerJson() has not been implemented.');
-  }
-
   Future<String> getCampaignsJson() {
     throw UnimplementedError('getCampaignsJson() has not been implemented.');
   }

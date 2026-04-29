@@ -16,7 +16,7 @@ void main() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
           latestCall = methodCall;
-          if (methodCall.method == 'getBannerJson') {
+          if (methodCall.method == 'getCampaignsByTypeJson') {
             return '[{"id":"banner-1"}]';
           }
           if (methodCall.method == 'getCampaignsJson') {
@@ -65,10 +65,11 @@ void main() {
     });
   });
 
-  test('getBannerJson returns native payload', () async {
-    final response = await platform.getBannerJson();
+  test('getCampaignsByTypeJson returns native payload', () async {
+    final response = await platform.getCampaignsByTypeJson('BAN');
 
-    expect(latestCall?.method, 'getBannerJson');
+    expect(latestCall?.method, 'getCampaignsByTypeJson');
+    expect(latestCall?.arguments, <String, Object?>{'type': 'BAN'});
     expect(response, '[{"id":"banner-1"}]');
   });
 

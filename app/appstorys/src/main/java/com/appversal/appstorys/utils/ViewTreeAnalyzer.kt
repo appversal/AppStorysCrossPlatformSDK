@@ -20,7 +20,7 @@ import androidx.compose.ui.semantics.SemanticsOwner
 import androidx.compose.ui.semantics.SemanticsPropertyKey
 import androidx.compose.ui.semantics.SemanticsPropertyReceiver
 import androidx.compose.ui.semantics.getOrNull
-import com.appversal.appstorys.core.api.ApiClient
+import com.appversal.appstorys.core.AppStorysCore
 import com.appversal.appstorys.core.api.SdkJson
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.encodeToString
@@ -72,11 +72,9 @@ internal object ViewTreeAnalyzer {
     suspend fun analyzeViewRoot(
         root: View,
         screenName: String,
-        user_id: String,
-        accessToken: String,
         activity: Activity,
         context: Context,
-        apiClient: ApiClient
+        core: AppStorysCore
     ): kotlinx.serialization.json.JsonObject {
         Log.i("ViewTreeAnalyzer", "===== analyzeViewRoot() START =====")
         val children = buildJsonArray {
@@ -115,27 +113,12 @@ internal object ViewTreeAnalyzer {
             Log.i("ViewTreeAnalyzer", "Screenshot captured. Sending to server...")
 
             try {
-                when (
-                    val result = apiClient.tooltipIdentify(
-                        accessToken = accessToken,
-                        userId = user_id,
-                        screenName = screenName,
-                        childrenJson = formattedJson,
-                        screenshotBytes = screenshot.readBytes(),
-                        screenshotFileName = screenshot.name
-                    )
-                ) {
-                    is com.appversal.appstorys.core.api.ApiResult.Success -> {
-                        Log.i("ViewTreeAnalyzer", "tooltipIdentify() sent successfully.")
-                    }
-
-                    is com.appversal.appstorys.core.api.ApiResult.Error -> {
-                        Log.e(
-                            "ViewTreeAnalyzer",
-                            "tooltipIdentify() server error: ${result.code} ${result.message}"
-                        )
-                    }
-                }
+                core.tooltipIdentify(
+                    screenName = screenName,
+                    childrenJson = formattedJson,
+                    screenshotBytes = screenshot.readBytes()
+                )
+                Log.i("ViewTreeAnalyzer", "tooltipIdentify() sent successfully.")
             } catch (e: Exception) {
                 Log.e("ViewTreeAnalyzer", "tooltipIdentify() failed", e)
             }

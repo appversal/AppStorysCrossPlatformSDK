@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
@@ -5,6 +6,7 @@ import 'package:flutter/services.dart';
 
 import 'appstorys_flutter_platform_interface.dart';
 import 'src/appstorys_api_models.dart';
+import 'src/widgets/capture_manager.dart';
 
 // This is the actual bridge to native code — implements the platform interface using Flutter's MethodChannel.
 // Extends the abstract platform interface — provides real implementations
@@ -24,10 +26,23 @@ class MethodChannelAppstorysFlutter extends AppstorysFlutterPlatform {
 
   @override
   Stream<String> get campaignsStream {
-    // Cast is safe — native always sends a String (getCampaignsJson() return type).
+    // Native now sends a wrapper: {"c":<campaigns_json>,"s":<isTestUser>}.
+    // We unwrap it here so the public campaignsStream API is unchanged —
+    // callers still receive a plain campaigns JSON string.
+    // The "s" flag automatically enables/disables the capture button so
+    // clients never need to call enableScreenCapture() manually.
     return _campaignsEventChannel
         .receiveBroadcastStream()
-        .map((event) => event as String);
+        .map((event) {
+          final wrapper = jsonDecode(event as String) as Map<String, dynamic>;
+          final isTestUser = wrapper['s'] as bool? ?? false;
+          final campaigns = wrapper['c'] as List?;
+          debugPrint('[CampaignsStream] received — isTestUser: $isTestUser, campaignCount: ${campaigns?.length ?? 0}');
+          CaptureManager.setEnabled(isTestUser);
+          // wrapper['c'] is the decoded List after jsonDecode — re-encode it
+          // back to a JSON string so callers receive the same format as before.
+          return jsonEncode(wrapper['c']);
+        });
   }
 
   @override
@@ -61,18 +76,6 @@ class MethodChannelAppstorysFlutter extends AppstorysFlutterPlatform {
         'getScreenCampaigns',
         <String, Object?>{'screenName': screenName, 'positionList': positionList},
       );
-    } on PlatformException catch (error) {
-      throw AppstorysException.fromPlatformException(error);
-    }
-  }
-
-  @override
-  Future<String> getBannerJson() async {
-    try {
-      // Calls native "getBannerJson" → returns JSON string of banner campaigns.
-      // Falls back to '[]' if native returns null.
-      final response = await methodChannel.invokeMethod<String>('getBannerJson');
-      return response ?? '[]';
     } on PlatformException catch (error) {
       throw AppstorysException.fromPlatformException(error);
     }

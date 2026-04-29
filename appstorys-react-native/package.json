@@ -1,0 +1,25 @@
+{
+  "name": "appstorys-react-native",
+  "version": "0.1.0-alpha02",
+  "description": "AppStorys SDK for React Native",
+  "main": "src/index",
+  "codegenConfig": {
+    "name": "AppstorysReactNativeSpec",
+    "type": "modules",
+    "jsSrcsDir": "src"
+  },
+  "author": "AppVersal <dev@appversal.com> (https://appstorys.co)",
+  "license": "UNLICENSED",
+  "homepage": "https://github.com/appversal/appstorys-react-native#readme",
+  "create-react-native-library": {
+    "type": "turbo-module",
+    "languages": "kotlin-objc",
+    "tools": [
+      "eslint",
+      "jest",
+      "lefthook",
+      "release-it"
+    ],
+    "version": "0.57.2"
+  }
+}

@@ -32,8 +32,6 @@ class _MyAppState extends State<MyApp> {
       accountId: '12a9eac5-94ee-4735-9aa6-b8a94cb8fbbb',
       userId: 'yash1',
     );
-    // Enable capture button for dev/test builds
-    _appstorys.enableScreenCapture(true);
     await _appstorys.getScreenCampaigns(screenName: 'Home Screen Flutter');
   }
 

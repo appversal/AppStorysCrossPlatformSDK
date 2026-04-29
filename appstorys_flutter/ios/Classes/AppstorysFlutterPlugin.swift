@@ -14,8 +14,6 @@ public class AppstorysFlutterPlugin: NSObject, FlutterPlugin {
       handleInitialize(call, result: result)
     case "getScreenCampaigns":
       handleGetScreenCampaigns(call, result: result)
-    case "getBannerJson":
-      handleGetBannerJson(result)
     case "getCampaignsJson":
       handleGetCampaignsJson(result)
     case "getCampaignsByTypeJson":
@@ -55,11 +53,6 @@ public class AppstorysFlutterPlugin: NSObject, FlutterPlugin {
   private func handleGetScreenCampaigns(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
     // Phase 6: Implement iOS bridge to shared-core .xcframework
     result(nil)
-  }
-
-  private func handleGetBannerJson(_ result: @escaping FlutterResult) {
-    // Phase 6: Implement iOS bridge to shared-core .xcframework
-    result("[]")
   }
 
   private func handleGetCampaignsJson(_ result: @escaping FlutterResult) {

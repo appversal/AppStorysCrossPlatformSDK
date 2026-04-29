@@ -19,7 +19,7 @@ void main() {
 
     await plugin.initialize(appId: 'demo-app-id', accountId: 'demo-account-id');
     await plugin.getScreenCampaigns(screenName: 'Home Screen Flutter');
-    final String bannerJson = await plugin.getBannerJson();
+    final String bannerJson = await plugin.getCampaignsByTypeJson('BAN');
     await plugin.trackEvent(
       event: 'viewed',
       metadata: <String, Object?>{'source': 'integration_test'},

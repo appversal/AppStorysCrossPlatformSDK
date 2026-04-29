@@ -87,31 +87,18 @@ class AppstorysFlutter {
     final sanitizedPositionList =
         positionList.map((item) => item.trim()).where((item) => item.isNotEmpty).toList();
 
+    // Optimistically hide the capture button on every screen change.
+    // The campaigns stream will re-enable it only if the API confirms isTestUser=true.
+    // Without this, the static CaptureManager._enabled=true persists across hot reloads
+    // when switching from a test user to an anonymous user.
+    debugPrint('[AppstorysFlutter] getScreenCampaigns("${screenName.trim()}") — optimistic capture reset');
+    CaptureManager.setEnabled(false);
+
     // Delegates to platform interface with sanitized input.
     return AppstorysFlutterPlatform.instance.getScreenCampaigns(
       screenName: screenName.trim(),
       positionList: sanitizedPositionList,
     );
-  }
-
-  // Raw JSON string — lower level, rarely used directly.
-  Future<String> getBannerJson() {
-    return AppstorysFlutterPlatform.instance.getBannerJson();
-  }
-
-  // Parsed version — decodes JSON and returns typed banner campaign objects.
-  Future<List<AppstorysBannerCampaign>> getBannerCampaigns() async {
-    final bannerJson = await getBannerJson();
-    final decoded = jsonDecode(bannerJson);
-    if (decoded is! List) {
-      throw const FormatException('Expected banner payload to be a JSON list.');
-    }
-
-    return decoded
-        .whereType<Map>()
-        .map((item) => item.map((key, value) => MapEntry('$key', value)))
-        .map(AppstorysBannerCampaign.fromJson)
-        .toList();
   }
 
   Future<void> trackEvent({
@@ -365,6 +352,7 @@ class AppstorysFlutter {
         campaignId: campaignId,
         metadata: metadata,
       ),
+      (campaignId) => dismissCampaign(campaignId),
     );
   }
 

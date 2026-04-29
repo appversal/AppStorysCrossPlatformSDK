@@ -13,6 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -45,13 +46,17 @@ class AppstorysFlutterPlugin :
             override fun onListen(arguments: Any?, sink: EventChannel.EventSink) {
                 campaignsCollectionJob?.cancel()
                 campaignsCollectionJob = pluginScope.launch {
-                    // StateFlow.collect() replays the current value immediately to new
-                    // collectors, so widgets always get campaigns even if getScreenCampaigns()
-                    // was called before the widget subscribed.
-                    core.campaigns.collect { _ ->
+                    // combine() fires whenever EITHER campaigns OR isTestUser changes.
+                    // This is necessary because on screens with 0 campaigns, _campaigns
+                    // stays at emptyList() so StateFlow deduplication prevents a re-emit
+                    // after the API sets isTestUser. The isTestUserFlow provides the
+                    // second trigger so the capture button updates correctly on all screens.
+                    combine(core.campaigns, core.isTestUserFlow) { _, isTest ->
                         val json = core.getCampaignsJson()
+                        "{\"c\":${json},\"s\":${isTest}}"
+                    }.collect { payload ->
                         withContext(Dispatchers.Main) {
-                            sink.success(json)
+                            sink.success(payload)
                         }
                     }
                 }
@@ -71,7 +76,6 @@ class AppstorysFlutterPlugin :
         when (call.method) {
             "initialize" -> handleInitialize(call, result)
             "getScreenCampaigns" -> handleGetScreenCampaigns(call, result)
-            "getBannerJson" -> handleGetBannerJson(result)
             "getCampaignsJson" -> handleGetCampaignsJson(result)
             "getCampaignsByTypeJson" -> handleGetCampaignsByTypeJson(call, result)
             "getPersonalizationDataJson" -> handleGetPersonalizationDataJson(result)
@@ -93,9 +97,19 @@ class AppstorysFlutterPlugin :
     private fun handleInitialize(call: MethodCall, result: Result) {
         val appId = call.argument<String>("appId") ?: return missingArgument(result, "appId")
         val accountId = call.argument<String>("accountId") ?: return missingArgument(result, "accountId")
-        val userId = call.argument<String>("userId") ?: ""
+        // null means userId was not passed from Dart — treat as explicit anonymous session.
+        // Clearing the stored identified user here mirrors how device info is injected via
+        // PlatformStorage before core.initialize() reads it.
+        val rawUserId = call.argument<String>("userId")
+        val userId = rawUserId ?: ""
 
         val storage = PlatformStorage()
+        if (rawUserId == null) {
+            // No userId passed → clear any previously stored identified user so the core
+            // starts a fresh anonymous session instead of restoring the old test user.
+            storage.putString("appstorys_user_id", "")
+            storage.putBoolean("appstorys_is_anonymous", true)
+        }
         val packageInfo = runCatching {
             flutterPluginBinding.applicationContext.packageManager
                 .getPackageInfo(flutterPluginBinding.applicationContext.packageName, 0)
@@ -130,12 +144,6 @@ class AppstorysFlutterPlugin :
         runBridgeCall(result) {
             core.getScreenCampaigns(screenName = screenName, positionList = positionList)
             null
-        }
-    }
-
-    private fun handleGetBannerJson(result: Result) {
-        runBridgeCall(result) {
-            core.getCampaignsByTypeJson("BAN")
         }
     }
 
