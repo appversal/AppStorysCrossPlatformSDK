@@ -151,8 +151,8 @@ object AppStorys {
 
     private val scratchedCampaigns = MutableStateFlow<List<String>>(emptyList())
 
-     // In-memory spin count per campaign — keyed by campaign ID, value = remaining spins
-     private val spinCountByCampaign = mutableStateMapOf<String, Int>()
+    // In-memory spin count per campaign — keyed by campaign ID, value = remaining spins
+    private val spinCountByCampaign = mutableStateMapOf<String, Int>()
 
     private var isScreenCaptureEnabled by mutableStateOf(false)
 
@@ -180,9 +180,9 @@ object AppStorys {
     private val currentMilestoneIndex = MutableStateFlow(0)
     private var showMilestone by mutableStateOf(true)
 
-     private fun isBackPressCampaignReady(): Boolean {
-         return core.isBackPressCampaignReady(backPressCampaignConsumed)
-     }
+    private fun isBackPressCampaignReady(): Boolean {
+        return core.isBackPressCampaignReady(backPressCampaignConsumed)
+    }
 
     fun initialize(
         context: Application,
@@ -212,7 +212,8 @@ object AppStorys {
         platformStorage.putString("screen_width", metrics.widthPixels.toString())
         platformStorage.putString("screen_height", metrics.heightPixels.toString())
         platformStorage.putString("screen_density", metrics.densityDpi.toString())
-        platformStorage.putString("orientation",
+        platformStorage.putString(
+            "orientation",
             if (configuration.orientation == android.content.res.Configuration.ORIENTATION_PORTRAIT)
                 "portrait" else "landscape"
         )
@@ -261,6 +262,15 @@ object AppStorys {
 
             showCaseInformation()
         }
+
+        // Keep isScreenCaptureEnabled in sync with the async API result instead of
+        // snapshotting it immediately after getScreenCampaigns() (which returns before
+        // the coroutine finishes and isTestUser is set).
+        coroutineScope.launch {
+            core.isTestUserFlow.collect { value ->
+                isScreenCaptureEnabled = value
+            }
+        }
     }
 
     fun getScreenCampaigns(
@@ -272,7 +282,6 @@ object AppStorys {
         impressions.update { emptyList() }
         backPressCampaignConsumed = false
         core.getScreenCampaigns(screenName, positionList)
-        isScreenCaptureEnabled = core.isTestUser
     }
 
     fun personalizeText(text: String): String {
@@ -370,25 +379,26 @@ object AppStorys {
     }
 
     @Composable
-     fun CSAT(
-         bottomPadding: Dp = 0.dp
-     ) {
-         if (!showCsat) {
-             val campaignsData = campaigns.collectAsStateWithLifecycle()
-             val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
-             val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
+    fun CSAT(
+        bottomPadding: Dp = 0.dp
+    ) {
+        if (!showCsat) {
+            val campaignsData = campaigns.collectAsStateWithLifecycle()
+            val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+            val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-             val filtered = remember(campaignsData.value, trackedEventsData.value, disabledData.value) {
-                 core.getFilteredCampaigns("CSAT", disabledData.value)
-             }
+            val filtered =
+                remember(campaignsData.value, trackedEventsData.value, disabledData.value) {
+                    core.getFilteredCampaigns("CSAT", disabledData.value)
+                }
 
-             val campaign = filtered.firstOrNull()
-             val csatDetails = when (val details = campaign?.details) {
-                 is CSATDetails -> details
-                 else -> null
-             }
+            val campaign = filtered.firstOrNull()
+            val csatDetails = when (val details = campaign?.details) {
+                is CSATDetails -> details
+                else -> null
+            }
 
-             if (csatDetails != null && campaign != null) {
+            if (csatDetails != null && campaign != null) {
                 val style = csatDetails.styling
                 var isVisibleState by remember { mutableStateOf(false) }
                 val delaySeconds = remember(style) {
@@ -401,11 +411,11 @@ object AppStorys {
                     } ?: 0
                 }
 
-                 LaunchedEffect(Unit) {
-                     campaign.id?.let {
-                         trackEvents(it, "viewed")
-                     }
-                     delay(delaySeconds * 1000L)
+                LaunchedEffect(Unit) {
+                    campaign.id?.let {
+                        trackEvents(it, "viewed")
+                    }
+                    delay(delaySeconds * 1000L)
                     isVisibleState = true
                 }
 
@@ -464,33 +474,33 @@ object AppStorys {
         }
     }
 
-     @Composable
-     fun Floater(
-         modifier: Modifier = Modifier,
-         bottomPadding: Dp = 0.dp
-     ) {
-         val campaignsData = campaigns.collectAsStateWithLifecycle()
-         val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
-         val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
+    @Composable
+    fun Floater(
+        modifier: Modifier = Modifier,
+        bottomPadding: Dp = 0.dp
+    ) {
+        val campaignsData = campaigns.collectAsStateWithLifecycle()
+        val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+        val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = remember(campaignsData.value, trackedEventsData.value, disabledData.value) {
-             core.getFilteredCampaigns("FLT", disabledData.value)
-         }
+        val filtered = remember(campaignsData.value, trackedEventsData.value, disabledData.value) {
+            core.getFilteredCampaigns("FLT", disabledData.value)
+        }
 
-         val campaign = filtered.firstOrNull { it.details is FloaterDetails }
+        val campaign = filtered.firstOrNull { it.details is FloaterDetails }
 
-         val floaterDetails = when (val details = campaign?.details) {
-             is FloaterDetails -> details
-             else -> null
-         }
+        val floaterDetails = when (val details = campaign?.details) {
+            is FloaterDetails -> details
+            else -> null
+        }
 
 
-         if (floaterDetails != null && (!floaterDetails.image.isNullOrEmpty() || !floaterDetails.lottie_data.isNullOrEmpty()) && campaign != null) {
-             LaunchedEffect(Unit) {
-                 campaign.id?.let {
-                     trackEvents(it, "viewed")
-                 }
-             }
+        if (floaterDetails != null && (!floaterDetails.image.isNullOrEmpty() || !floaterDetails.lottie_data.isNullOrEmpty()) && campaign != null) {
+            LaunchedEffect(Unit) {
+                campaign.id?.let {
+                    trackEvents(it, "viewed")
+                }
+            }
 
             val styling = floaterDetails.styling
 
@@ -537,28 +547,28 @@ object AppStorys {
     }
 
 
-     @Composable
-     fun Pip(
-         modifier: Modifier = Modifier,
-         bottomPadding: Dp = 0.dp,
-         topPadding: Dp = 0.dp,
-     ) {
-         val campaignsData = campaigns.collectAsStateWithLifecycle()
-         val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
-         val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
+    @Composable
+    fun Pip(
+        modifier: Modifier = Modifier,
+        bottomPadding: Dp = 0.dp,
+        topPadding: Dp = 0.dp,
+    ) {
+        val campaignsData = campaigns.collectAsStateWithLifecycle()
+        val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+        val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = remember(campaignsData.value, trackedEventsData.value, disabledData.value) {
-             core.getFilteredCampaigns("PIP", disabledData.value)
-         }
+        val filtered = remember(campaignsData.value, trackedEventsData.value, disabledData.value) {
+            core.getFilteredCampaigns("PIP", disabledData.value)
+        }
 
-         val campaign = filtered.firstOrNull { it.details is PipDetails }
+        val campaign = filtered.firstOrNull { it.details is PipDetails }
 
-         val pipDetails = when (val details = campaign?.details) {
-             is PipDetails -> details
-             else -> null
-         }
+        val pipDetails = when (val details = campaign?.details) {
+            is PipDetails -> details
+            else -> null
+        }
 
-         if (pipDetails != null && !pipDetails.small_video.isNullOrEmpty() && campaign != null) {
+        if (pipDetails != null && !pipDetails.small_video.isNullOrEmpty() && campaign != null) {
             key(
                 campaign?.id, campaign?.triggerEvent
             ) {
@@ -746,19 +756,19 @@ object AppStorys {
         }
     }
 
-     @OptIn(UnstableApi::class)
-     @Composable
-     fun Stories() {
-         val campaignsData = campaigns.collectAsStateWithLifecycle()
-         val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
-         val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
+    @OptIn(UnstableApi::class)
+    @Composable
+    fun Stories() {
+        val campaignsData = campaigns.collectAsStateWithLifecycle()
+        val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+        val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = remember(campaignsData.value, trackedEventsData.value, disabledData.value) {
-             core.getFilteredCampaigns("STR", disabledData.value)
-         }
+        val filtered = remember(campaignsData.value, trackedEventsData.value, disabledData.value) {
+            core.getFilteredCampaigns("STR", disabledData.value)
+        }
 
-         val campaign = filtered.firstOrNull()
-         val storiesDetails = campaign?.details as? StoriesDetails
+        val campaign = filtered.firstOrNull()
+        val storiesDetails = campaign?.details as? StoriesDetails
 
         if (storiesDetails != null && !storiesDetails.groups.isNullOrEmpty() && campaign != null) {
             StoryAppMain(
@@ -776,23 +786,23 @@ object AppStorys {
         }
     }
 
-     @Composable
-     fun Reels(modifier: Modifier = Modifier) {
-         val campaignsData = campaigns.collectAsStateWithLifecycle()
-         val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
-         val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
+    @Composable
+    fun Reels(modifier: Modifier = Modifier) {
+        val campaignsData = campaigns.collectAsStateWithLifecycle()
+        val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+        val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = remember(campaignsData.value, trackedEventsData.value, disabledData.value) {
-             core.getFilteredCampaigns("REL", disabledData.value)
-         }
+        val filtered = remember(campaignsData.value, trackedEventsData.value, disabledData.value) {
+            core.getFilteredCampaigns("REL", disabledData.value)
+        }
 
-         val campaign = filtered.firstOrNull()
-         val reelsDetails = campaign?.details as? ReelsDetails
-         val selectedReelIndex by selectedReelIndex.collectAsStateWithLifecycle()
-         val visibility by reelFullScreenVisible.collectAsStateWithLifecycle()
-         val reels = reelsDetails?.reels
+        val campaign = filtered.firstOrNull()
+        val reelsDetails = campaign?.details as? ReelsDetails
+        val selectedReelIndex by selectedReelIndex.collectAsStateWithLifecycle()
+        val visibility by reelFullScreenVisible.collectAsStateWithLifecycle()
+        val reels = reelsDetails?.reels
 
-         if (!reels.isNullOrEmpty() && campaign != null) {
+        if (!reels.isNullOrEmpty() && campaign != null) {
             Box(modifier = Modifier.fillMaxSize()) {
 
                 ReelsRow(
@@ -953,25 +963,26 @@ object AppStorys {
         return core.userId
     }
 
-     @Composable
-     fun PinnedBanner(
-         modifier: Modifier = Modifier,
-         placeholder: Drawable? = null,
-         placeholderContent: (@Composable () -> Unit)? = null,
-         bottomPadding: Dp = 0.dp,
-     ) {
-         val campaignsData = campaigns.collectAsStateWithLifecycle()
-         val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
-         val disabledCampaignsFlow = disabledCampaigns.collectAsStateWithLifecycle()
+    @Composable
+    fun PinnedBanner(
+        modifier: Modifier = Modifier,
+        placeholder: Drawable? = null,
+        placeholderContent: (@Composable () -> Unit)? = null,
+        bottomPadding: Dp = 0.dp,
+    ) {
+        val campaignsData = campaigns.collectAsStateWithLifecycle()
+        val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+        val disabledCampaignsFlow = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = remember(campaignsData.value, trackedEventsData.value, disabledCampaignsFlow.value) {
-             core.getFilteredCampaigns("BAN", disabledCampaignsFlow.value)
-         }
+        val filtered =
+            remember(campaignsData.value, trackedEventsData.value, disabledCampaignsFlow.value) {
+                core.getFilteredCampaigns("BAN", disabledCampaignsFlow.value)
+            }
 
-         val campaign = filtered.firstOrNull { it.details is BannerDetails }
-         val bannerDetails = campaign?.details as? BannerDetails
+        val campaign = filtered.firstOrNull { it.details is BannerDetails }
+        val bannerDetails = campaign?.details as? BannerDetails
 
-         if (bannerDetails != null && campaign != null) {
+        if (bannerDetails != null && campaign != null) {
             val style = bannerDetails.styling
             val bannerUrl = bannerDetails.image
 
@@ -1076,29 +1087,29 @@ object AppStorys {
     }
 
     @Composable
-     fun Widget(
-         modifier: Modifier = Modifier,
-         placeholder: Drawable? = null,
-         position: String? = null
-     ) {
-         val campaignsData = campaigns.collectAsStateWithLifecycle()
-         val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
-         val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
+    fun Widget(
+        modifier: Modifier = Modifier,
+        placeholder: Drawable? = null,
+        position: String? = null
+    ) {
+        val campaignsData = campaigns.collectAsStateWithLifecycle()
+        val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+        val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = remember(campaignsData.value, trackedEventsData.value, disabledData.value) {
-             core.getFilteredCampaigns("WID", disabledData.value)
-         }
+        val filtered = remember(campaignsData.value, trackedEventsData.value, disabledData.value) {
+            core.getFilteredCampaigns("WID", disabledData.value)
+        }
 
-         val campaign = filtered.firstOrNull {
-             if (position == null) {
-                 it.position == null
-             } else {
-                 it.position == position
-             }
-         }
-         val widgetDetails = campaign?.details as? WidgetDetails
+        val campaign = filtered.firstOrNull {
+            if (position == null) {
+                it.position == null
+            } else {
+                it.position == position
+            }
+        }
+        val widgetDetails = campaign?.details as? WidgetDetails
 
-         if (widgetDetails != null && campaign != null) {
+        if (widgetDetails != null && campaign != null) {
 
             if (widgetDetails.type == "full") {
 
@@ -1459,30 +1470,30 @@ object AppStorys {
     }
 
     @Composable
-     fun BottomSheet() {
+    fun BottomSheet() {
 
-         val campaignsData = campaigns.collectAsStateWithLifecycle()
-         val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
-         val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
+        val campaignsData = campaigns.collectAsStateWithLifecycle()
+        val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+        val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = remember(campaignsData.value, trackedEventsData.value, disabledData.value) {
-             core.getFilteredCampaigns("BTS", disabledData.value)
-         }
+        val filtered = remember(campaignsData.value, trackedEventsData.value, disabledData.value) {
+            core.getFilteredCampaigns("BTS", disabledData.value)
+        }
 
-         val campaign = filtered.firstOrNull { it.details is BottomSheetDetails }
+        val campaign = filtered.firstOrNull { it.details is BottomSheetDetails }
 
-         val bottomSheetDetails = when (val details = campaign?.details) {
-             is BottomSheetDetails -> details
-             else -> null
-         }
+        val bottomSheetDetails = when (val details = campaign?.details) {
+            is BottomSheetDetails -> details
+            else -> null
+        }
 
-         if (bottomSheetDetails != null && showBottomSheet && campaign != null) {
+        if (bottomSheetDetails != null && showBottomSheet && campaign != null) {
 
-             LaunchedEffect(Unit) {
-                 campaign.id?.let {
-                     trackEvents(it, "viewed")
-                 }
-             }
+            LaunchedEffect(Unit) {
+                campaign.id?.let {
+                    trackEvents(it, "viewed")
+                }
+            }
 
             BottomSheetComponent(
                 onDismissRequest = {
@@ -1503,26 +1514,26 @@ object AppStorys {
         }
     }
 
-     @Composable
-     fun Survey() {
-         var showSurvey by remember { mutableStateOf(true) }
+    @Composable
+    fun Survey() {
+        var showSurvey by remember { mutableStateOf(true) }
 
-         val campaignsData = campaigns.collectAsStateWithLifecycle()
-         val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
-         val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
+        val campaignsData = campaigns.collectAsStateWithLifecycle()
+        val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+        val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = remember(campaignsData.value, trackedEventsData.value, disabledData.value) {
-             core.getFilteredCampaigns("SUR", disabledData.value)
-         }
+        val filtered = remember(campaignsData.value, trackedEventsData.value, disabledData.value) {
+            core.getFilteredCampaigns("SUR", disabledData.value)
+        }
 
-         val campaign = filtered.firstOrNull { it.details is SurveyDetails }
+        val campaign = filtered.firstOrNull { it.details is SurveyDetails }
 
-         val surveyDetails = when (val details = campaign?.details) {
-             is SurveyDetails -> details
-             else -> null
-         }
+        val surveyDetails = when (val details = campaign?.details) {
+            is SurveyDetails -> details
+            else -> null
+        }
 
-         if (surveyDetails != null && showSurvey && campaign != null) {
+        if (surveyDetails != null && showSurvey && campaign != null) {
             SurveyBottomSheet(
                 onDismissRequest = {
                     showSurvey = false
@@ -1540,30 +1551,30 @@ object AppStorys {
         }
     }
 
-     @Composable
-     fun Modals() {
-         val campaignsData = campaigns.collectAsStateWithLifecycle()
-         val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
-         val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
+    @Composable
+    fun Modals() {
+        val campaignsData = campaigns.collectAsStateWithLifecycle()
+        val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+        val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = remember(campaignsData.value, trackedEventsData.value, disabledData.value) {
-             core.getFilteredCampaigns("MOD", disabledData.value)
-         }
+        val filtered = remember(campaignsData.value, trackedEventsData.value, disabledData.value) {
+            core.getFilteredCampaigns("MOD", disabledData.value)
+        }
 
-         val campaign = filtered.firstOrNull { it.details is ModalDetails }
+        val campaign = filtered.firstOrNull { it.details is ModalDetails }
 
-         val modalDetails = when (val details = campaign?.details) {
-             is ModalDetails -> details
-             else -> null
-         }
+        val modalDetails = when (val details = campaign?.details) {
+            is ModalDetails -> details
+            else -> null
+        }
 
-         if (modalDetails != null && showModal && campaign != null) {
+        if (modalDetails != null && showModal && campaign != null) {
 
-             LaunchedEffect(Unit) {
-                 campaign.id?.let {
-                     trackEvents(it, "viewed")
-                 }
-             }
+            LaunchedEffect(Unit) {
+                campaign.id?.let {
+                    trackEvents(it, "viewed")
+                }
+            }
 
             PopupModal(
                 onCloseClick = {
@@ -1606,42 +1617,42 @@ object AppStorys {
 
     @RequiresApi(Build.VERSION_CODES.M)
     @Composable
-     fun ScratchCard() {
+    fun ScratchCard() {
 
-         var confettiTrigger by remember { mutableStateOf(0) }
-          val campaignsData = campaigns.collectAsStateWithLifecycle()
-          val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
-         val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
+        var confettiTrigger by remember { mutableStateOf(0) }
+        val campaignsData = campaigns.collectAsStateWithLifecycle()
+        val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+        val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = remember(campaignsData.value, trackedEventsData.value, disabledData.value) {
-             core.getFilteredCampaigns("SCRT", disabledData.value)
-         }
+        val filtered = remember(campaignsData.value, trackedEventsData.value, disabledData.value) {
+            core.getFilteredCampaigns("SCRT", disabledData.value)
+        }
 
-         val campaign = filtered.firstOrNull { it.details is ScratchCardDetails }
+        val campaign = filtered.firstOrNull { it.details is ScratchCardDetails }
 
-         val scratchCardDetails = when (val details = campaign?.details) {
-             is ScratchCardDetails -> details
-             else -> null
-         }
+        val scratchCardDetails = when (val details = campaign?.details) {
+            is ScratchCardDetails -> details
+            else -> null
+        }
 
-         val scratchedCampaignsData = scratchedCampaigns.collectAsStateWithLifecycle()
+        val scratchedCampaignsData = scratchedCampaigns.collectAsStateWithLifecycle()
 
-         val isAlreadyScratched = campaign?.id?.let {
-             scratchedCampaignsData.value.contains(it)
-         } ?: false
+        val isAlreadyScratched = campaign?.id?.let {
+            scratchedCampaignsData.value.contains(it)
+        } ?: false
 
-         var wasFullyScratched by remember(campaign?.id, isAlreadyScratched) {
-             mutableStateOf(isAlreadyScratched)
-         }
+        var wasFullyScratched by remember(campaign?.id, isAlreadyScratched) {
+            mutableStateOf(isAlreadyScratched)
+        }
 
-         var isPresented by remember(campaign?.id) { mutableStateOf(true) }
+        var isPresented by remember(campaign?.id) { mutableStateOf(true) }
 
-         if (scratchCardDetails != null && campaign != null && isPresented) {
+        if (scratchCardDetails != null && campaign != null && isPresented) {
 
-             LaunchedEffect(Unit) {
-                 campaign.id?.let {
-                     trackEvents(it, "viewed")
-                 }
+            LaunchedEffect(Unit) {
+                campaign.id?.let {
+                    trackEvents(it, "viewed")
+                }
             }
 
             LaunchedEffect(wasFullyScratched) {
@@ -1733,52 +1744,52 @@ object AppStorys {
         }
     }
 
-     @RequiresApi(Build.VERSION_CODES.M)
-     @Composable
-     fun SpinTheWheel() {
-          val campaignsData = campaigns.collectAsStateWithLifecycle()
-          val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
-         val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
+    @RequiresApi(Build.VERSION_CODES.M)
+    @Composable
+    fun SpinTheWheel() {
+        val campaignsData = campaigns.collectAsStateWithLifecycle()
+        val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+        val disabledData = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = remember(campaignsData.value, trackedEventsData.value, disabledData.value) {
-             core.getFilteredCampaigns("STW", disabledData.value)
-         }
+        val filtered = remember(campaignsData.value, trackedEventsData.value, disabledData.value) {
+            core.getFilteredCampaigns("STW", disabledData.value)
+        }
 
-         val campaign = filtered.firstOrNull { it.details is SpinTheWheelDetails }
+        val campaign = filtered.firstOrNull { it.details is SpinTheWheelDetails }
 
-         val spinTheWheelDetails = when (val details = campaign?.details) {
-             is SpinTheWheelDetails -> details
-             else -> null
-         }
+        val spinTheWheelDetails = when (val details = campaign?.details) {
+            is SpinTheWheelDetails -> details
+            else -> null
+        }
 
-         var isPresented by remember(campaign?.id) { mutableStateOf(true) }
+        var isPresented by remember(campaign?.id) { mutableStateOf(true) }
 
-         // Spin count: hoist here so it survives recomposition and screen navigation
-         val campaignId = campaign?.id
-         if (spinTheWheelDetails != null && campaignId != null && campaign != null) {
-             val initialSpins = spinTheWheelDetails.availableSpins
-                 ?: spinTheWheelDetails.content?.userInteraction?.numberSpin
-                 ?: 3
+        // Spin count: hoist here so it survives recomposition and screen navigation
+        val campaignId = campaign?.id
+        if (spinTheWheelDetails != null && campaignId != null && campaign != null) {
+            val initialSpins = spinTheWheelDetails.availableSpins
+                ?: spinTheWheelDetails.content?.userInteraction?.numberSpin
+                ?: 3
 
-             // Seed in-memory map on first encounter (also covers post-restart restore)
-             if (!spinCountByCampaign.containsKey(campaignId)) {
-                 val persisted = getSpinCount(
-                     campaignId = campaignId,
-                     sharedPreferences = context.getSharedPreferences(
-                         "appstorys_spin_counts",
-                         Context.MODE_PRIVATE
-                     )
-                 )
-                 spinCountByCampaign[campaignId] = persisted ?: initialSpins
-             }
+            // Seed in-memory map on first encounter (also covers post-restart restore)
+            if (!spinCountByCampaign.containsKey(campaignId)) {
+                val persisted = getSpinCount(
+                    campaignId = campaignId,
+                    sharedPreferences = context.getSharedPreferences(
+                        "appstorys_spin_counts",
+                        Context.MODE_PRIVATE
+                    )
+                )
+                spinCountByCampaign[campaignId] = persisted ?: initialSpins
+            }
 
-             val spinsLeft = spinCountByCampaign[campaignId] ?: initialSpins
+            val spinsLeft = spinCountByCampaign[campaignId] ?: initialSpins
 
-             if (isPresented) {
+            if (isPresented) {
 
-                 LaunchedEffect(Unit) {
-                     trackEvents(campaignId, "viewed")
-                 }
+                LaunchedEffect(Unit) {
+                    trackEvents(campaignId, "viewed")
+                }
 
                 val redirectUrl = spinTheWheelDetails.link ?: ""
 
@@ -1824,50 +1835,51 @@ object AppStorys {
         }
     }
 
-     @Composable
-     fun Milestone(
-         topPadding: Dp = 0.dp,
-         bottomPadding: Dp = 0.dp,
-         isWidgets: Boolean = true
-     ) {
-         val campaignsData = campaigns.collectAsStateWithLifecycle()
-         val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
-         val disabledCampaignsFlow = disabledCampaigns.collectAsStateWithLifecycle()
+    @Composable
+    fun Milestone(
+        topPadding: Dp = 0.dp,
+        bottomPadding: Dp = 0.dp,
+        isWidgets: Boolean = true
+    ) {
+        val campaignsData = campaigns.collectAsStateWithLifecycle()
+        val trackedEventsData = trackedEventNames.collectAsStateWithLifecycle()
+        val disabledCampaignsFlow = disabledCampaigns.collectAsStateWithLifecycle()
 
-         val filtered = remember(campaignsData.value, trackedEventsData.value, disabledCampaignsFlow.value) {
-             core.getFilteredCampaigns("MIL", disabledCampaignsFlow.value)
-         }
+        val filtered =
+            remember(campaignsData.value, trackedEventsData.value, disabledCampaignsFlow.value) {
+                core.getFilteredCampaigns("MIL", disabledCampaignsFlow.value)
+            }
 
-         val campaign = filtered.firstOrNull { it.details is MilestoneDetails }
+        val campaign = filtered.firstOrNull { it.details is MilestoneDetails }
 
-         val milestoneDetails = campaign?.details as? MilestoneDetails
+        val milestoneDetails = campaign?.details as? MilestoneDetails
 
-         val currentIndex by currentMilestoneIndex.collectAsStateWithLifecycle()
+        val currentIndex by currentMilestoneIndex.collectAsStateWithLifecycle()
 
-         // Track events and update milestone index
-         LaunchedEffect(trackedEventsData.value.size, milestoneDetails) {
-             milestoneDetails?.milestoneItems?.let { items ->
-                 val sortedItems = items.sortedBy { it.order }
+        // Track events and update milestone index
+        LaunchedEffect(trackedEventsData.value.size, milestoneDetails) {
+            milestoneDetails?.milestoneItems?.let { items ->
+                val sortedItems = items.sortedBy { it.order }
 
-                 for ((index, item) in sortedItems.withIndex()) {
-                     item.triggerEvents?.forEach { trigger ->
-                         trigger.eventName?.let { eventName ->
-                             if (trackedEventsData.value.any { it.eventName == eventName } && index > currentIndex) {
-                                 currentMilestoneIndex.emit(index)
-                                 return@LaunchedEffect
-                             }
-                         }
-                     }
-                 }
-             }
-         }
+                for ((index, item) in sortedItems.withIndex()) {
+                    item.triggerEvents?.forEach { trigger ->
+                        trigger.eventName?.let { eventName ->
+                            if (trackedEventsData.value.any { it.eventName == eventName } && index > currentIndex) {
+                                currentMilestoneIndex.emit(index)
+                                return@LaunchedEffect
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
-         if (milestoneDetails != null &&
-             campaign?.id != null &&
-             !disabledCampaignsFlow.value.contains(campaign.id) &&
-             campaign != null &&
-             showMilestone
-         ) {
+        if (milestoneDetails != null &&
+            campaign?.id != null &&
+            !disabledCampaignsFlow.value.contains(campaign.id) &&
+            campaign != null &&
+            showMilestone
+        ) {
             val sortedItems = milestoneDetails.milestoneItems?.sortedBy { it.order } ?: return
 
             if (currentIndex >= sortedItems.size) return
@@ -2025,9 +2037,9 @@ object AppStorys {
         coroutineScope.launch {
             val campaign = campaigns.value.firstOrNull { campaign ->
                 campaign.campaignType == "TTP" &&
-                    (campaign.details as? TooltipsDetails)
-                        ?.tooltips
-                        ?.any { it.id == tooltip.id } != null
+                        (campaign.details as? TooltipsDetails)
+                            ?.tooltips
+                            ?.any { it.id == tooltip.id } != null
             } ?: campaigns.value.firstOrNull { campaign ->
                 campaign.campaignType == "TTP" && campaign.details is TooltipsDetails
             }

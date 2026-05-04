@@ -656,6 +656,7 @@ class AppStorysCore(private val storage: PlatformStorage) {
             userId = userId,
             screenName = screenName,
             childrenJson = childrenJson,
+            screenshotFileName = "tooltip_${System.currentTimeMillis()}.png",
             screenshotBytes = screenshotBytes
         )
     }

@@ -98,26 +98,38 @@ class _HomeScreenState extends State<HomeScreen> {
     await widget.appstorys.getScreenCampaigns(screenName: _screenNames[index]);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          _buildScreen(_selectedIndex),
-          AppStorysBanner(appStorys: widget.appstorys, height: 120),
-          AppStorysFloater(
-            appStorys: widget.appstorys,
-            onTap: (link) async {
-              final uri = Uri.tryParse(link);
-              if (uri != null) await launchUrl(uri, mode: LaunchMode.externalApplication);
-            },
-          ),
-          widget.appstorys.captureScreenWidget(
-            screenName: _screenNames[_selectedIndex],
-            screenContext: context,
-          ),
-        ],
-      ),
+   @override
+   Widget build(BuildContext context) {
+     return Scaffold(
+       body: Stack(
+         children: [
+           _buildScreen(_selectedIndex),
+           AppStorysBanner(appStorys: widget.appstorys, height: 120),
+
+           AppStorysFloater(
+             appStorys: widget.appstorys,
+             onTap: (link) async {
+               final uri = Uri.tryParse(link);
+               if (uri != null) await launchUrl(uri, mode: LaunchMode.externalApplication);
+             },
+           ),
+
+           AppStorysPip(
+             appStorys: widget.appstorys,
+             bottomPadding: kBottomNavigationBarHeight,
+             onLinkTap: (link) async {
+               final uri = Uri.tryParse(link);
+               if (uri != null) await launchUrl(uri, mode: LaunchMode.externalApplication);
+             },
+           ),
+
+           widget.appstorys.captureScreenWidget(
+             screenName: _screenNames[_selectedIndex],
+             screenContext: context,
+           ),
+
+         ],
+       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onTabTapped,
@@ -135,11 +147,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildScreen(int index) {
     switch (index) {
-      case 0: return const _HomeTab();
+      case 0: return _HomeTab(appstorys: widget.appstorys);
       case 1: return const _ShopTab();
       case 2: return const _ProfileTab();
       case 3: return _SettingsTab(appstorys: widget.appstorys);
-      default: return const _HomeTab();
+      default: return _HomeTab(appstorys: widget.appstorys);
     }
   }
 }
@@ -147,7 +159,9 @@ class _HomeScreenState extends State<HomeScreen> {
 // ─── Home Tab ────────────────────────────────────────────────────────────────
 
 class _HomeTab extends StatelessWidget {
-  const _HomeTab();
+  final AppstorysFlutter appstorys;
+
+  const _HomeTab({required this.appstorys});
 
   @override
   Widget build(BuildContext context) {
@@ -187,6 +201,14 @@ class _HomeTab extends StatelessWidget {
                     _DealCard(title: 'Flash Sale: 6PM', color: Colors.red.shade100),
                   ],
                 ),
+              ),
+              const SizedBox(height: 24),
+              AppStorysWidget(
+                appStorys: appstorys,
+                onTap: (link) async {
+                  final uri = Uri.tryParse(link);
+                  if (uri != null) await launchUrl(uri, mode: LaunchMode.externalApplication);
+                },
               ),
               const SizedBox(height: 24),
               _SectionHeader(key: const ValueKey('categories'), title: 'Categories'),

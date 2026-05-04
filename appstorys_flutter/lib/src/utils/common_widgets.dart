@@ -44,29 +44,26 @@ class CrossButton extends StatelessWidget {
       }
     }
 
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            color: bgColor.withValues(alpha: 0.7),
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: _parseColor(
-                styling != null && styling!['color'] is Map
-                    ? (styling!['color'] as Map<String, dynamic>)['stroke'] as String?
-                    : null,
-              ),
-              width: 1,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: bgColor.withValues(alpha: 0.7),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: _parseColor(
+              styling != null && styling!['color'] is Map
+                  ? (styling!['color'] as Map<String, dynamic>)['stroke'] as String?
+                  : null,
             ),
+            width: 1,
           ),
-          padding: const EdgeInsets.all(4),
-          child: Icon(
-            Icons.close,
-            size: iconSize,
-            color: iconColor,
-          ),
+        ),
+        padding: const EdgeInsets.all(4),
+        child: Icon(
+          Icons.close,
+          size: iconSize,
+          color: iconColor,
         ),
       ),
     );

@@ -93,7 +93,7 @@ class CaptureManager {
       await WidgetsBinding.instance.endOfFrame;
       await Future.delayed(const Duration(milliseconds: 250));
 
-      final rootElement = WidgetsBinding.instance.renderViewElement;
+      final rootElement = WidgetsBinding.instance.rootElement;
 
       if (rootElement == null) {
         debugPrint('[CaptureManager] root element null');

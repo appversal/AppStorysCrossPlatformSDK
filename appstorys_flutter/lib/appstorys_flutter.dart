@@ -5,18 +5,22 @@ import 'package:flutter/material.dart';
 
 import 'appstorys_flutter_platform_interface.dart';
 import 'src/appstorys_api_models.dart';
-import 'src/widgets/capture_manager.dart';
-import 'src/widgets/tooltip_manager.dart';
+import 'src/tooltips/capture_manager.dart';
+import 'src/tooltips/tooltip_manager.dart';
 
 export 'src/appstorys_api_models.dart';
 export 'src/models/banner_models.dart';
 export 'src/models/floater_models.dart';
-export 'src/widgets/app_storys_banner.dart';
-export 'src/widgets/app_storys_floater.dart';
+export 'src/models/pip_models.dart';
+export 'src/models/widgets_models.dart';
+export 'src/banner/app_storys_banner.dart';
+export 'src/floater/app_storys_floater.dart';
+export 'src/pip/app_storys_pip.dart';
+export 'src/widgets/app_storys_widget.dart';
 export 'src/utils/common_widgets.dart';
 export 'src/utils/campaigns_stream_mixin.dart';
-export 'src/widgets/tooltip_manager.dart' show TooltipManager;
-export 'src/widgets/capture_manager.dart' show CaptureManager;
+export 'src/tooltips/tooltip_manager.dart' show TooltipManager;
+export 'src/tooltips/capture_manager.dart' show CaptureManager;
 
 // This is the public API that Flutter developers actually use.
 // It validates and sanitizes inputs before delegating to the platform interface.

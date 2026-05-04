@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 
 import 'appstorys_flutter_platform_interface.dart';
 import 'src/appstorys_api_models.dart';
-import 'src/widgets/capture_manager.dart';
+import 'src/tooltips/capture_manager.dart';
 
 // This is the actual bridge to native code — implements the platform interface using Flutter's MethodChannel.
 // Extends the abstract platform interface — provides real implementations
