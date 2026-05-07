@@ -1,15 +1,27 @@
-# appstorys_flutter
+# AppStorys Flutter SDK
 
-A new Flutter plugin project.
+Display engagement campaigns in your Flutter app — Banners, Stories, PiP videos,
+Modals, Bottom Sheets, CSAT ratings, Surveys, Scratch Cards, and Spin The Wheel.
 
-## Getting Started
+## Installation
 
-This project is a starting point for a Flutter
-[plug-in package](https://flutter.dev/to/develop-plugins),
-a specialized package that includes platform-specific implementation code for
-Android and/or iOS.
+```yaml
+dependencies:
+  appstorys_flutter: ^1.0.0-alpha01
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Quick start
+
+```dart
+final _appstorys = AppstorysFlutter();
+
+await _appstorys.initialize(
+  appId:     'YOUR_APP_ID',
+  accountId: 'YOUR_ACCOUNT_ID',
+  userId:    'user_123',
+);
+await _appstorys.getScreenCampaigns(screenName: 'Home');
+```
+
+Add AppStorysOverlay inside a Stack on every screen.
 

@@ -8,6 +8,7 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -27,7 +28,14 @@ class AppstorysFlutterPlugin :
     private val core: AppStorysCore by lazy { AppStorysCore(PlatformStorage()) }
 
     // Coroutine scope owned by the plugin — cancelled when the engine detaches.
-    private val pluginScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    // CoroutineExceptionHandler logs errors instead of letting them propagate to
+    // Android's default uncaught-exception handler (which kills the process).
+    private val pluginScope = CoroutineScope(
+        SupervisorJob() + Dispatchers.Default +
+            CoroutineExceptionHandler { _, throwable ->
+                android.util.Log.e("AppStorysPlugin", "Unhandled coroutine error", throwable)
+            }
+    )
     // Holds the active StateFlow collection job so it can be cancelled on stream cancel.
     private var campaignsCollectionJob: Job? = null
 
@@ -270,11 +278,19 @@ class AppstorysFlutterPlugin :
         result.error("INVALID_ARGS", "Missing required argument: $name", null)
     }
 
+    // Runs block() on a background IO thread so KMP runBlocking calls inside
+    // shared-core never block the Android main thread (which would trigger an ANR).
     private fun runBridgeCall(result: Result, block: () -> Any?) {
-        try {
-            result.success(block())
-        } catch (e: Exception) {
-            result.error("APPSTORYS_ERROR", e.message ?: "Unexpected AppStorys error", null)
+        pluginScope.launch(Dispatchers.IO) {
+            try {
+                val value = block()
+                withContext(Dispatchers.Main) { result.success(value) }
+            } catch (t: Throwable) {
+                android.util.Log.e("AppStorysPlugin", "Bridge call error", t)
+                withContext(Dispatchers.Main) {
+                    result.error("APPSTORYS_ERROR", t.message ?: "Unexpected AppStorys error", null)
+                }
+            }
         }
     }
 

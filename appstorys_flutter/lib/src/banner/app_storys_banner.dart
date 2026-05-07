@@ -7,7 +7,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import '../../appstorys_flutter.dart';
-import '../utils/campaigns_stream_mixin.dart';
+import '../common/cross_button.dart';
 
 /// A widget that displays an AppStorys banner campaign.
 ///
@@ -29,6 +29,11 @@ class AppStorysBanner extends StatefulWidget {
   final EdgeInsets margin;
   final BorderRadius? borderRadius;
   final VoidCallback? onDismissed;
+  /// Extra space below the banner — pass the host BottomNavigationBar height
+  /// so the banner sits above it. Added on top of any backend-configured margin.
+  final double bottomPadding;
+  /// Callback for handling banner link clicks — receives the link (URL or screen name).
+  final void Function(String link)? onTap;
 
   const AppStorysBanner({
     super.key,
@@ -39,6 +44,8 @@ class AppStorysBanner extends StatefulWidget {
     this.margin = const EdgeInsets.all(12),
     this.borderRadius,
     this.onDismissed,
+    this.bottomPadding = 0,
+    this.onTap,
   });
 
   @override
@@ -140,15 +147,25 @@ class _AppStorysBannerState extends State<AppStorysBanner>
     widget.appStorys
         .trackEvent(event: 'viewed', campaignId: banner!.id)
         .catchError((_) {});
+
+    // Dismiss the banner from core after tracking the view.
+    // This prevents it from re-appearing when navigating back to the same screen,
+    // matching Kotlin's approach of using disableCampaign() for overlay campaigns.
+    widget.appStorys.dismissCampaign(banner.id).catchError((_) {});
   }
 
   Future<void> _onTap() async {
     final banner = _banner;
-    if (banner?.link?.isEmpty ?? true) return;
+    if (banner?.id.isEmpty ?? true) return;
 
     await widget.appStorys
         .trackEvent(event: 'clicked', campaignId: banner!.id)
         .catchError((_) {});
+
+    final link = banner.link;
+    if (link?.isNotEmpty == true) {
+      widget.onTap?.call(link!);
+    }
   }
 
   BorderRadius _resolveBorderRadius() {
@@ -200,6 +217,7 @@ class _AppStorysBannerState extends State<AppStorysBanner>
       borderRadius: borderRadius,
       elevation: widget.elevation,
       margin: widget.margin,
+      bottomPadding: widget.bottomPadding,
       forcedHeight: _forcedHeight,
       aspectRatio: _aspectRatio,
       isImage: isImage,
@@ -219,6 +237,7 @@ class _BannerView extends StatelessWidget {
   final BorderRadius borderRadius;
   final double elevation;
   final EdgeInsets margin;
+  final double bottomPadding;
   final double? forcedHeight;
   final double? aspectRatio;
   final bool isImage;
@@ -231,6 +250,7 @@ class _BannerView extends StatelessWidget {
     required this.borderRadius,
     required this.elevation,
     required this.margin,
+    required this.bottomPadding,
     required this.forcedHeight,
     required this.aspectRatio,
     required this.isImage,
@@ -281,7 +301,7 @@ class _BannerView extends StatelessWidget {
       minimum: EdgeInsets.only(
         left: banner.styling?.marginLeft ?? margin.left,
         right: banner.styling?.marginRight ?? margin.right,
-        bottom: banner.styling?.marginBottom ?? margin.bottom,
+        bottom: (banner.styling?.marginBottom ?? margin.bottom) + bottomPadding,
       ),
       child: Align(
         alignment: Alignment.bottomCenter,

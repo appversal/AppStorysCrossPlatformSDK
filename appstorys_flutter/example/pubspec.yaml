@@ -31,6 +31,11 @@ dependencies:
   url_launcher: ^6.3.1
   video_player: ^2.8.0
 
+dependency_overrides:
+  # path_provider_android 2.3.1 pulls in jni:^1.0.0 which requires android-35.
+  # 2.2.22 has identical functionality without the jni dependency.
+  path_provider_android: 2.2.22
+
 dev_dependencies:
   integration_test:
     sdk: flutter

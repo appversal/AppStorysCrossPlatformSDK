@@ -1,6 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -8,19 +6,19 @@ import 'appstorys_flutter_platform_interface.dart';
 import 'src/appstorys_api_models.dart';
 import 'src/tooltips/capture_manager.dart';
 
-// This is the actual bridge to native code — implements the platform interface using Flutter's MethodChannel.
-// Extends the abstract platform interface — provides real implementations
+/// This is the actual bridge to native code — implements the platform interface using Flutter's MethodChannel.
+/// Extends the abstract platform interface — provides real implementations
 /// An implementation of [AppstorysFlutterPlatform] that uses method channels.
 class MethodChannelAppstorysFlutter extends AppstorysFlutterPlatform {
   /// The method channel used to interact with the native platform.
-  // The channel name must match exactly what the native side registers.
-  // Android: channel = MethodChannel(binding.binaryMessenger, "appstorys_flutter")
+  /// The channel name must match exactly what the native side registers.
+  /// Android: channel = MethodChannel(binding.binaryMessenger, "appstorys_flutter")
   @visibleForTesting
   final methodChannel = const MethodChannel('appstorys_flutter');
 
-  // EventChannel — must match the name registered in AppstorysFlutterPlugin.kt.
-  // receiveBroadcastStream() creates a new native listener each time it is called,
-  // so AppstorysFlutter caches the resulting Dart stream to avoid duplicate listeners.
+  /// EventChannel — must match the name registered in AppstorysFlutterPlugin.kt.
+  /// receiveBroadcastStream() creates a new native listener each time it is called,
+  /// so AppstorysFlutter caches the resulting Dart stream to avoid duplicate listeners.
   static const EventChannel _campaignsEventChannel =
       EventChannel('appstorys_flutter/campaigns_stream');
 

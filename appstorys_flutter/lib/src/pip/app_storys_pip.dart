@@ -2,8 +2,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import '../../appstorys_flutter.dart';
-import '../models/pip_models.dart';
-import '../utils/campaigns_stream_mixin.dart';
+import '../common/cross_button.dart';
+import '../common/mute_button.dart';
+import '../common/unmute_button.dart';
 import 'pip_full_screen.dart';
 import 'pip_video_player.dart';
 
@@ -39,7 +40,6 @@ class _AppStorysPipState extends State<AppStorysPip>
   bool _muted = false;
 
   Offset _position = Offset.zero;
-  bool _dragging = false;
 
   late AnimationController _snapController;
   Animation<Offset>? _snapAnim;
@@ -119,7 +119,6 @@ class _AppStorysPipState extends State<AppStorysPip>
       // Combine host-provided padding with any backend-configured padding —
       // mirrors Kotlin: pipStyling?.pipBottomPadding?.dp?.plus(bottomPadding)
       final totalBottom = widget.bottomPadding + (_pip!.styling?.pipBottomPadding ?? 0);
-      final totalTop = widget.topPadding + (_pip!.styling?.pipTopPadding ?? 0);
 
       final isLeft = _pip!.position.toLowerCase() == 'left';
 
@@ -140,6 +139,11 @@ class _AppStorysPipState extends State<AppStorysPip>
     widget.appStorys
         .trackEvent(event: 'viewed', campaignId: pip!.id)
         .catchError((_) {});
+
+    // Dismiss the PiP from core after tracking the view.
+    // This prevents it from re-appearing when navigating back to the same screen,
+    // matching Kotlin's approach of using disableCampaign() for overlay campaigns.
+    widget.appStorys.dismissCampaign(pip.id).catchError((_) {});
   }
 
   void _onSnapTick() {
@@ -193,8 +197,7 @@ class _AppStorysPipState extends State<AppStorysPip>
 
     setState(() => _playing = false);
 
-    Navigator.push(
-      context,
+    Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => PipFullScreen(
           appStorys: widget.appStorys,
@@ -226,12 +229,10 @@ class _AppStorysPipState extends State<AppStorysPip>
         onTap: _onTap,
         onDrag: (delta) {
           setState(() {
-            _dragging = true;
             _position += delta;
           });
         },
         onDragEnd: () {
-          _dragging = false;
           _snapToEdge();
         },
         onMuteToggle: () => setState(() => _muted = !_muted),
@@ -286,22 +287,32 @@ class _PipView extends StatelessWidget {
                 isPlaying: isPlaying,
               ),
             ),
-            Positioned(
-              top: 4,
-              left: 4,
-              child: _IconBtn(
-                icon: muted ? Icons.volume_off : Icons.volume_up,
-                onTap: onMuteToggle,
+            if (pip.styling?.soundToggleEnabled != false)
+              Positioned(
+                top: 4,
+                left: 4,
+                child: muted
+                    ? MuteButton(
+                        onTap: onMuteToggle,
+                        iconSize: 14,
+                        styling: pip.styling?.soundToggle,
+                      )
+                    : UnmuteButton(
+                        onTap: onMuteToggle,
+                        iconSize: 14,
+                        styling: pip.styling?.soundToggle,
+                      ),
               ),
-            ),
-            Positioned(
-              top: 4,
-              right: 4,
-              child: _IconBtn(
-                icon: Icons.close,
-                onTap: onClose,
+            if (pip.styling?.crossButtonEnabled != false)
+              Positioned(
+                top: 4,
+                right: 4,
+                child: CrossButton(
+                  onTap: onClose,
+                  iconSize: 14,
+                  styling: pip.styling?.crossButton,
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -309,25 +320,3 @@ class _PipView extends StatelessWidget {
   }
 }
 
-class _IconBtn extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _IconBtn({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 24,
-        height: 24,
-        decoration: const BoxDecoration(
-          color: Colors.white70,
-          shape: BoxShape.circle,
-        ),
-        child: Icon(icon, size: 14, color: Colors.black),
-      ),
-    );
-  }
-}

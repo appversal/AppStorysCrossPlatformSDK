@@ -3,9 +3,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import '../../appstorys_flutter.dart';
-import '../models/widgets_models.dart';
-import '../utils/campaigns_stream_mixin.dart';
-import '../utils/common_widgets.dart' show isGifUrl, isLottieUrl;
 
 // =============================================================================
 // PUBLIC WIDGET
@@ -586,7 +583,7 @@ class _WidgetMedia extends StatelessWidget {
         fit: isGifUrl(image.image) ? BoxFit.contain : BoxFit.cover,
         width: double.infinity,
         height: double.infinity,
-        errorBuilder: (_, __, ___) => Container(color: Colors.grey[200]),
+        errorBuilder: (_, _, _) => Container(color: Colors.grey[200]),
       );
     }
 
@@ -658,7 +655,7 @@ class _VisibilityDetectorState extends State<_VisibilityDetector> {
   }
 
   void _detach() {
-    for (final p in _positions) p.removeListener(_check);
+    for (final p in _positions) { p.removeListener(_check); }
     _positions.clear();
   }
 

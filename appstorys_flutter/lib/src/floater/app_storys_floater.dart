@@ -2,19 +2,20 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import '../../appstorys_flutter.dart';
-import '../models/floater_models.dart';
-import '../utils/campaigns_stream_mixin.dart';
-import '../utils/common_widgets.dart' show isGifUrl, isLottieUrl;
 
 /// PUBLIC widget
 class AppStorysFloater extends StatefulWidget {
   final AppstorysFlutter appStorys;
   final void Function(String link)? onTap;
+  /// Extra space below the floater — pass the host BottomNavigationBar height
+  /// so the floater sits above it. Added on top of any backend-configured margin.
+  final double bottomPadding;
 
   const AppStorysFloater({
     super.key,
     required this.appStorys,
     this.onTap,
+    this.bottomPadding = 0,
   });
 
   @override
@@ -90,6 +91,11 @@ class _AppStorysFloaterState extends State<AppStorysFloater>
     widget.appStorys
         .trackEvent(event: 'viewed', campaignId: f!.id)
         .catchError((_) {});
+    
+    // Dismiss the floater from core after tracking the view.
+    // This prevents it from re-appearing when navigating back to the same screen,
+    // matching Kotlin's approach of using disableCampaign() for overlay campaigns.
+    widget.appStorys.dismissCampaign(f.id).catchError((_) {});
   }
 
   void _onTap() {
@@ -130,6 +136,7 @@ class _AppStorysFloaterState extends State<AppStorysFloater>
     return _FloaterView(
       floater: f,
       borderRadius: _borderRadius(),
+      bottomPadding: widget.bottomPadding,
       onTap: _onTap,
     );
   }
@@ -139,11 +146,13 @@ class _AppStorysFloaterState extends State<AppStorysFloater>
 class _FloaterView extends StatelessWidget {
   final FloaterCampaign floater;
   final BorderRadius borderRadius;
+  final double bottomPadding;
   final VoidCallback onTap;
 
   const _FloaterView({
     required this.floater,
     required this.borderRadius,
+    required this.bottomPadding,
     required this.onTap,
   });
 
@@ -159,7 +168,7 @@ class _FloaterView extends StatelessWidget {
       alignment: isLeft ? Alignment.bottomLeft : Alignment.bottomRight,
       child: Padding(
         padding: EdgeInsets.only(
-          bottom: s?.marginBottom ?? 0,
+          bottom: (s?.marginBottom ?? 0) + bottomPadding,
           left: isLeft ? (s?.marginLeft ?? 0) : 0,
           right: isLeft ? 0 : (s?.marginRight ?? 0),
         ),
@@ -195,7 +204,7 @@ class _MediaView extends StatelessWidget {
       return Image.network(
         floater.image!,
         fit: isGifUrl(floater.image) ? BoxFit.contain : BoxFit.cover,
-        errorBuilder: (_, __, ___) => Container(color: Colors.grey[200]),
+        errorBuilder: (_, _, _) => Container(color: Colors.grey[200]),
       );
     }
 

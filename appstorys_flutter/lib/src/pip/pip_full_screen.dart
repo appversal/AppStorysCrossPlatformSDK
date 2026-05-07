@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../appstorys_flutter.dart';
-import '../models/pip_models.dart';
+import '../common/cross_button.dart';
+import '../common/cta_button.dart';
+import '../common/minimize_button.dart';
+import '../common/mute_button.dart';
+import '../common/unmute_button.dart';
 import 'pip_video_player.dart';
 
 class PipFullScreen extends StatefulWidget {
@@ -75,126 +79,73 @@ class _PipFullScreenState extends State<PipFullScreen> {
 
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          /// VIDEO
-          Positioned.fill(
-            child: PipVideoPlayer(
-              videoUrl: widget.videoUrl,
-              mute: _muted,
-            ),
-          ),
-
-          /// TOP LEFT (minimize)
-          Positioned(
-            top: 12,
-            left: 12,
-            child: _IconButton(
-              icon: Icons.picture_in_picture_alt,
-              onTap: _onMinimize,
-            ),
-          ),
-
-          /// TOP RIGHT (sound + close)
-          Positioned(
-            top: 12,
-            right: 12,
-            child: Row(
-              children: [
-                _IconButton(
-                  icon: _muted ? Icons.volume_off : Icons.volume_up,
-                  onTap: () => setState(() => _muted = !_muted),
-                ),
-                const SizedBox(width: 8),
-                _IconButton(
-                  icon: Icons.close,
-                  onTap: _onClose,
-                ),
-              ],
-            ),
-          ),
-
-          /// CTA BUTTON
-          if (campaign.buttonText?.isNotEmpty == true)
-            Positioned(
-              bottom: 20,
-              left: 20,
-              right: 20,
-              child: _CtaButton(
-                text: campaign.buttonText!,
-                onTap: _onCtaTap,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            /// VIDEO
+            Positioned.fill(
+              child: PipVideoPlayer(
+                videoUrl: widget.videoUrl,
+                mute: _muted,
               ),
             ),
-        ],
-      ),
-    );
-  }
-}
 
-/// ─────────────────────────────────────────────────────────
-/// REUSABLE ICON BUTTON
-/// ─────────────────────────────────────────────────────────
-class _IconButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
+            /// TOP LEFT (minimize)
+            if (campaign.styling?.expandControlsEnabled != false)
+              Positioned(
+                top: 12,
+                left: 12,
+                child: MinimiseButton(
+                  onTap: _onMinimize,
+                  styling: campaign.styling?.expandControls,
+                ),
+              ),
 
-  const _IconButton({
-    required this.icon,
-    required this.onTap,
-  });
+            /// TOP RIGHT (sound + close)
+            Positioned(
+              top: 12,
+              right: 12,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (campaign.styling?.soundToggleEnabled != false) ...[
+                    _muted
+                        ? MuteButton(
+                            onTap: () => setState(() => _muted = !_muted),
+                            styling: campaign.styling?.soundToggle,
+                          )
+                        : UnmuteButton(
+                            onTap: () => setState(() => _muted = !_muted),
+                            styling: campaign.styling?.soundToggle,
+                          ),
+                    const SizedBox(width: 8),
+                  ],
+                  if (campaign.styling?.crossButtonEnabled != false)
+                    CrossButton(
+                      onTap: _onClose,
+                      styling: campaign.styling?.crossButton,
+                    ),
+                ],
+              ),
+            ),
 
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 36,
-        height: 36,
-        decoration: const BoxDecoration(
-          color: Colors.white70,
-          shape: BoxShape.circle,
-        ),
-        child: Icon(
-          icon,
-          size: 20,
-          color: Colors.black,
-        ),
-      ),
-    );
-  }
-}
-
-/// ─────────────────────────────────────────────────────────
-/// CTA BUTTON
-/// ─────────────────────────────────────────────────────────
-class _CtaButton extends StatelessWidget {
-  final String text;
-  final VoidCallback onTap;
-
-  const _CtaButton({
-    required this.text,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          text,
-          style: const TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.w600,
-          ),
+            /// CTA BUTTON
+            if (campaign.buttonText?.isNotEmpty == true)
+              Positioned(
+                bottom: 20,
+                left: 20,
+                right: 20,
+                child: CtaButton(
+                  onTap: _onCtaTap,
+                  text: campaign.buttonText!,
+                  fullWidth: true,
+                  styling: campaign.styling?.cta,
+                ),
+              ),
+          ],
         ),
       ),
     );
   }
 }
+

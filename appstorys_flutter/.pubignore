@@ -1,0 +1,6 @@
+# Exclude superseded file that is gitignored but checked in
+lib/src/stories/app_storys_stories.dart
+
+# Exclude development/documentation files not needed by SDK consumers
+AppStorys_Flutter_Deep_Dive.md
+FLUTTER_SDK_GUIDE.html

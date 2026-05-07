@@ -4,30 +4,40 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
 import 'appstorys_flutter_platform_interface.dart';
-import 'src/appstorys_api_models.dart';
 import 'src/tooltips/capture_manager.dart';
 import 'src/tooltips/tooltip_manager.dart';
 
 export 'src/appstorys_api_models.dart';
 export 'src/models/banner_models.dart';
+export 'src/models/bottom_sheet_models.dart';
+export 'src/models/csat_models.dart';
 export 'src/models/floater_models.dart';
 export 'src/models/pip_models.dart';
+export 'src/models/survey_models.dart';
+export 'src/models/scratch_card_models.dart';
+export 'src/models/spin_wheel_models.dart';
 export 'src/models/widgets_models.dart';
 export 'src/banner/app_storys_banner.dart';
+export 'src/bottom_sheet/app_storys_bottom_sheet.dart';
 export 'src/floater/app_storys_floater.dart';
+export 'src/modal/modal.dart';
+export 'src/csat/csat.dart' show AppStorysCsat;
+export 'src/scratch_card/scratch_card.dart' show AppStorysScratchCard;
+export 'src/spin_wheel/spin_the_wheel.dart' show AppStorysSpinWheel;
+export 'src/survey/survey.dart' show AppStorysSurvey;
 export 'src/pip/app_storys_pip.dart';
+export 'src/overlay/app_storys_overlay.dart';
+export 'src/stories/stories.dart';
 export 'src/widgets/app_storys_widget.dart';
 export 'src/utils/common_widgets.dart';
 export 'src/utils/campaigns_stream_mixin.dart';
 export 'src/tooltips/tooltip_manager.dart' show TooltipManager;
 export 'src/tooltips/capture_manager.dart' show CaptureManager;
 
-// This is the public API that Flutter developers actually use.
-// It validates and sanitizes inputs before delegating to the platform interface.
+/// This is the public API that Flutter developers actually use. It validates and sanitizes inputs before delegating to the platform interface.
 class AppstorysFlutter {
-  // Cached broadcast stream — ensures a single native EventChannel listener is
-  // created regardless of how many widgets subscribe to campaignsStream.
-  // Each AppstorysFlutter instance has its own cache; share one instance app-wide.
+  /// Cached broadcast stream — ensures a single native EventChannel listener is created regardless of how many widgets subscribe to campaignsStream.
+  /// Each AppstorysFlutter instance has its own cache; share one instance app-wide.
   Stream<String>? _campaignsStreamCache;
 
   /// A broadcast stream that emits the full campaigns JSON string whenever

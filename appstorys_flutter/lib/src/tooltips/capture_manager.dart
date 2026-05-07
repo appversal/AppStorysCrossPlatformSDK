@@ -122,6 +122,10 @@ class CaptureManager {
       final pixelRatio =
           ui.PlatformDispatcher.instance.views.first.devicePixelRatio;
 
+      // Collect layout; guard against unmounted context after async gaps.
+      if (!context.mounted) return;
+      final layoutJson = _collectLayout(context, pixelRatio);
+
       final image = await boundary.toImage(pixelRatio: pixelRatio);
 
       final byteData =
@@ -130,8 +134,6 @@ class CaptureManager {
       if (byteData == null) return;
 
       final pngBytes = byteData.buffer.asUint8List();
-
-      final layoutJson = _collectLayout(context, pixelRatio);
 
       await identifyElements(
         screenName,

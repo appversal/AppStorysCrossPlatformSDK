@@ -1,6 +1,3 @@
-import 'dart:async';
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:appstorys_flutter/appstorys_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -27,12 +24,24 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _init() async {
-    await _appstorys.initialize(
-      appId: 'f69bdccf-b20f-4938-b39e-7075d76db791',
-      accountId: '12a9eac5-94ee-4735-9aa6-b8a94cb8fbbb',
-      userId: 'yash1',
-    );
-    await _appstorys.getScreenCampaigns(screenName: 'Home Screen Flutter');
+    try {
+      await _appstorys.initialize(
+        appId: 'f69bdccf-b20f-4938-b39e-7075d76db791',
+        accountId: '12a9eac5-94ee-4735-9aa6-b8a94cb8fbbb',
+        userId: 'yash1',
+      );
+      await _appstorys.getScreenCampaigns(
+        screenName: 'Home Screen Flutter',
+        positionList: ['widget_one', 'widget_two'],
+      );
+    } catch (e) {
+      debugPrint('[AppStorys] init failed: $e');
+    }
+  }
+
+  void _onLinkTap(String link) async {
+    final uri = Uri.tryParse(link);
+    if (uri != null) await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   @override
@@ -40,15 +49,18 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       title: 'AppStorys Example',
       theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.indigo),
-      home: HomeScreen(appstorys: _appstorys),
+      home: HomeScreen(appstorys: _appstorys, onLinkTap: _onLinkTap),
     );
   }
 }
 
+// ─── HomeScreen (tab host) ────────────────────────────────────────────────────
+
 class HomeScreen extends StatefulWidget {
   final AppstorysFlutter appstorys;
+  final void Function(String link) onLinkTap;
 
-  const HomeScreen({super.key, required this.appstorys});
+  const HomeScreen({super.key, required this.appstorys, required this.onLinkTap});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -56,7 +68,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
-  StreamSubscription<String>? _campaignsSub;
 
   static const _screenNames = [
     'Home Screen Flutter',
@@ -65,71 +76,46 @@ class _HomeScreenState extends State<HomeScreen> {
     'Settings',
   ];
 
-  @override
-  void initState() {
-    super.initState();
-    _campaignsSub = widget.appstorys.campaignsStream.listen((json) {
-      final decoded = jsonDecode(json);
-      if (decoded is! List) return;
-      final campaigns = decoded
-          .whereType<Map>()
-          .map((e) => Map<String, Object?>.from(e))
-          .toList();
-
-      final ttpCount = campaigns.where((c) => c['campaign_type'] == 'TTP').length;
-      debugPrint('[TooltipTest] campaigns received: ${campaigns.length}, TTP: $ttpCount');
-
-      if (ttpCount > 0 && mounted) {
-        widget.appstorys.processTooltips(context, campaigns);
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _campaignsSub?.cancel();
-    TooltipManager.reset();
-    super.dispose();
-  }
+  static const _screenPositions = <String, List<String>>{
+    'Home Screen Flutter': ['widget_one', 'widget_two'],
+    'Products': [],
+    'Profile': [],
+    'Settings': [],
+  };
 
   Future<void> _onTabTapped(int index) async {
-    TooltipManager.reset();
     setState(() => _selectedIndex = index);
-    await widget.appstorys.getScreenCampaigns(screenName: _screenNames[index]);
+    final screen = _screenNames[index];
+    await widget.appstorys.getScreenCampaigns(
+      screenName: screen,
+      positionList: _screenPositions[screen] ?? [],
+    );
   }
 
-   @override
-   Widget build(BuildContext context) {
-     return Scaffold(
-       body: Stack(
-         children: [
-           _buildScreen(_selectedIndex),
-           AppStorysBanner(appStorys: widget.appstorys, height: 120),
+  @override
+  Widget build(BuildContext context) {
+    // Mirror of native: Stack = [body content, overlayElements(), captureScreen()]
+    return Scaffold(
+      body: Stack(
+        children: [
+          _buildScreen(_selectedIndex),
 
-           AppStorysFloater(
-             appStorys: widget.appstorys,
-             onTap: (link) async {
-               final uri = Uri.tryParse(link);
-               if (uri != null) await launchUrl(uri, mode: LaunchMode.externalApplication);
-             },
-           ),
+          // Equivalent of ...AppStorys.overlayElements() in the native code.
+          // Renders Banner, Floater, PiP, BottomSheet, Modal — all floating.
+          // Stories and Widget campaigns are inline inside each screen instead.
+          AppStorysOverlay(
+            appStorys: widget.appstorys,
+            bottomPadding: kBottomNavigationBarHeight,
+            onLinkTap: widget.onLinkTap,
+          ),
 
-           AppStorysPip(
-             appStorys: widget.appstorys,
-             bottomPadding: kBottomNavigationBarHeight,
-             onLinkTap: (link) async {
-               final uri = Uri.tryParse(link);
-               if (uri != null) await launchUrl(uri, mode: LaunchMode.externalApplication);
-             },
-           ),
-
-           widget.appstorys.captureScreenWidget(
-             screenName: _screenNames[_selectedIndex],
-             screenContext: context,
-           ),
-
-         ],
-       ),
+          // Equivalent of AppStorys.captureScreen(screenName, context).
+          widget.appstorys.captureScreenWidget(
+            screenName: _screenNames[_selectedIndex],
+            screenContext: context,
+          ),
+        ],
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onTabTapped,
@@ -147,11 +133,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildScreen(int index) {
     switch (index) {
-      case 0: return _HomeTab(appstorys: widget.appstorys);
+      case 0: return _HomeTab(appstorys: widget.appstorys, onLinkTap: widget.onLinkTap);
       case 1: return const _ShopTab();
       case 2: return const _ProfileTab();
       case 3: return _SettingsTab(appstorys: widget.appstorys);
-      default: return _HomeTab(appstorys: widget.appstorys);
+      default: return _HomeTab(appstorys: widget.appstorys, onLinkTap: widget.onLinkTap);
     }
   }
 }
@@ -160,8 +146,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
 class _HomeTab extends StatelessWidget {
   final AppstorysFlutter appstorys;
+  final void Function(String link)? onLinkTap;
 
-  const _HomeTab({required this.appstorys});
+  const _HomeTab({required this.appstorys, this.onLinkTap});
 
   @override
   Widget build(BuildContext context) {
@@ -183,12 +170,29 @@ class _HomeTab extends StatelessWidget {
             ),
           ),
         ),
+
+        // Inline — takes up real space and scrolls with the page.
+        SliverToBoxAdapter(
+          child: AppStorysStories(
+            appStorys: appstorys,
+            onLinkTap: onLinkTap,
+          ),
+        ),
+
         SliverPadding(
           padding: const EdgeInsets.all(16),
           sliver: SliverList(
             delegate: SliverChildListDelegate([
-              const SizedBox(height: 120), // space for banner
-              // ValueKey tags must match the `target` field in the AppStorys dashboard
+
+              // Equivalent of AppStorys.widgets(position: "widget_one").
+              // Inline in scroll content — not floating.
+              AppStorysWidget(
+                appStorys: appstorys,
+                position: 'widget_one',
+                onTap: onLinkTap,
+              ),
+              const SizedBox(height: 16),
+
               _SectionHeader(key: const ValueKey('featured_deals'), title: 'Featured Deals'),
               const SizedBox(height: 12),
               SizedBox(
@@ -203,14 +207,15 @@ class _HomeTab extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
+
+              // Equivalent of AppStorys.widgets(position: "widget_two").
               AppStorysWidget(
                 appStorys: appstorys,
-                onTap: (link) async {
-                  final uri = Uri.tryParse(link);
-                  if (uri != null) await launchUrl(uri, mode: LaunchMode.externalApplication);
-                },
+                position: 'widget_two',
+                onTap: onLinkTap,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
+
               _SectionHeader(key: const ValueKey('categories'), title: 'Categories'),
               const SizedBox(height: 12),
               Row(
@@ -224,9 +229,11 @@ class _HomeTab extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 24),
+
               _SectionHeader(key: const ValueKey('trending_now'), title: 'Trending Now'),
               const SizedBox(height: 12),
               ..._trendingProducts.map((p) => _ProductListTile(product: p)),
+              const SizedBox(height: kBottomNavigationBarHeight + 16),
             ]),
           ),
         ),

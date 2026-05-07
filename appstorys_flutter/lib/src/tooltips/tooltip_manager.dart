@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
+
+import '../common/async_font_text.dart';
 
 typedef TrackEventCallback = Future<void> Function(
   String event, {
@@ -101,7 +102,11 @@ class TooltipManager {
   }
 
   static Element? _findElement(String target) {
-    if (target.isEmpty || _ctx?.mounted != true) return null;
+    if (target.isEmpty) return null;
+    // Walk from the root element so we can reach any widget in the app,
+    // not just the overlay's own subtree.
+    final root = WidgetsBinding.instance.rootElement;
+    if (root == null) return null;
     Element? found;
     void visit(Element el) {
       if (found != null) return;
@@ -113,7 +118,7 @@ class TooltipManager {
       el.visitChildren(visit);
     }
     try {
-      visit(_ctx! as Element);
+      visit(root);
     } catch (e) {
       debugPrint('[TooltipManager] error walking tree: $e');
     }
@@ -373,6 +378,9 @@ class _TextContent extends StatelessWidget {
     final ctaWidth = ctaContainer['ctaWidth'] != null ? TooltipManager._d(ctaContainer['ctaWidth'], 0) : null;
     final ctaAlign = TooltipManager._ctaAlignment(ctaContainer['alignment'] as String?);
     final ctaFontSize = TooltipManager._d(ctaTextMap['fontSize'], 13);
+    final titleFontFamily = titleMap['fontFamily']?.toString();
+    final subFontFamily = subMap['fontFamily']?.toString();
+    final ctaFontFamily = ctaTextMap['fontFamily']?.toString();
 
     final titleMarginMap = TooltipManager._map(titleMap['margin']);
     final subMarginMap = TooltipManager._map(subMap['margin']);
@@ -392,7 +400,7 @@ class _TextContent extends StatelessWidget {
                 TooltipManager._d(titleMarginMap['right'], 0),
                 TooltipManager._d(titleMarginMap['bottom'], 0),
               ),
-              child: Text(
+              child: AsyncFontText(
                 titleText,
                 textAlign: TooltipManager._textAlign(titleMap['textAlign'] as String?),
                 style: TextStyle(
@@ -400,6 +408,7 @@ class _TextContent extends StatelessWidget {
                   fontSize: TooltipManager._d(titleMap['fontSize'], 14),
                   fontWeight: FontWeight.bold,
                   height: 1.3,
+                  fontFamily: titleFontFamily,
                 ),
               ),
             ),
@@ -412,13 +421,14 @@ class _TextContent extends StatelessWidget {
                 TooltipManager._d(subMarginMap['right'], 0),
                 TooltipManager._d(subMarginMap['bottom'], 0),
               ),
-              child: Text(
+              child: AsyncFontText(
                 subText,
                 textAlign: TooltipManager._textAlign(subMap['textAlign'] as String?),
                 style: TextStyle(
                   color: TooltipManager._color(subMap['color'] as String?, fallback: Colors.black54),
                   fontSize: TooltipManager._d(subMap['fontSize'], 12),
                   height: 1.4,
+                  fontFamily: subFontFamily,
                 ),
               ),
             ),
@@ -448,12 +458,13 @@ class _TextContent extends StatelessWidget {
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     alignment: Alignment.center,
-                    child: Text(
+                    child: AsyncFontText(
                       ctaText,
                       style: TextStyle(
                         color: ctaFg,
                         fontSize: ctaFontSize,
                         fontWeight: FontWeight.w600,
+                        fontFamily: ctaFontFamily,
                       ),
                     ),
                   ),
@@ -486,7 +497,7 @@ class _ImageContent extends StatelessWidget {
       fit: BoxFit.cover,
       width: double.infinity,
       height: double.infinity,
-      errorBuilder: (_, __, ___) => Container(
+      errorBuilder: (_, _, _) => Container(
         color: Colors.grey[200],
         child: const Center(child: Icon(Icons.error_outline, color: Colors.grey)),
       ),

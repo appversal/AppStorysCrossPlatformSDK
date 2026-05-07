@@ -68,13 +68,32 @@ class WidgetImage {
     required this.order,
   });
 
-  factory WidgetImage.fromJson(Map<String, dynamic> json) => WidgetImage(
-        id: (json['id'] as String?) ?? '',
-        image: json['image'] as String?,
-        lottieData: json['lottie_data'] as String?,
-        link: json['link'] as String?,
-        order: (json['order'] as num?)?.toInt() ?? 0,
-      );
+  factory WidgetImage.fromJson(Map<String, dynamic> json) {
+    // Kotlin serializes link as JsonElement? — can be a JSON string, a Map/object,
+    // or null. The Kotlin Widget() composable does .toString().removeSurrounding("\"")
+    // to strip the surrounding quotes from a serialized JsonString. We mirror that.
+    final rawLink = json['link'];
+    String? link;
+    if (rawLink is String) {
+      final trimmed = rawLink.trim();
+      link = trimmed.isNotEmpty ? trimmed : null;
+    } else if (rawLink is Map) {
+      // JsonObject serialized as map — try common URL keys
+      final val = rawLink['url'] ?? rawLink['web'] ?? rawLink['href'];
+      link = val?.toString().trim().isNotEmpty == true ? val.toString().trim() : null;
+    } else if (rawLink != null) {
+      final s = rawLink.toString().trim();
+      link = s.isNotEmpty ? s : null;
+    }
+
+    return WidgetImage(
+      id: (json['id'] as String?) ?? '',
+      image: json['image'] as String?,
+      lottieData: json['lottie_data'] as String?,
+      link: link,
+      order: (json['order'] as num?)?.toInt() ?? 0,
+    );
+  }
 
   bool get isLottie => lottieData != null && lottieData!.isNotEmpty;
   bool get hasMedia => (image?.isNotEmpty ?? false) || isLottie;
@@ -117,8 +136,8 @@ class WidgetDetails {
             : null,
       ),
       widgetImages: (json['widget_images'] as List?)
-              ?.map((e) => WidgetImage.fromJson(
-                  Map<String, dynamic>.from(e as Map)))
+              ?.whereType<Map>()
+              .map((e) => WidgetImage.fromJson(Map<String, dynamic>.from(e)))
               .toList() ??
           [],
     );

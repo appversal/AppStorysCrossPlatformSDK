@@ -43,7 +43,7 @@ class BannerCampaign {
         'link': link,
         'styling': styling?.toJson(),
         'lottie_data': lottieData,
-      };
+  };
 }
 
 class BannerStyling {
