@@ -1,0 +1,2024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AppStorys — Shared-Core & Kotlin App Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1e2432;
+    --border: #30363d;
+    --accent: #58a6ff;
+    --accent2: #3fb950;
+    --accent3: #e3b341;
+    --accent4: #f78166;
+    --accent5: #bc8cff;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --text-dim: #484f58;
+    --sidebar-w: 290px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    width: var(--sidebar-w);
+    height: 100vh;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 28px 0 40px;
+    z-index: 100;
+  }
+
+  .sidebar-logo {
+    padding: 0 24px 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  .sidebar-logo .badge {
+    display: inline-block;
+    background: rgba(88,166,255,0.1);
+    border: 1px solid rgba(88,166,255,0.3);
+    border-radius: 100px;
+    padding: 3px 10px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  .sidebar-logo h2 {
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1.3;
+  }
+
+  .nav-group {
+    margin-bottom: 4px;
+  }
+
+  .nav-section {
+    padding: 10px 24px 4px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 24px;
+    font-size: 13px;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+  }
+
+  .nav-item:hover, .nav-item.active {
+    color: var(--text);
+    background: var(--surface2);
+    border-left-color: var(--accent);
+  }
+
+  .nav-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ── Main ── */
+  .main {
+    margin-left: var(--sidebar-w);
+    padding: 56px 64px 100px;
+    max-width: calc(var(--sidebar-w) + 900px);
+  }
+
+  /* ── Hero ── */
+  .hero {
+    margin-bottom: 64px;
+    padding-bottom: 48px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hero-chips {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .chip-blue  { background: rgba(88,166,255,0.1);  border: 1px solid rgba(88,166,255,0.3);  color: var(--accent); }
+  .chip-green { background: rgba(63,185,80,0.1);   border: 1px solid rgba(63,185,80,0.3);   color: var(--accent2); }
+  .chip-gold  { background: rgba(227,179,65,0.1);  border: 1px solid rgba(227,179,65,0.3);  color: var(--accent3); }
+  .chip-red   { background: rgba(247,129,102,0.1); border: 1px solid rgba(247,129,102,0.3); color: var(--accent4); }
+  .chip-purple{ background: rgba(188,140,255,0.1); border: 1px solid rgba(188,140,255,0.3); color: var(--accent5); }
+
+  .hero h1 {
+    font-size: 40px;
+    font-weight: 800;
+    line-height: 1.15;
+    color: var(--text);
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+  }
+
+  .hero h1 .hl-blue   { color: var(--accent); }
+  .hero h1 .hl-green  { color: var(--accent2); }
+
+  .hero p {
+    font-size: 16px;
+    color: var(--text-muted);
+    max-width: 620px;
+    line-height: 1.8;
+  }
+
+  /* ── Sections ── */
+  .section {
+    margin-bottom: 72px;
+    scroll-margin-top: 40px;
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  h2 {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 16px;
+    letter-spacing: -0.01em;
+  }
+
+  h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 36px 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin: 24px 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  p { margin-bottom: 16px; color: var(--text-muted); }
+  strong { color: var(--text); font-weight: 600; }
+
+  /* ── Code ── */
+  pre {
+    background: #0d1117 !important;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    overflow-x: auto;
+    margin: 16px 0;
+  }
+
+  pre code {
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 12.5px !important;
+    line-height: 1.75 !important;
+  }
+
+  .code-label {
+    display: inline-block;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px 6px 0 0;
+    padding: 4px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: -1px;
+    position: relative;
+    z-index: 1;
+  }
+
+  code:not(pre code) {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    background: rgba(110,118,129,0.12);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 6px;
+    color: var(--accent3);
+  }
+
+  /* ── Callouts ── */
+  .callout {
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin: 20px 0;
+    display: flex;
+    gap: 14px;
+    font-size: 14px;
+  }
+  .callout-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+  .callout-body { flex: 1; }
+  .callout-body strong { display: block; margin-bottom: 5px; font-size: 14px; }
+  .callout-body p { margin: 0; font-size: 13.5px; color: inherit; }
+
+  .callout.info    { background: rgba(88,166,255,0.07);  border: 1px solid rgba(88,166,255,0.25);  color: #9ecbff; }
+  .callout.success { background: rgba(63,185,80,0.07);   border: 1px solid rgba(63,185,80,0.25);   color: #7ee787; }
+  .callout.warning { background: rgba(227,179,65,0.07);  border: 1px solid rgba(227,179,65,0.25);  color: #f0c060; }
+  .callout.danger  { background: rgba(247,129,102,0.07); border: 1px solid rgba(247,129,102,0.25); color: #ffa198; }
+
+  /* ── Architecture boxes ── */
+  .layer-stack {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 20px 0;
+  }
+
+  .layer-row {
+    display: flex;
+    align-items: stretch;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+
+  .layer-row:last-child { border-bottom: none; }
+  .layer-row:hover { background: rgba(255,255,255,0.02); }
+
+  .layer-tag {
+    width: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    padding: 14px 8px;
+    text-align: center;
+  }
+
+  .layer-content {
+    padding: 14px 20px;
+    flex: 1;
+  }
+
+  .layer-title { font-weight: 600; color: var(--text); font-size: 14px; margin-bottom: 3px; }
+  .layer-desc  { font-size: 12.5px; color: var(--text-muted); }
+
+  /* ── Flow steps ── */
+  .flow { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 20px 0; }
+
+  .flow-item {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .flow-item:last-child { border-bottom: none; }
+
+  .flow-num {
+    width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--accent);
+    background: rgba(88,166,255,0.06);
+    border-right: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .flow-body { padding: 14px 20px; flex: 1; }
+  .flow-title { font-weight: 600; color: var(--text); font-size: 13.5px; margin-bottom: 3px; }
+  .flow-detail { font-size: 12.5px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+
+  /* ── API endpoint table ── */
+  .api-table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 13px; }
+
+  .api-table th {
+    background: var(--surface2);
+    color: var(--text);
+    font-weight: 600;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 2px solid var(--border);
+  }
+
+  .api-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-muted);
+    vertical-align: top;
+  }
+
+  .api-table tr:last-child td { border-bottom: none; }
+  .api-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .method-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .post { background: rgba(247,129,102,0.15); color: var(--accent4); }
+  .get  { background: rgba(63,185,80,0.15);   color: var(--accent2); }
+
+  /* ── Campaign type grid ── */
+  .campaign-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    margin: 20px 0;
+  }
+
+  .campaign-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    transition: border-color 0.15s;
+  }
+
+  .campaign-card:hover { border-color: var(--accent); }
+
+  .campaign-code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    display: inline-block;
+  }
+
+  .campaign-name { font-weight: 600; color: var(--text); font-size: 13px; }
+  .campaign-desc { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+  /* ── State flow diagram ── */
+  .state-diagram {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin: 20px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    line-height: 1.9;
+    color: var(--text-muted);
+    overflow-x: auto;
+  }
+
+  .state-diagram .highlight { color: var(--accent); }
+  .state-diagram .highlight2 { color: var(--accent2); }
+  .state-diagram .highlight3 { color: var(--accent3); }
+  .state-diagram .highlight4 { color: var(--accent4); }
+  .state-diagram .comment { color: var(--text-dim); }
+
+  /* ── Two-col ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+
+  .info-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+  }
+
+  .info-card h4 { margin: 0 0 8px; text-transform: none; letter-spacing: 0; font-size: 14px; color: var(--text); }
+  .info-card p { margin: 0; font-size: 13px; }
+  .info-card code { font-size: 11.5px; }
+
+  /* ── Divider ── */
+  hr { border: none; border-top: 1px solid var(--border); margin: 48px 0; }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="badge">Implementation Guide</div>
+    <h2>Shared-Core &amp;<br>Kotlin App</h2>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-section">Overview</div>
+    <a class="nav-item active" href="#architecture"><span class="nav-dot" style="background:var(--accent)"></span>Architecture</a>
+    <a class="nav-item" href="#kmp"><span class="nav-dot" style="background:var(--accent5)"></span>What is KMP</a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-section">Shared-Core Internals</div>
+    <a class="nav-item" href="#state"><span class="nav-dot" style="background:var(--accent2)"></span>State &amp; StateFlows</a>
+    <a class="nav-item" href="#initialize"><span class="nav-dot" style="background:var(--accent)"></span>Initialize Flow</a>
+    <a class="nav-item" href="#campaigns"><span class="nav-dot" style="background:var(--accent3)"></span>getScreenCampaigns</a>
+    <a class="nav-item" href="#variants"><span class="nav-dot" style="background:var(--accent5)"></span>Variant Extraction</a>
+    <a class="nav-item" href="#trigger"><span class="nav-dot" style="background:var(--accent4)"></span>TriggerEventMatcher</a>
+    <a class="nav-item" href="#apiclient"><span class="nav-dot" style="background:var(--accent2)"></span>ApiClient</a>
+    <a class="nav-item" href="#storage"><span class="nav-dot" style="background:var(--accent)"></span>PlatformStorage</a>
+    <a class="nav-item" href="#lifecycle"><span class="nav-dot" style="background:var(--accent3)"></span>Lifecycle</a>
+    <a class="nav-item" href="#campaigntypes"><span class="nav-dot" style="background:var(--accent5)"></span>Campaign Types</a>
+    <a class="nav-item" href="#usermanagement"><span class="nav-dot" style="background:var(--accent4)"></span>User Management</a>
+    <a class="nav-item" href="#jsonbridge"><span class="nav-dot" style="background:var(--accent2)"></span>JSON Bridge Methods</a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-section">Kotlin Test App</div>
+    <a class="nav-item" href="#app-arch"><span class="nav-dot" style="background:var(--accent)"></span>App Architecture</a>
+    <a class="nav-item" href="#app-class"><span class="nav-dot" style="background:var(--accent3)"></span>App.kt</a>
+    <a class="nav-item" href="#mainactivity"><span class="nav-dot" style="background:var(--accent2)"></span>MainActivity.kt</a>
+    <a class="nav-item" href="#overlay"><span class="nav-dot" style="background:var(--accent5)"></span>overlayElements</a>
+    <a class="nav-item" href="#homescreen"><span class="nav-dot" style="background:var(--accent4)"></span>HomeScreen Composable</a>
+  </div>
+
+  <div class="nav-group">
+    <div class="nav-section">Full Flows</div>
+    <a class="nav-item" href="#fullflow"><span class="nav-dot" style="background:var(--accent)"></span>End-to-End Data Flow</a>
+    <a class="nav-item" href="#endpointsref"><span class="nav-dot" style="background:var(--accent2)"></span>API Endpoints Reference</a>
+    <a class="nav-item" href="#crossplatform"><span class="nav-dot" style="background:var(--accent3)"></span>Cross-Platform Design</a>
+  </div>
+</nav>
+
+<!-- Main -->
+<main class="main">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-chips">
+      <span class="chip chip-blue">KMP Shared-Core</span>
+      <span class="chip chip-green">Kotlin Android App</span>
+      <span class="chip chip-gold">Ktor HTTP</span>
+      <span class="chip chip-purple">Coroutines &amp; StateFlow</span>
+      <span class="chip chip-red">Jetpack Compose</span>
+    </div>
+    <h1>
+      <span class="hl-blue">Shared-Core</span> &amp;<br>
+      <span class="hl-green">Kotlin App</span> — Deep Dive
+    </h1>
+    <p>A complete guide to the KMP engine that powers all three platforms (Android, Flutter, React Native), and the Kotlin test app that demonstrates every campaign type end to end.</p>
+  </div>
+
+  <!-- 1. Architecture -->
+  <div class="section" id="architecture">
+    <div class="section-label" style="color:var(--accent)">Section 01</div>
+    <h2>Architecture — How It All Fits Together</h2>
+
+    <p>The entire SDK is built around a single source of truth: <code>AppStorysCore</code>. Every platform (Android, Flutter, React Native) uses the same core via KMP — no duplicated logic, no diverging behavior.</p>
+
+    <div class="layer-stack">
+      <div class="layer-row">
+        <div class="layer-tag" style="color:var(--accent2); background:rgba(63,185,80,0.05)">Android<br>App</div>
+        <div class="layer-content">
+          <div class="layer-title">Kotlin Test App — Jetpack Compose UI</div>
+          <div class="layer-desc">App.kt initializes. MainActivity hosts NavHost + overlayElements. HomeScreen / PayScreen / TestScreen call getScreenCampaigns + render campaign composables.</div>
+        </div>
+      </div>
+      <div class="layer-row">
+        <div class="layer-tag" style="color:var(--accent3); background:rgba(227,179,65,0.05)">Android<br>SDK</div>
+        <div class="layer-content">
+          <div class="layer-title">AppStorys Android Wrapper — Composable Campaign Widgets</div>
+          <div class="layer-desc">Wraps AppStorysCore. Exposes Compose UI: <code>Stories()</code>, <code>Widget()</code>, <code>Milestone()</code>, <code>overlayElements()</code>. Observes StateFlows directly.</div>
+        </div>
+      </div>
+      <div class="layer-row">
+        <div class="layer-tag" style="color:var(--accent); background:rgba(88,166,255,0.05)">CORE</div>
+        <div class="layer-content">
+          <div class="layer-title">AppStorysCore — KMP Engine (shared-core)</div>
+          <div class="layer-desc">All business logic. StateFlows, HTTP calls, variant extraction, trigger matching, user state, JSON bridge methods. Shared by Android, Flutter, and React Native.</div>
+        </div>
+      </div>
+      <div class="layer-row">
+        <div class="layer-tag" style="color:var(--accent5); background:rgba(188,140,255,0.05)">API<br>Layer</div>
+        <div class="layer-content">
+          <div class="layer-title">ApiClient — Ktor HTTP</div>
+          <div class="layer-desc">All network calls. Validate-account, track-user-res, CDN campaigns.json (with ETag caching), capture-event, CSAT, Survey, Reels, reconcile. Pure Kotlin, no Android imports.</div>
+        </div>
+      </div>
+      <div class="layer-row">
+        <div class="layer-tag" style="color:var(--accent4); background:rgba(247,129,102,0.05)">Platform<br>Storage</div>
+        <div class="layer-content">
+          <div class="layer-title">PlatformStorage — expect/actual KMP</div>
+          <div class="layer-desc">Android: SharedPreferences. iOS: NSUserDefaults. Same interface everywhere. Stores access token, userId, anonymousFlag, ETag, campaigns cache.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. What is KMP -->
+  <div class="section" id="kmp">
+    <div class="section-label" style="color:var(--accent5)">Section 02</div>
+    <h2>What is KMP (Kotlin Multiplatform)?</h2>
+
+    <p>KMP lets you write business logic once in Kotlin and compile it to multiple targets — Android (JVM), iOS (Native), JavaScript. Each target gets a native binary — no interpreter, no runtime penalty.</p>
+
+    <div class="two-col">
+      <div class="info-card">
+        <h4>Common code</h4>
+        <p>Everything in <code>commonMain</code> — AppStorysCore, ApiClient, all models, TriggerEventMatcher. Compiles to ALL targets. Zero platform imports allowed here.</p>
+      </div>
+      <div class="info-card">
+        <h4>Platform-specific code</h4>
+        <p>The <code>expect/actual</code> pattern. <code>expect class PlatformStorage</code> is declared in commonMain. <code>actual class PlatformStorage</code> is implemented separately in <code>androidMain</code> (SharedPreferences) and <code>iosMain</code> (NSUserDefaults).</p>
+      </div>
+    </div>
+
+    <div class="code-label">shared-core/build.gradle.kts — KMP targets</div>
+    <pre><code class="language-kotlin">kotlin {
+    androidTarget {
+        publishLibraryVariants("release")
+    }
+    // iOS targets only built on macOS CI
+    // listOf(iosX64(), iosArm64(), iosSimulatorArm64()).forEach { ... }
+
+    sourceSets {
+        commonMain.dependencies {
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+            implementation("io.ktor:ktor-client-core:3.0.3")
+            implementation("io.ktor:ktor-client-content-negotiation:3.0.3")
+            implementation("io.ktor:ktor-serialization-kotlinx-json:3.0.3")
+            implementation("io.ktor:ktor-client-logging:3.0.3")
+        }
+        androidMain.dependencies {
+            implementation("io.ktor:ktor-client-android:3.0.3")
+        }
+        iosMain.dependencies {
+            implementation("io.ktor:ktor-client-darwin:3.0.3")
+        }
+    }
+}</code></pre>
+
+    <div class="callout info">
+      <div class="callout-icon">💡</div>
+      <div class="callout-body">
+        <strong>Why this matters for Flutter and React Native</strong>
+        <p>Both Flutter and RN pull in the <strong>Android</strong> target of this library via JitPack. The same <code>AppStorysCore</code> class runs inside their Android plugins — no separate implementation needed. The logic is identical to what the native Android app uses.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. State and StateFlows -->
+  <div class="section" id="state">
+    <div class="section-label" style="color:var(--accent2)">Section 03</div>
+    <h2>Internal State &amp; StateFlows</h2>
+
+    <p><code>AppStorysCore</code> holds all SDK state. Nothing is stored in Activities, ViewModels, or singletons. Every consumer (Android, Flutter, RN) reads from these same fields.</p>
+
+    <div class="code-label">AppStorysCore.kt — all state fields</div>
+    <pre><code class="language-kotlin">class AppStorysCore(private val storage: PlatformStorage) {
+
+    // Coroutine scope — SupervisorJob: one failed child doesn't kill others
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    // ── Authentication ─────────────────────────────────────────────
+    var accessToken: String = ""       private set   // JWT from validate-account
+    var userId: String = ""            private set   // current user (real or anon)
+    var isAnonymousUser: Boolean = true private set  // false after setUserId()
+    var isTestUser: Boolean = false    private set   // true if dashboard marks as test
+    var appId: String = ""
+    var accountId: String = ""
+
+    // ── SDK Lifecycle ──────────────────────────────────────────────
+    enum class SdkState { Uninitialized, Initializing, Initialized, Paused, Error }
+    var sdkState: SdkState = SdkState.Uninitialized  private set
+
+    // ── The 4 StateFlows ──────────────────────────────────────────
+    // All are MutableStateFlow internally, exposed as read-only StateFlow.
+    // StateFlow REPLAYS the current value to every new collector.
+
+    private val _campaigns = MutableStateFlow&lt;List&lt;Campaign&gt;&gt;(emptyList())
+    val campaigns: StateFlow&lt;List&lt;Campaign&gt;&gt; = _campaigns.asStateFlow()
+    // Emits whenever getScreenCampaigns() completes — all widgets react
+
+    private val _disabledCampaigns = MutableStateFlow&lt;List&lt;String&gt;&gt;(emptyList())
+    val disabledCampaigns: StateFlow&lt;List&lt;String&gt;&gt; = _disabledCampaigns.asStateFlow()
+    // Grows when dismissCampaign() is called — resets on screen change
+
+    private val _trackedEvents = MutableStateFlow&lt;Set&lt;TrackedEventData&gt;&gt;(emptySet())
+    val trackedEvents: StateFlow&lt;Set&lt;TrackedEventData&gt;&gt; = _trackedEvents.asStateFlow()
+    // Grows when trackEvent() / viaAppStorys() is called — gates trigger campaigns
+
+    private val _campaignVariants = MutableStateFlow&lt;List&lt;CampaignVariant&gt;&gt;(emptyList())
+    val campaignVariants: StateFlow&lt;List&lt;CampaignVariant&gt;&gt; = _campaignVariants.asStateFlow()
+    // Stores which variant each user is assigned — used for trackEvent variant_id
+
+    // ── Other state ────────────────────────────────────────────────
+    var currentScreen: String = ""     private set   // last screen name passed to getScreenCampaigns
+    private var personalizationData: Map&lt;String, String&gt;? = null   // from track-user-res
+    private var campaignsJob: Job? = null   // active fetch job — cancelled on screen change
+    private val deviceInfo: Map&lt;String, Any&gt; = getDeviceInfo()
+}</code></pre>
+
+    <div class="callout success">
+      <div class="callout-icon">🔑</div>
+      <div class="callout-body">
+        <strong>StateFlow Replay — the key guarantee</strong>
+        <p>Unlike a regular Flow, StateFlow always holds the latest value. Any new collector gets it <strong>immediately</strong> on subscription. This is why Android composables and Flutter widgets don't miss campaigns even if they mount after <code>getScreenCampaigns()</code> completed.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Initialize Flow -->
+  <div class="section" id="initialize">
+    <div class="section-label" style="color:var(--accent)">Section 04</div>
+    <h2>The Initialize Flow</h2>
+
+    <p>Initialization is a 3-step async process. The Kotlin coroutine runs on <code>Dispatchers.Default</code> — the calling thread is never blocked.</p>
+
+    <div class="code-label">AppStorysCore.kt — initialize()</div>
+    <pre><code class="language-kotlin">fun initialize(appId: String, accountId: String, userId: String = "") {
+    this.appId = appId
+    this.accountId = accountId
+
+    // ── Step 1: Resolve user identity ───────────────────────────────────────
+    if (userId.isNotEmpty()) {
+        // Real user provided — store it, mark as non-anonymous
+        this.userId = userId
+        this.isAnonymousUser = false
+        storage.putString("appstorys_user_id", userId)
+        storage.putBoolean("appstorys_is_anonymous", false)
+    } else {
+        val saved = storage.getString("appstorys_user_id")
+        if (!saved.isNullOrEmpty()) {
+            // Previous session exists — restore it
+            this.userId = saved
+            this.isAnonymousUser = storage.getBoolean("appstorys_is_anonymous", true)
+        } else {
+            // First launch — generate anonymous ID, persist it
+            this.userId = "${randomAnonymousSuffix()}_anonymous"
+            this.isAnonymousUser = true
+            storage.putString("appstorys_user_id", this.userId)
+            storage.putBoolean("appstorys_is_anonymous", true)
+        }
+    }
+
+    // ── Guard: skip if already initialized ──────────────────────────────────
+    if (sdkState == SdkState.Initialized || sdkState == SdkState.Initializing) return
+    sdkState = SdkState.Initializing
+
+    // ── Steps 2 + 3 run in a coroutine ──────────────────────────────────────
+    scope.launch {
+        try {
+            // Step 2: POST validate-account → get Bearer access token
+            val tokenResult = apiClient.validateAccount(
+                accountId = accountId,
+                request = ValidateAccountRequest(
+                    app_id = appId,
+                    account_id = accountId,
+                    user_id = this@AppStorysCore.userId,
+                    attributes = null
+                )
+            )
+
+            if (tokenResult is ApiResult.Success &amp;&amp; !tokenResult.data.access_token.isNullOrBlank()) {
+                accessToken = tokenResult.data.access_token!!
+                sdkState = SdkState.Initialized
+
+                // Step 3: Fetch campaigns for whatever screen was already set
+                // campaignsJob.isActive guard prevents duplicate fetch if
+                // getScreenCampaigns() was called before init completed
+                if (campaignsJob?.isActive != true) {
+                    getScreenCampaigns(currentScreen, emptyList())
+                }
+            } else {
+                sdkState = SdkState.Error
+            }
+        } catch (e: Exception) {
+            sdkState = SdkState.Error
+        }
+    }
+}</code></pre>
+
+    <h3>User Identity Resolution</h3>
+    <p>The core always has a userId — never null. The resolution priority is:</p>
+
+    <div class="flow">
+      <div class="flow-item">
+        <div class="flow-num">1</div>
+        <div class="flow-body">
+          <div class="flow-title">Real userId provided</div>
+          <div class="flow-detail">userId = provided value, isAnonymousUser = false. Stored in PlatformStorage.</div>
+        </div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-num">2</div>
+        <div class="flow-body">
+          <div class="flow-title">No userId but previous session exists in storage</div>
+          <div class="flow-detail">userId = stored value. isAnonymousUser = stored flag. Session continuity preserved.</div>
+        </div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-num">3</div>
+        <div class="flow-body">
+          <div class="flow-title">First launch, no userId</div>
+          <div class="flow-detail">Generates: "{13-digit-random}_anonymous". Persists to storage. isAnonymousUser = true.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. getScreenCampaigns -->
+  <div class="section" id="campaigns">
+    <div class="section-label" style="color:var(--accent3)">Section 05</div>
+    <h2>getScreenCampaigns — The Campaign Fetch Pipeline</h2>
+
+    <p>This is the most complex method in the core. It performs up to <strong>3 HTTP calls</strong> and resolves variants before updating the StateFlow.</p>
+
+    <div class="code-label">AppStorysCore.kt — getScreenCampaigns()</div>
+    <pre><code class="language-kotlin">fun getScreenCampaigns(screenName: String, positionList: List&lt;String&gt; = emptyList()) {
+    campaignsJob?.cancel()   // ← cancel previous screen's in-flight fetch
+    campaignsJob = scope.launch {
+
+        // waitForInit() polls every 100ms until sdkState == Initialized (max 5s)
+        // Needed because getScreenCampaigns() might be called before init completes
+        if (!waitForInit()) return@launch
+
+        ensureActive()  // bail if this job was already cancelled
+
+        // ── Screen change: reset all per-screen state ─────────────────────
+        if (currentScreen != screenName) {
+            _disabledCampaigns.emit(emptyList())  // dismissed campaigns reset
+            _campaigns.emit(emptyList())           // clear UI immediately
+            _trackedEvents.emit(emptySet())        // trigger events reset
+            currentScreen = screenName
+            delay(100)    // small debounce — prevents flicker on fast tab switches
+        }
+
+        ensureActive()
+
+        // ── HTTP 1: POST track-user-res ───────────────────────────────────
+        // Asks the server: "which campaign IDs is this user eligible for?"
+        // Also returns: variants assignment, personalization data, test_user flag
+        val eligibleResult = apiClient.getEligibleCampaigns(
+            accountId = accountId,
+            accessToken = accessToken,
+            request = TrackUserWebSocketRequest(
+                user_id = userId,
+                screenName = currentScreen
+            )
+        )
+        val eligibleCampaignIds = eligibleResult.data.eligibleCampaignList ?: emptyList()
+
+        // ── HTTP 2: GET campaigns.json from S3 CDN ────────────────────────
+        // Full campaign definitions. Uses ETag — 304 means serve from cache.
+        val allCampaigns = apiClient.fetchCampaignsJson(accountId = accountId).data
+
+        // ── HTTP 3 (optional): load missing campaigns ─────────────────────
+        // If any eligible IDs are not in the CDN cache, fetch them individually
+        val cachedIds = allCampaigns.mapNotNull { it.id }.toSet()
+        val missingIds = eligibleCampaignIds.filter { it !in cachedIds }
+        if (missingIds.isNotEmpty()) {
+            val missingResult = apiClient.loadMissingCampaigns(
+                accessToken = accessToken,
+                campaignIds = missingIds
+            )
+            // merge into allCampaigns
+        }
+
+        // ── Filter: screen + eligibility ──────────────────────────────────
+        val variants = eligibleResult.data.variants ?: emptyList()
+
+        val campaignsList = allCampaigns
+            .filter { campaign ->
+                campaign.id in eligibleCampaignIds &amp;&amp;
+                campaign.screen?.equals(currentScreen, ignoreCase = true) == true
+            }
+            .map { campaign ->
+                // Resolve variant BEFORE emitting — all platforms get resolved data
+                val variant = variants.find { it.id == campaign.id }
+                if (variant != null) extractVariantFromCampaign(campaign, variant.v_id)
+                else campaign
+            }
+
+        // ── Emit → all observers update ───────────────────────────────────
+        _campaigns.emit(campaignsList)
+        _campaignVariants.emit(variants)
+
+        // ── Test-user only: identify widget positions ─────────────────────
+        if (isTestUser &amp;&amp; positionList.isNotEmpty()) {
+            apiClient.identifyPositions(accessToken, positionList, currentScreen)
+        }
+    }
+}</code></pre>
+
+    <h3>The waitForInit() Pattern</h3>
+    <pre><code class="language-kotlin">// Polls until initialized or times out after 5 seconds (50 × 100ms)
+private suspend fun waitForInit(): Boolean {
+    var attempts = 0
+    while (sdkState == SdkState.Initializing &amp;&amp; attempts &lt; 50) {
+        delay(100)
+        attempts++
+    }
+    return sdkState == SdkState.Initialized
+}</code></pre>
+
+    <div class="callout warning">
+      <div class="callout-icon">⚠️</div>
+      <div class="callout-body">
+        <strong>The CDN ETag Cache</strong>
+        <p>The CDN returns <code>304 Not Modified</code> when campaigns haven't changed. The core stores both the ETag and the full JSON in <code>PlatformStorage</code>. On 304, it deserializes the cached JSON instead of downloading again. On network failure, it falls back to cached JSON rather than failing hard.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Variant Extraction -->
+  <div class="section" id="variants">
+    <div class="section-label" style="color:var(--accent5)">Section 06</div>
+    <h2>Variant Extraction — A/B Testing</h2>
+
+    <p>Campaigns can have multiple variants (A/B/C testing). The <code>track-user-res</code> response tells the core which variant each user is assigned. The core resolves variants <strong>before emitting</strong> — so all platforms always receive already-resolved campaigns.</p>
+
+    <div class="code-label">AppStorysCore.kt — extractVariantFromCampaign()</div>
+    <pre><code class="language-kotlin">private fun extractVariantFromCampaign(campaign: Campaign, variantId: String): Campaign {
+    val details = campaign.details
+    if (details !is VariantCampaignDetails) return campaign  // not a variant campaign
+
+    // Get the specific variant's JSON object
+    val variantData = details.variants[variantId]?.jsonObject ?: return campaign
+
+    // Deserialize into the correct typed details object based on campaign type
+    val variantDetails = when (campaign.campaignType) {
+        "BAN"  -> SdkJson.decodeFromJsonElement&lt;BannerDetails&gt;(variantData)
+        "FLT"  -> SdkJson.decodeFromJsonElement&lt;FloaterDetails&gt;(variantData)
+        "CSAT" -> SdkJson.decodeFromJsonElement&lt;CSATDetails&gt;(variantData)
+        "WID"  -> SdkJson.decodeFromJsonElement&lt;WidgetDetails&gt;(variantData)
+        "REL"  -> SdkJson.decodeFromJsonElement&lt;ReelsDetails&gt;(variantData)
+        "TTP"  -> SdkJson.decodeFromJsonElement&lt;TooltipsDetails&gt;(variantData)
+        "PIP"  -> SdkJson.decodeFromJsonElement&lt;PipDetails&gt;(variantData)
+        "BTS"  -> SdkJson.decodeFromJsonElement&lt;BottomSheetDetails&gt;(variantData)
+        "SUR"  -> SdkJson.decodeFromJsonElement&lt;SurveyDetails&gt;(variantData)
+        "MOD"  -> SdkJson.decodeFromJsonElement&lt;ModalDetails&gt;(variantData)
+        "STR"  -> StoriesDetails(SdkJson.decodeFromJsonElement&lt;List&lt;StoryGroup&gt;&gt;(variantData))
+        "SCRT" -> SdkJson.decodeFromJsonElement&lt;ScratchCardDetails&gt;(variantData)
+        "MIL"  -> SdkJson.decodeFromJsonElement&lt;MilestoneDetails&gt;(variantData)
+        "STW"  -> SdkJson.decodeFromJsonElement&lt;SpinTheWheelDetails&gt;(variantData)
+        else -> null
+    }
+
+    // Return new Campaign with variant details replacing VariantCampaignDetails
+    return if (variantDetails != null) campaign.copy(details = variantDetails) else campaign
+}</code></pre>
+
+    <div class="callout info">
+      <div class="callout-icon">🧬</div>
+      <div class="callout-body">
+        <strong>Why resolve before emitting?</strong>
+        <p>Flutter and React Native receive campaigns as raw JSON. If variants were left as <code>VariantCampaignDetails</code>, every platform would need to implement its own variant resolution logic. Resolving in core means all platforms get a clean, typed object — consistent behavior, zero duplication.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. TriggerEventMatcher -->
+  <div class="section" id="trigger">
+    <div class="section-label" style="color:var(--accent4)">Section 07</div>
+    <h2>TriggerEventMatcher — Conditional Campaigns</h2>
+
+    <p>Not all campaigns show on screen load. Some are gated behind user actions — a login, a purchase, a back press. <code>TriggerEventMatcher</code> evaluates whether a campaign's conditions are met.</p>
+
+    <h3>How Trigger Campaigns Work</h3>
+    <p>Every campaign has an optional <code>trigger_event</code> field from the dashboard. When a user fires an event via <code>trackEvent()</code>, it's added to <code>_trackedEvents</code>. <code>getFilteredCampaigns()</code> checks this set before returning any campaign.</p>
+
+    <div class="code-label">TriggerEventMatcher.kt — shouldShowCampaign()</div>
+    <pre><code class="language-kotlin">fun shouldShowCampaign(
+    triggerEvent: TriggerEvent?,
+    campaignId: String?,
+    trackedEvents: Set&lt;TrackedEventData&gt;
+): Boolean {
+    if (triggerEvent == null) return true   // no trigger = always show
+
+    return when (triggerEvent) {
+
+        // Simple string trigger — campaign shows if this event name was tracked
+        is TriggerEvent.StringTrigger -&gt; {
+            if (triggerEvent.event.isEmpty()) return true
+            val eventToMatch = if (triggerEvent.event == "viaAppStorys") {
+                // viaAppStorys trigger uses campaign-specific sentinel
+                "viaAppStorys${campaignId}"
+            } else {
+                triggerEvent.event
+            }
+            trackedEvents.any { it.eventName == eventToMatch }
+        }
+
+        // Object trigger — event name + condition matching on metadata
+        is TriggerEvent.ObjectTrigger -&gt; {
+            if (triggerEvent.event.isEmpty()) return true
+
+            // Back-press campaigns only evaluate after back is actually pressed
+            val isBackPressCampaign = triggerEvent.eventConfig.any { it.backPress == true }
+            if (isBackPressCampaign) {
+                val backPressTriggered = trackedEvents.any {
+                    it.eventName == BACK_PRESS_SENTINEL  // "__back_press_triggered__"
+                }
+                if (!backPressTriggered) return false
+            }
+
+            // Check if any tracked event with the right name satisfies all conditions
+            val matchingEvents = trackedEvents.filter { it.eventName == triggerEvent.event }
+            matchingEvents.any { tracked -&gt;
+                matchesAllConditions(triggerEvent.eventConfig, tracked.metadata)
+            }
+        }
+    }
+}</code></pre>
+
+    <h3>Condition Operators</h3>
+    <pre><code class="language-kotlin">// Supported operators on metadata values — configured on the dashboard
+"eq"  → metadataValue == conditionValue
+"neq" → metadataValue != conditionValue
+"gt"  → metadataValue.toDouble() > conditionValue.toDouble()
+"gte" → metadataValue.toDouble() >= conditionValue.toDouble()
+"lt"  → metadataValue.toDouble() < conditionValue.toDouble()
+"lte" → metadataValue.toDouble() <= conditionValue.toDouble()</code></pre>
+
+    <h3>Practical Example</h3>
+    <pre><code class="language-kotlin">// Dashboard config: show Modal after Login event where age > 25
+
+// In app code:
+appStorys.trackEvents(
+    event = "Login",
+    metadata = mapOf("age" to 34, "name" to "Yash")
+)
+
+// Core adds TrackedEventData("Login", {"age": 34, "name": "Yash"}) to _trackedEvents
+
+// TriggerEventMatcher evaluates:
+//   triggerEvent.event == "Login" ✓
+//   condition: key="age", operator="gt", value="25"
+//   metadata["age"].toDouble() = 34 > 25 ✓
+// → shouldShowCampaign returns true → Modal is included in getFilteredCampaigns()</code></pre>
+
+    <h3>Back-Press Campaigns</h3>
+    <pre><code class="language-kotlin">// When user presses back:
+core.injectBackPressSentinel()
+// → adds TrackedEventData("__back_press_triggered__") to _trackedEvents
+// → back_press campaigns now evaluate their real conditions
+// → if conditions pass → campaign shows (e.g. exit intent Modal)
+
+// After consuming:
+core.clearTrackedEventForTrigger(triggerEvent)
+// → removes the event from _trackedEvents so it doesn't re-trigger</code></pre>
+  </div>
+
+  <!-- 8. ApiClient -->
+  <div class="section" id="apiclient">
+    <div class="section-label" style="color:var(--accent2)">Section 08</div>
+    <h2>ApiClient — All Network Calls</h2>
+
+    <p>Built on <strong>Ktor</strong> — a KMP HTTP client that compiles to Android (OkHttp engine) and iOS (Darwin engine). All calls return <code>ApiResult&lt;T&gt;</code> — a sealed class with <code>Success</code> and <code>Error</code> variants.</p>
+
+    <div class="code-label">ApiResult — every call returns this</div>
+    <pre><code class="language-kotlin">sealed class ApiResult&lt;out T&gt; {
+    data class Success&lt;T&gt;(val data: T) : ApiResult&lt;T&gt;()
+    data class Error(val message: String, val code: Int? = null) : ApiResult&lt;Nothing&gt;()
+}</code></pre>
+
+    <h3>Ktor Client Configuration</h3>
+    <pre><code class="language-kotlin">private fun createDefaultHttpClient(): HttpClient {
+    return HttpClient {
+        install(ContentNegotiation) {
+            json(apiJson)  // kotlinx-serialization JSON
+        }
+        install(HttpTimeout) {
+            requestTimeoutMillis = 30_000   // 30s all timeouts
+            connectTimeoutMillis = 30_000
+            socketTimeoutMillis = 30_000
+        }
+        install(Logging) {
+            level = LogLevel.INFO  // logs REQUEST + RESPONSE to Logcat/console
+        }
+    }
+}
+
+// JSON parser — lenient, ignores unknown keys (future API fields won't crash)
+val apiJson = Json {
+    ignoreUnknownKeys = true
+    isLenient = true
+    coerceInputValues = true
+    explicitNulls = false
+}</code></pre>
+
+    <h3>CDN Caching with ETag</h3>
+    <pre><code class="language-kotlin">suspend fun fetchCampaignsJson(accountId: String): ApiResult&lt;List&lt;Campaign&gt;&gt; {
+    val cachedEtag = storage.getString("campaigns_etag_$accountId")
+
+    val response = httpClient.get("$CDN_BASE_URL/clients/$accountId/campaigns.json") {
+        cachedEtag?.let { header(HttpHeaders.IfNoneMatch, it) }  // ← conditional GET
+    }
+
+    return when (response.status.value) {
+        200 -&gt; {
+            // Fresh data — cache it and update ETag
+            val payload = response.body&lt;String&gt;()
+            storage.putString("campaigns_json_$accountId", payload)
+            storage.putString("campaigns_etag_$accountId", response.headers[HttpHeaders.ETag])
+            ApiResult.Success(decodeCampaigns(payload))
+        }
+        304 -&gt; {
+            // Nothing changed — serve from cache
+            val cached = storage.getString("campaigns_json_$accountId")
+            ApiResult.Success(decodeCampaigns(cached!!))
+        }
+        else -&gt; fallbackToCachedCampaigns(...)   // network error → serve stale cache
+    }
+}</code></pre>
+
+    <div class="callout success">
+      <div class="callout-icon">🚀</div>
+      <div class="callout-body">
+        <strong>304 Not Modified</strong>
+        <p>After the first app launch, campaigns.json is cached. Subsequent <code>getScreenCampaigns()</code> calls get a 304 response — the full JSON is never re-downloaded. This makes campaign loads near-instant after first run.</p>
+      </div>
+    </div>
+
+    <h3>safeCall — Uniform Error Handling</h3>
+    <pre><code class="language-kotlin">// All simple request/response calls use this — eliminates duplicated try/catch
+private suspend inline fun &lt;reified T&gt; safeCall(
+    operation: String,
+    call: () -&gt; HttpResponse
+): ApiResult&lt;T&gt; {
+    return try {
+        val response = call()
+        if (!response.status.isSuccess()) {
+            ApiResult.Error("Request failed with code ${response.status.value}", response.status.value)
+        } else {
+            ApiResult.Success(response.body())   // auto-deserializes via ContentNegotiation
+        }
+    } catch (e: Exception) {
+        ApiResult.Error(message = e.message ?: "Unexpected error")
+    }
+}</code></pre>
+  </div>
+
+  <!-- 9. PlatformStorage -->
+  <div class="section" id="storage">
+    <div class="section-label" style="color:var(--accent)">Section 09</div>
+    <h2>PlatformStorage — expect/actual KMP</h2>
+
+    <p>The only platform-specific piece in shared-core. Uses Kotlin's <code>expect/actual</code> mechanism — one declaration in <code>commonMain</code>, separate implementations per platform.</p>
+
+    <div class="two-col">
+      <div class="info-card">
+        <h4>commonMain — declaration</h4>
+        <pre style="margin:8px 0 0; padding:12px;"><code class="language-kotlin" style="font-size:11.5px">expect class PlatformStorage {
+    fun getString(key: String): String?
+    fun putString(key: String, value: String)
+    fun getBoolean(key: String, default: Boolean): Boolean
+    fun putBoolean(key: String, value: Boolean)
+}</code></pre>
+      </div>
+      <div class="info-card">
+        <h4>androidMain — actual</h4>
+        <pre style="margin:8px 0 0; padding:12px;"><code class="language-kotlin" style="font-size:11.5px">actual class PlatformStorage {
+    private val prefs = App.context
+        .getSharedPreferences("appstorys", MODE_PRIVATE)
+
+    actual fun getString(key: String) =
+        prefs.getString(key, null)
+    // ... SharedPreferences impl
+}</code></pre>
+      </div>
+    </div>
+
+    <p style="margin-top:16px;">What gets stored:</p>
+    <table class="api-table">
+      <thead><tr><th>Key</th><th>Value</th><th>Set when</th></tr></thead>
+      <tbody>
+        <tr><td><code>appstorys_user_id</code></td><td>userId string</td><td>initialize(), setUserId()</td></tr>
+        <tr><td><code>appstorys_is_anonymous</code></td><td>Boolean</td><td>initialize(), setUserId()</td></tr>
+        <tr><td><code>campaigns_json_{accountId}</code></td><td>Full campaigns JSON</td><td>fetchCampaignsJson() 200</td></tr>
+        <tr><td><code>campaigns_etag_{accountId}</code></td><td>HTTP ETag header</td><td>fetchCampaignsJson() 200</td></tr>
+        <tr><td><code>app_version</code></td><td>versionName</td><td>Plugin initialize handler</td></tr>
+        <tr><td><code>package_name</code></td><td>app package</td><td>Plugin initialize handler</td></tr>
+        <tr><td><code>screen_width/height/density</code></td><td>display metrics</td><td>Plugin initialize handler</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 10. Lifecycle -->
+  <div class="section" id="lifecycle">
+    <div class="section-label" style="color:var(--accent3)">Section 10</div>
+    <h2>Lifecycle Management</h2>
+
+    <p>The core tracks app foreground/background state so campaigns don't render in the background and are refreshed when the app returns.</p>
+
+    <div class="code-label">AppStorysCore.kt — lifecycle methods</div>
+    <pre><code class="language-kotlin">fun onAppResumed() {
+    // Called from Activity.onResume() via the Android wrapper
+    if (sdkState == SdkState.Paused &amp;&amp; currentScreen.isNotBlank()) {
+        sdkState = SdkState.Initialized
+        // Re-fetch for the screen we were on — user may have been away a while
+        getScreenCampaigns(currentScreen, emptyList())
+    }
+}
+
+fun onAppStopped() {
+    // Called from Activity.onStop() via the Android wrapper
+    sdkState = SdkState.Paused
+    scope.launch {
+        _campaigns.emit(emptyList())      // clear campaigns — don't render in bg
+        _trackedEvents.emit(emptySet())   // clear tracked events
+    }
+    campaignsJob?.cancel()   // stop any in-flight fetch
+    campaignsJob = null
+}
+
+fun destroy() {
+    scope.cancel()   // cancel ALL coroutines — called on app process death
+}</code></pre>
+  </div>
+
+  <!-- 11. Campaign Types -->
+  <div class="section" id="campaigntypes">
+    <div class="section-label" style="color:var(--accent5)">Section 11</div>
+    <h2>Campaign Types — All 14</h2>
+
+    <p>Every campaign type has a unique 2-4 letter code used throughout the system — in filtering, variant extraction, and JSON bridge methods.</p>
+
+    <div class="campaign-grid">
+      <div class="campaign-card">
+        <div class="campaign-code" style="background:rgba(88,166,255,0.15);color:var(--accent)">BAN</div>
+        <div class="campaign-name">Banner</div>
+        <div class="campaign-desc">Sticky image/GIF/Lottie at bottom of screen</div>
+      </div>
+      <div class="campaign-card">
+        <div class="campaign-code" style="background:rgba(63,185,80,0.15);color:var(--accent2)">FLT</div>
+        <div class="campaign-name">Floater</div>
+        <div class="campaign-desc">Corner floating button/image, draggable</div>
+      </div>
+      <div class="campaign-card">
+        <div class="campaign-code" style="background:rgba(247,129,102,0.15);color:var(--accent4)">MOD</div>
+        <div class="campaign-name">Modal</div>
+        <div class="campaign-desc">Full-screen overlay popup</div>
+      </div>
+      <div class="campaign-card">
+        <div class="campaign-code" style="background:rgba(227,179,65,0.15);color:var(--accent3)">CSAT</div>
+        <div class="campaign-name">CSAT</div>
+        <div class="campaign-desc">Customer satisfaction rating widget</div>
+      </div>
+      <div class="campaign-card">
+        <div class="campaign-code" style="background:rgba(188,140,255,0.15);color:var(--accent5)">SUR</div>
+        <div class="campaign-name">Survey</div>
+        <div class="campaign-desc">Single/multi-select question widget</div>
+      </div>
+      <div class="campaign-card">
+        <div class="campaign-code" style="background:rgba(88,166,255,0.15);color:var(--accent)">BTS</div>
+        <div class="campaign-name">Bottom Sheet</div>
+        <div class="campaign-desc">Slide-up bottom sheet</div>
+      </div>
+      <div class="campaign-card">
+        <div class="campaign-code" style="background:rgba(63,185,80,0.15);color:var(--accent2)">REL</div>
+        <div class="campaign-name">Reels</div>
+        <div class="campaign-desc">Vertical video feed with like/share</div>
+      </div>
+      <div class="campaign-card">
+        <div class="campaign-code" style="background:rgba(247,129,102,0.15);color:var(--accent4)">TTP</div>
+        <div class="campaign-name">Tooltips</div>
+        <div class="campaign-desc">Anchored step-by-step onboarding tips</div>
+      </div>
+      <div class="campaign-card">
+        <div class="campaign-code" style="background:rgba(227,179,65,0.15);color:var(--accent3)">PIP</div>
+        <div class="campaign-name">Picture-in-Picture</div>
+        <div class="campaign-desc">Small draggable video overlay</div>
+      </div>
+      <div class="campaign-card">
+        <div class="campaign-code" style="background:rgba(188,140,255,0.15);color:var(--accent5)">STR</div>
+        <div class="campaign-name">Stories</div>
+        <div class="campaign-desc">Instagram-style story bubbles + full-screen</div>
+      </div>
+      <div class="campaign-card">
+        <div class="campaign-code" style="background:rgba(88,166,255,0.15);color:var(--accent)">WID</div>
+        <div class="campaign-name">Widget</div>
+        <div class="campaign-desc">Inline image/GIF widget at a named position</div>
+      </div>
+      <div class="campaign-card">
+        <div class="campaign-code" style="background:rgba(63,185,80,0.15);color:var(--accent2)">MIL</div>
+        <div class="campaign-name">Milestone</div>
+        <div class="campaign-desc">Progress bar / achievement widget</div>
+      </div>
+      <div class="campaign-card">
+        <div class="campaign-code" style="background:rgba(247,129,102,0.15);color:var(--accent4)">SCRT</div>
+        <div class="campaign-name">Scratch Card</div>
+        <div class="campaign-desc">Interactive scratch-to-reveal reward</div>
+      </div>
+      <div class="campaign-card">
+        <div class="campaign-code" style="background:rgba(227,179,65,0.15);color:var(--accent3)">STW</div>
+        <div class="campaign-name">Spin the Wheel</div>
+        <div class="campaign-desc">Gamified spin-to-win reward campaign</div>
+      </div>
+    </div>
+
+    <h3>Campaign Data Model</h3>
+    <div class="code-label">CampaignModels.kt</div>
+    <pre><code class="language-kotlin">// The universal Campaign wrapper — every type uses this
+@Serializable(with = CampaignDeserializer::class)
+data class Campaign(
+    val id: String?,
+    @SerialName("campaign_type") val campaignType: String?,    // "BAN", "FLT", "MOD", ...
+    val details: CampaignDetails?,  // typed subclass (BannerDetails, FloaterDetails, ...)
+    val position: String?,          // named slot e.g. "widget_one"
+    val screen: String?,            // screen name this campaign belongs to
+    @SerialName("trigger_event") val triggerEvent: TriggerEvent?  // null = always show
+)
+
+// All details types extend this sealed class — kotlinx-serialization uses
+// CampaignDeserializer to dispatch to the correct subclass based on campaign_type
+@Serializable
+sealed class CampaignDetails</code></pre>
+  </div>
+
+  <!-- 12. User Management -->
+  <div class="section" id="usermanagement">
+    <div class="section-label" style="color:var(--accent4)">Section 12</div>
+    <h2>User Management</h2>
+
+    <h3>setUserId — Anonymous to Identified</h3>
+    <pre><code class="language-kotlin">fun setUserId(newUserId: String) {
+    scope.launch {
+        val previousUserId = userId
+        val wasAnonymous = isAnonymousUser
+
+        // Already this userId — no-op
+        if (!wasAnonymous &amp;&amp; previousUserId == newUserId) return@launch
+
+        try {
+            if (wasAnonymous) {
+                // Merge anonymous session into identified account
+                // Backend links campaign views/clicks from anonymous period
+                apiClient.reconcileAnonymousUser(
+                    accessToken = accessToken,
+                    request = ReconcileUserRequest(
+                        anonymous_user_id = previousUserId,   // "9123456789012_anonymous"
+                        identified_user_id = newUserId        // "yash@example.com"
+                    )
+                )
+            }
+
+            userId = newUserId
+            isAnonymousUser = false
+            storage.putString("appstorys_user_id", newUserId)
+            storage.putBoolean("appstorys_is_anonymous", false)
+        } catch (e: Exception) { ... }
+    }
+}</code></pre>
+
+    <h3>setUserProperties — Targeting Attributes</h3>
+    <pre><code class="language-kotlin">fun setUserProperties(attributes: Map&lt;String, Any&gt;) {
+    scope.launch {
+        // Merges app-provided attributes with device info before sending
+        val enrichedAttributes = attributes + deviceInfo
+        // deviceInfo includes: screen_width, screen_height, app_version, os_version, etc.
+
+        apiClient.updateUserProperties(
+            accessToken = accessToken,
+            request = UpdateUserPropertiesRequest(
+                user_id = userId,
+                attributes = enrichedAttributes.toJsonElementMap()  // → Map&lt;String, JsonElement&gt;
+            )
+        )
+    }
+}
+
+// Usage in Android app:
+campaignManager.setUserProperties(mapOf("first_name" to "sharma"))</code></pre>
+
+    <h3>trackEvent</h3>
+    <pre><code class="language-kotlin">fun trackEvent(campaignId: String? = null, event: String, metadata: Map&lt;String, Any&gt;? = null) {
+    scope.launch {
+        // System events (viewed, clicked, etc.) are NOT added to _trackedEvents
+        // — they're analytics only, not trigger gates
+        val systemEvents = setOf("viewed", "clicked", "csat captured", "survey captured", ...)
+
+        if (event !in systemEvents) {
+            // Custom events ARE added — they can gate trigger campaigns
+            _trackedEvents.update { it + TrackedEventData(event, metadata) }
+        }
+
+        // Look up variant_id for this campaign (if any) to send with the event
+        val variantId = campaignId?.let { id ->
+            _campaignVariants.value.find { it.id == id }?.v_id
+        }
+
+        // Merge metadata + device info + variant_id into final payload
+        val finalMetadata = (metadata ?: emptyMap()) + deviceInfo +
+            (if (variantId != null) mapOf("variant_id" to variantId) else emptyMap())
+
+        apiClient.captureEvent(
+            accessToken = accessToken,
+            userId = userId,
+            campaignId = campaignId,
+            event = event,
+            metadata = finalMetadata
+        )
+    }
+}</code></pre>
+  </div>
+
+  <!-- 13. JSON Bridge Methods -->
+  <div class="section" id="jsonbridge">
+    <div class="section-label" style="color:var(--accent2)">Section 13</div>
+    <h2>JSON Bridge Methods</h2>
+
+    <p>These methods exist specifically for Flutter and React Native — they can't read Kotlin objects directly, so the core serializes state to JSON strings that cross the bridge.</p>
+
+    <div class="code-label">AppStorysCore.kt — bridge methods</div>
+    <pre><code class="language-kotlin">// All active campaigns → JSON array
+// Used by: Flutter EventChannel push, RN getCampaignsJson()
+fun getCampaignsJson(): String {
+    return SdkJson.encodeToString(
+        ListSerializer(CampaignDeserializer),
+        _campaigns.value
+    )
+}
+
+// Filter by type first, then serialize
+// Used by: Flutter getCampaignsByTypeJson("BAN"), RN getCampaignsByTypeJson()
+fun getCampaignsByTypeJson(type: String): String {
+    return SdkJson.encodeToString(
+        ListSerializer(CampaignDeserializer),
+        getFilteredCampaigns(type)   // respects disabled + trigger conditions
+    )
+}
+
+// Personalization key-value map → JSON object
+// Used by: Flutter getPersonalizationData(), RN getPersonalizationData()
+fun getPersonalizationDataJson(): String {
+    return SdkJson.encodeToString(
+        MapSerializer(String.serializer(), String.serializer()),
+        personalizationData ?: emptyMap()
+    )
+}
+
+// Template variable substitution
+// "Hello {{first_name}}!" → "Hello Yash!"
+fun personalizeText(text: String): String {
+    return com.appversal.appstorys.core.utils.personalizeText(
+        text,
+        personalizationData ?: emptyMap()
+    )
+}
+
+// getFilteredCampaigns — used by Android composables directly (no JSON serialization needed)
+fun getFilteredCampaigns(campaignType: String, disabledIds: List&lt;String&gt; = ...): List&lt;Campaign&gt; {
+    return _campaigns.value.filter { campaign -&gt;
+        campaign.campaignType == campaignType &amp;&amp;
+        campaign.id != null &amp;&amp;
+        !disabledIds.contains(campaign.id) &amp;&amp;
+        TriggerEventMatcher.shouldShowCampaign(
+            triggerEvent = campaign.triggerEvent,
+            campaignId = campaign.id,
+            trackedEvents = _trackedEvents.value
+        )
+    }
+}</code></pre>
+
+    <div class="callout info">
+      <div class="callout-icon">💡</div>
+      <div class="callout-body">
+        <strong>Android vs Flutter/RN — different consumption paths</strong>
+        <p>Android composables call <code>getFilteredCampaigns()</code> directly — typed Kotlin objects, no serialization. Flutter/RN call <code>getCampaignsJson()</code> or receive it via EventChannel push — raw JSON strings parsed on the Dart/JS side.</p>
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- 14. App Architecture -->
+  <div class="section" id="app-arch">
+    <div class="section-label" style="color:var(--accent)">Section 14</div>
+    <h2>Kotlin Test App — Architecture</h2>
+
+    <p>The test app is a Jetpack Compose application that demonstrates every SDK feature. It has two Activity types and a global App class.</p>
+
+    <div class="layer-stack">
+      <div class="layer-row">
+        <div class="layer-tag" style="color:var(--accent2); background:rgba(63,185,80,0.05)">App.kt</div>
+        <div class="layer-content">
+          <div class="layer-title">Application class — initialization + navigation state</div>
+          <div class="layer-desc">Calls AppStorys.initialize(). Holds <code>screenNameNavigation: MutableStateFlow&lt;String&gt;</code> — the SDK uses this to trigger programmatic screen navigation from campaign CTAs.</div>
+        </div>
+      </div>
+      <div class="layer-row">
+        <div class="layer-tag" style="color:var(--accent); background:rgba(88,166,255,0.05)">Main<br>Activity</div>
+        <div class="layer-content">
+          <div class="layer-title">MainActivity.kt — Compose NavHost + deep link handling</div>
+          <div class="layer-desc">Root Compose UI. Hosts NavHost with "home" and "test" routes. Handles deep links via <code>Intent.ACTION_VIEW</code>. Places <code>overlayElements()</code> outside NavHost so it floats above all screens.</div>
+        </div>
+      </div>
+      <div class="layer-row">
+        <div class="layer-tag" style="color:var(--accent3); background:rgba(227,179,65,0.05)">Test<br>Activity</div>
+        <div class="layer-content">
+          <div class="layer-title">TestActivity.kt — XML layout (legacy pattern)</div>
+          <div class="layer-desc">Demonstrates XML integration. Started via deep link "xmlhome". Shows SDK still works with traditional View-based layouts.</div>
+        </div>
+      </div>
+      <div class="layer-row">
+        <div class="layer-tag" style="color:var(--accent5); background:rgba(188,140,255,0.05)">More<br>Activity</div>
+        <div class="layer-content">
+          <div class="layer-title">MoreActivity.kt — XML "Cashbook" tab</div>
+          <div class="layer-desc">A second XML Activity demonstrating multi-Activity deep-link routing from campaign CTAs.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 15. App.kt -->
+  <div class="section" id="app-class">
+    <div class="section-label" style="color:var(--accent3)">Section 15</div>
+    <h2>App.kt — The Application Class</h2>
+
+    <div class="code-label">App.kt</div>
+    <pre><code class="language-kotlin">class App : Application() {
+
+    // StateFlow for programmatic navigation from SDK campaign CTAs
+    // LaunchedEffect in MyApp/HomeHost collects this and calls navController.navigate()
+    val screenNameNavigation = MutableStateFlow("")
+
+    override fun onCreate() {
+        super.onCreate()
+
+        val userId = getOrCreateUserId()  // UUID from SharedPreferences
+
+        AppStorys.initialize(
+            context = this,
+            appId = "f69bdccf-b20f-4938-b39e-7075d76db791",
+            accountId = "12a9eac5-94ee-4735-9aa6-b8a94cb8fbbb",
+            userId = "yash1",
+            // Callback — SDK calls this when a campaign CTA has a screen target
+            // e.g. a Banner with link "appstorys://TestScreen" calls this with "TestScreen"
+            navigateToScreen = { screen ->
+                navigateToScreen(screen)
+            }
+        )
+
+        appStorys = AppStorys  // store reference for composables to access
+    }
+
+    fun navigateToScreen(name: String) {
+        appScope.launch { screenNameNavigation.emit(name) }
+    }
+
+    fun resetNavigation() {
+        appScope.launch { screenNameNavigation.emit("") }
+    }
+
+    companion object {
+        lateinit var appStorys: AppStorys
+            private set
+    }
+}</code></pre>
+
+    <div class="callout warning">
+      <div class="callout-icon">🔗</div>
+      <div class="callout-body">
+        <strong>navigateToScreen callback</strong>
+        <p>The SDK can programmatically navigate the app — for example, a Banner campaign might have a CTA that should open the "Pay" tab. The SDK calls <code>navigateToScreen("PayScreen")</code> → App emits to StateFlow → LaunchedEffect in HomeHost switches the tab.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 16. MainActivity -->
+  <div class="section" id="mainactivity">
+    <div class="section-label" style="color:var(--accent2)">Section 16</div>
+    <h2>MainActivity.kt — NavHost + Deep Links</h2>
+
+    <div class="code-label">MainActivity.kt — MyApp composable</div>
+    <pre><code class="language-kotlin">@Composable
+fun MyApp() {
+    val app = LocalContext.current.applicationContext as App
+    val screenName by app.screenNameNavigation.collectAsState()
+    val navController = rememberNavController()
+
+    // Handle SDK-driven navigation (from campaign CTAs, push notifications, etc.)
+    LaunchedEffect(screenName) {
+        if (screenName.isNotEmpty()) {
+            when (screenName) {
+                "TestScreen" -&gt; navController.navigate("test")
+                // add more routes here as needed
+            }
+            app.resetNavigation()
+        }
+    }
+
+    // Root Box — overlayElements is OUTSIDE NavHost
+    // It renders on top of every route without being affected by navigation
+    Box(modifier = Modifier.fillMaxSize()) {
+
+        NavHost(
+            navController = navController,
+            startDestination = "home",
+            enterTransition = { slideIntoContainer(Left, tween(300)) },
+            exitTransition = { slideOutOfContainer(Left, tween(300)) },
+            popEnterTransition = { slideIntoContainer(Right, tween(300)) },
+            popExitTransition = { slideOutOfContainer(Right, tween(300)) }
+        ) {
+            composable("home") {
+                HomeHost(onNavigateToTest = { navController.navigate("test") })
+            }
+            composable("test") {
+                LaunchedEffect(Unit) {
+                    // Fetch campaigns for this screen when it is entered
+                    App.appStorys.getScreenCampaigns("Test Screen", listOf())
+                }
+                TestScreen(onBack = { navController.popBackStack() })
+            }
+        }
+
+        // Overlay: floater, modal, CSAT, etc. — always on top
+        App.appStorys.overlayElements(
+            topPadding = 70.dp,
+            bottomPadding = 70.dp,
+            activity = context as Activity
+        )
+    }
+}</code></pre>
+
+    <h3>Deep Link Handling</h3>
+    <pre><code class="language-kotlin">// AndroidManifest registers this Activity to handle appstorys:// links
+// A campaign CTA with link "appstorys://TestScreen" launches this code
+
+override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    handleDeepLinkIntent(intent)   // cold start
+    handleScreenNameExtra(intent)  // from another Activity via startActivity extras
+}
+
+override fun onNewIntent(intent: Intent) {
+    super.onNewIntent(intent)
+    handleDeepLinkIntent(intent)   // already running (singleTop)
+}
+
+private fun handleDeepLinkIntent(intent: Intent?) {
+    if (intent?.action == Intent.ACTION_VIEW) {
+        val screenName = intent.data?.host?.lowercase()  // "appstorys://TestScreen" → "testscreen"
+        if (!screenName.isNullOrEmpty()) routeScreen(screenName)
+    }
+}
+
+private fun routeScreen(screenName: String) {
+    when (screenName.lowercase()) {
+        "xmlhome" -&gt; startActivity(Intent(this, TestActivity::class.java))
+        "cashbook" -&gt; startActivity(Intent(this, MoreActivity::class.java))
+        else -&gt; {
+            // Compose screen — emit to StateFlow, LaunchedEffect handles it
+            (applicationContext as App).navigateToScreen(screenName)
+        }
+    }
+}</code></pre>
+  </div>
+
+  <!-- 17. overlayElements -->
+  <div class="section" id="overlay">
+    <div class="section-label" style="color:var(--accent5)">Section 17</div>
+    <h2>overlayElements — Global Campaign Overlay</h2>
+
+    <p><code>overlayElements()</code> is the Android SDK's equivalent of Flutter's <code>Stack</code> approach. It renders all floating/overlay campaign types in a single composable placed <strong>outside</strong> the NavHost — so they appear above every screen.</p>
+
+    <div class="callout success">
+      <div class="callout-icon">📍</div>
+      <div class="callout-body">
+        <strong>Why outside NavHost?</strong>
+        <p>If <code>overlayElements()</code> were inside a specific route, it would disappear during navigation transitions. Placing it in the root <code>Box</code> means the Floater, Modal, CSAT, etc. remain visible regardless of which screen is active.</p>
+      </div>
+    </div>
+
+    <pre><code class="language-kotlin">// In MainActivity — root Box
+Box(modifier = Modifier.fillMaxSize()) {
+
+    NavHost(...) {
+        composable("home") { HomeHost() }
+        composable("test") { TestScreen() }
+    }
+
+    // overlayElements lives here — always on top, always rendered
+    App.appStorys.overlayElements(
+        topPadding = 70.dp,     // respects top app bar height
+        bottomPadding = 70.dp,  // respects bottom nav bar height
+        activity = context as Activity
+    )
+}</code></pre>
+
+    <p>What <code>overlayElements()</code> renders internally (from the Android wrapper):</p>
+    <div class="layer-stack">
+      <div class="layer-row">
+        <div class="layer-tag" style="color:var(--accent2); background:rgba(63,185,80,0.05)">FLT</div>
+        <div class="layer-content">
+          <div class="layer-title">Floater</div>
+          <div class="layer-desc">Draggable bottom-corner image/GIF button. Tracks viewed + clicked.</div>
+        </div>
+      </div>
+      <div class="layer-row">
+        <div class="layer-tag" style="color:var(--accent); background:rgba(88,166,255,0.05)">MOD</div>
+        <div class="layer-content">
+          <div class="layer-title">Modal</div>
+          <div class="layer-desc">Full-screen overlay. Shows on trigger event. Dismissible.</div>
+        </div>
+      </div>
+      <div class="layer-row">
+        <div class="layer-tag" style="color:var(--accent3); background:rgba(227,179,65,0.05)">CSAT</div>
+        <div class="layer-content">
+          <div class="layer-title">CSAT</div>
+          <div class="layer-desc">Rating widget overlay. Submits via captureCsatResponse.</div>
+        </div>
+      </div>
+      <div class="layer-row">
+        <div class="layer-tag" style="color:var(--accent5); background:rgba(188,140,255,0.05)">BTS</div>
+        <div class="layer-content">
+          <div class="layer-title">BottomSheet</div>
+          <div class="layer-desc">Slide-up bottom sheet overlay.</div>
+        </div>
+      </div>
+      <div class="layer-row">
+        <div class="layer-tag" style="color:var(--accent4); background:rgba(247,129,102,0.05)">BAN</div>
+        <div class="layer-content">
+          <div class="layer-title">Banner</div>
+          <div class="layer-desc">Sticky bottom banner. Dismissible with cross button.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 18. HomeScreen Composable -->
+  <div class="section" id="homescreen">
+    <div class="section-label" style="color:var(--accent4)">Section 18</div>
+    <h2>HomeScreen Composable — SDK Usage in Practice</h2>
+
+    <p>The HomeScreen demonstrates every inline campaign type and event tracking pattern.</p>
+
+    <div class="code-label">MainActivity.kt — HomeScreen()</div>
+    <pre><code class="language-kotlin">@Composable
+fun HomeScreen(padding: PaddingValues, ...) {
+    val campaignManager = App.appStorys
+
+    LaunchedEffect(Unit) {
+        // Fetch campaigns for this screen.
+        // positionList = named widget slots on this screen — sent to backend
+        // for test users so the dashboard can map positions to campaigns
+        campaignManager.getScreenCampaigns(
+            "Home Screen Kotlin",
+            listOf("widget_one")  // ← widget positions present on this screen
+        )
+    }
+
+    LazyColumn {
+        item {
+            // ── Inline campaign widgets ───────────────────────────────────
+
+            // Stories — horizontal row of circular bubbles
+            campaignManager.Stories()
+
+            // Milestone — progress bar / achievement display
+            campaignManager.Milestone()
+
+            // Widget — inline image/GIF at a named position
+            campaignManager.Widget(
+                modifier = Modifier.appstorys("tooltip_home"),  // ← tooltip anchor
+            )
+
+            // Widget with position + placeholder fallback
+            campaignManager.Widget(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .appstorys("tooltip_home_prem_test"),        // ← tooltip anchor
+                placeholder = context.getDrawable(R.drawable.ic_launcher_foreground),
+                position = "widget_one",   // matches position in getScreenCampaigns
+            )
+
+            // ── User actions ──────────────────────────────────────────────
+
+            Button(onClick = {
+                // trackEvents() — adds "Login" to _trackedEvents with metadata
+                // Any trigger-event campaign gated on Login now evaluates
+                campaignManager.trackEvents(
+                    event = "Login",
+                    metadata = mapOf("name" to eventInput1, "age" to eventInput2)
+                )
+            }) { Text("Login Event") }
+
+            Button(onClick = {
+                // setUserProperties — sends attributes to backend for targeting
+                campaignManager.setUserProperties(mapOf("first_name" to "sharma"))
+            }) { Text("Set Story User Properties") }
+        }
+    }
+}</code></pre>
+
+    <h3>The .appstorys() Modifier</h3>
+    <pre><code class="language-kotlin">// This Modifier marks a composable as a tooltip anchor.
+// The Android SDK uses it to capture the UI element's position on screen
+// so the tooltip bubble can be positioned relative to it.
+// Used only for test users + TTP (Tooltip) campaign type.
+
+Modifier.appstorys("tooltip_home")         // element identifier
+Modifier.appstorys("lazy_column")          // on scrollable containers
+Modifier.appstorys("open_bottom_sheet")    // on buttons
+
+// Under the hood: it captures layout coordinates via onGloballyPositioned
+// and passes them to the tooltipIdentify API (screenshot + element tree upload)</code></pre>
+  </div>
+
+  <hr>
+
+  <!-- 19. Full End-to-End Flow -->
+  <div class="section" id="fullflow">
+    <div class="section-label" style="color:var(--accent)">Section 19</div>
+    <h2>Full End-to-End Data Flow</h2>
+
+    <div class="state-diagram">
+<span class="highlight">App.onCreate()</span>
+  AppStorys.initialize(appId, accountId, userId)
+    │
+    ├─ <span class="comment">Step 1: Resolve userId (real / restore / anonymous)</span>
+    │   PlatformStorage.getString("appstorys_user_id") → restore or generate
+    │
+    ├─ <span class="comment">Step 2: Launch coroutine on Dispatchers.Default</span>
+    │   ApiClient.validateAccount(accountId, {app_id, account_id, user_id})
+    │   POST https://users.appstorys.co/{accountId}/validate-account
+    │   ← 200 { access_token: "Bearer eyJ..." }
+    │   accessToken = tokenResult.data.access_token
+    │   sdkState = <span class="highlight2">Initialized</span>
+    │
+    └─ <span class="comment">Step 3: getScreenCampaigns(currentScreen) if not already active</span>
+
+<span class="highlight">HomeScreen.LaunchedEffect</span>
+  campaignManager.getScreenCampaigns("Home Screen Kotlin", ["widget_one"])
+    │
+    ├─ waitForInit() — polls until sdkState == Initialized
+    │
+    ├─ Screen changed: emit(emptyList()) → UI clears
+    │   _disabledCampaigns, _trackedEvents also reset
+    │
+    ├─ <span class="comment">HTTP 1: POST track-user-res</span>
+    │   POST https://users.appstorys.co/v2/{accountId}/track-user-res
+    │   Body: { user_id, screenName: "Home Screen Kotlin" }
+    │   ← { eligibleCampaignList: ["abc", "def"], variants: [...],
+    │        personalization_data: {"first_name": "Yash"}, test_user: false }
+    │
+    ├─ <span class="comment">HTTP 2: GET campaigns.json (with ETag)</span>
+    │   GET https://cdn.../clients/{accountId}/campaigns.json
+    │   If-None-Match: "prev-etag"
+    │   ← 304 Not Modified (fast) → serve cached JSON
+    │   OR ← 200 + new JSON → cache + update ETag
+    │
+    ├─ <span class="comment">HTTP 3 (optional): loadMissingCampaigns</span>
+    │   POST https://users.appstorys.co/load-campaign-data
+    │   Body: ["id_not_in_cdn_cache"]
+    │   ← [{campaign not in CDN yet}]
+    │
+    ├─ Filter: campaign.id in eligibleList &amp;&amp; campaign.screen == "Home Screen Kotlin"
+    │
+    ├─ extractVariantFromCampaign() for each campaign with variant assignment
+    │   BannerDetails / FloaterDetails / etc. resolved from VariantCampaignDetails
+    │
+    ├─ <span class="highlight2">_campaigns.emit(campaignsList)</span>  ← StateFlow fires
+    │   _campaignVariants.emit(variants)
+    │
+    └─ personalizationData = { "first_name": "Yash" }
+
+<span class="highlight">StateFlow emission triggers all observers:</span>
+
+  <span class="highlight2">Android SDK wrapper:</span>
+    collectAsState() on campaigns StateFlow
+    getFilteredCampaigns("BAN") → check disabled + TriggerEventMatcher
+    Banner composable rebuilds → renders image
+    getFilteredCampaigns("FLT") → Floater composable rebuilds
+    getFilteredCampaigns("STR") → Stories composable rebuilds
+
+  <span class="highlight3">Flutter plugin (AppstorysFlutterPlugin.kt):</span>
+    core.campaigns.collect { _ → getCampaignsJson() → sink.success(json) }
+    → EventChannel → Dart campaignsStream emits
+    → AppStorysBanner filters "BAN" → renders
+    → AppStorysFloater filters "FLT" → renders
+
+  <span class="highlight4">React Native (polling, no push):</span>
+    JS calls getCampaignsJson() after 1500ms wait
+    → getCampaignsByType("BAN") → Floater component renders
+
+<span class="highlight">User taps Banner:</span>
+  campaignManager.trackEvents("clicked", campaignId)
+    ApiClient.captureEvent(accessToken, userId, campaignId, "clicked", {})
+    POST https://tracking.appstorys.co/capture-event
+    ← 204 No Content
+
+<span class="highlight">User logs in:</span>
+  campaignManager.trackEvents("Login", {age: 34})
+    _trackedEvents += TrackedEventData("Login", {age: 34})
+    API: captureEvent("Login", {...})
+    TriggerEventMatcher re-evaluates all trigger campaigns
+    Any campaign with triggerEvent.event="Login" &amp;&amp; age > 25 now qualifies
+    → getFilteredCampaigns() returns it → Modal appears
+    </div>
+  </div>
+
+  <!-- 20. API Endpoints Reference -->
+  <div class="section" id="endpointsref">
+    <div class="section-label" style="color:var(--accent2)">Section 20</div>
+    <h2>API Endpoints Reference</h2>
+
+    <table class="api-table">
+      <thead>
+        <tr><th>Method</th><th>Endpoint</th><th>Called when</th><th>Returns</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="method-badge post">POST</span></td>
+          <td><code>users.appstorys.co/{accountId}/validate-account</code></td>
+          <td>initialize()</td>
+          <td>access_token (JWT)</td>
+        </tr>
+        <tr>
+          <td><span class="method-badge post">POST</span></td>
+          <td><code>users.appstorys.co/v2/{accountId}/track-user-res</code></td>
+          <td>getScreenCampaigns()</td>
+          <td>eligibleCampaignList, variants, personalization_data, test_user</td>
+        </tr>
+        <tr>
+          <td><span class="method-badge get">GET</span></td>
+          <td><code>dev-cdn-campaign-appstorys.s3…/clients/{accountId}/campaigns.json</code></td>
+          <td>getScreenCampaigns()</td>
+          <td>Full campaign definitions (cached with ETag)</td>
+        </tr>
+        <tr>
+          <td><span class="method-badge post">POST</span></td>
+          <td><code>users.appstorys.co/load-campaign-data</code></td>
+          <td>getScreenCampaigns() — missing IDs only</td>
+          <td>Campaign objects not in CDN cache</td>
+        </tr>
+        <tr>
+          <td><span class="method-badge post">POST</span></td>
+          <td><code>tracking.appstorys.co/capture-event</code></td>
+          <td>trackEvent()</td>
+          <td>204 No Content</td>
+        </tr>
+        <tr>
+          <td><span class="method-badge post">POST</span></td>
+          <td><code>users.appstorys.co/update-user-atr</code></td>
+          <td>setUserProperties()</td>
+          <td>200 OK</td>
+        </tr>
+        <tr>
+          <td><span class="method-badge post">POST</span></td>
+          <td><code>users.appstorys.co/reconcile-anonymous-user</code></td>
+          <td>setUserId() — was anonymous</td>
+          <td>200 OK — merges campaign history</td>
+        </tr>
+        <tr>
+          <td><span class="method-badge post">POST</span></td>
+          <td><code>users.appstorys.co/api/v1/campaigns/capture-csat-response/</code></td>
+          <td>captureCsatResponse()</td>
+          <td>200 OK</td>
+        </tr>
+        <tr>
+          <td><span class="method-badge post">POST</span></td>
+          <td><code>users.appstorys.co/api/v1/campaigns/capture-survey-response/</code></td>
+          <td>captureSurveyResponse()</td>
+          <td>200 OK</td>
+        </tr>
+        <tr>
+          <td><span class="method-badge post">POST</span></td>
+          <td><code>users.appstorys.co/api/v1/campaigns/reel-like/</code></td>
+          <td>sendReelLikeStatus()</td>
+          <td>200 OK</td>
+        </tr>
+        <tr>
+          <td><span class="method-badge post">POST</span></td>
+          <td><code>backend.appstorys.co/api/v2/appinfo/identify-positions/</code></td>
+          <td>getScreenCampaigns() — test users only</td>
+          <td>200 OK — maps widget slots</td>
+        </tr>
+        <tr>
+          <td><span class="method-badge post">POST</span></td>
+          <td><code>backend.appstorys.co/api/v1/appinfo/identify-elements/</code></td>
+          <td>Tooltip screen capture — test users only</td>
+          <td>200 OK — maps tooltip anchors via screenshot</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 21. Cross-Platform Design -->
+  <div class="section" id="crossplatform">
+    <div class="section-label" style="color:var(--accent3)">Section 21</div>
+    <h2>Cross-Platform Design Decisions</h2>
+
+    <table class="api-table">
+      <thead><tr><th>Decision</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Single AppStorysCore for all platforms</strong></td>
+          <td>All HTTP logic, state management, variant resolution, trigger matching lives once — zero divergence. Android, Flutter, and RN are all guaranteed identical behavior.</td>
+        </tr>
+        <tr>
+          <td><strong>StateFlow as the source of truth</strong></td>
+          <td>Replay semantics mean no widget ever misses a campaign update — late subscribers still get the current value. Eliminates timing races across all three platforms.</td>
+        </tr>
+        <tr>
+          <td><strong>Variants resolved before emission</strong></td>
+          <td>Android reads typed Kotlin objects. Flutter/RN read JSON. Neither needs to implement variant resolution logic — core does it once for everyone.</td>
+        </tr>
+        <tr>
+          <td><strong>ETag CDN caching</strong></td>
+          <td>Campaigns.json is often hundreds of KB. After first download, 304 responses skip re-download completely — making every subsequent <code>getScreenCampaigns()</code> call much faster.</td>
+        </tr>
+        <tr>
+          <td><strong>expect/actual for PlatformStorage</strong></td>
+          <td>Common code never imports android.* or NSUserDefaults. The KMP compiler links the correct platform implementation — the core is truly portable.</td>
+        </tr>
+        <tr>
+          <td><strong>JSON bridge methods (getCampaignsJson etc.)</strong></td>
+          <td>Flutter/RN can't consume Kotlin objects — they need strings. Bridge methods serialize state on demand. Android never uses them (reads StateFlow directly).</td>
+        </tr>
+        <tr>
+          <td><strong>SupervisorJob in coroutine scopes</strong></td>
+          <td>If the campaigns fetch fails, the entire SDK doesn't crash. Other coroutines (event tracking, user properties) remain alive and operational.</td>
+        </tr>
+        <tr>
+          <td><strong>ApiResult sealed class</strong></td>
+          <td>Every API call returns Success or Error — no exceptions thrown across call boundaries. Core code handles both cases explicitly, no silent failures.</td>
+        </tr>
+        <tr>
+          <td><strong>getFilteredCampaigns() checks 3 conditions</strong></td>
+          <td>Campaign must: (1) match campaign type, (2) not be in disabled list, (3) pass TriggerEventMatcher. All composables/widgets go through this — consistent filtering everywhere.</td>
+        </tr>
+        <tr>
+          <td><strong>navigateToScreen callback in initialize()</strong></td>
+          <td>The SDK must trigger app navigation when a campaign CTA is tapped, but it can't import NavController or know the app's routing scheme. The callback inverts control — the app decides how to handle it.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</main>
+
+<script>
+  const sections = document.querySelectorAll('.section[id]');
+  const navItems = document.querySelectorAll('.nav-item');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navItems.forEach(item => item.classList.remove('active'));
+        const active = document.querySelector(`.nav-item[href="#${entry.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-15% 0px -75% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

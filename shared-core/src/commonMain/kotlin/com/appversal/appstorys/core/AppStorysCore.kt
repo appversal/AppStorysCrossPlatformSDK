@@ -159,7 +159,7 @@ class AppStorysCore(private val storage: PlatformStorage) {
                     sdkState = SdkState.Initialized
                     sdkLogDebug("Initialized. User: ${this@AppStorysCore.userId}")
 
-                    if (campaignsJob?.isActive != true) {
+                    if (currentScreen.isNotBlank() && campaignsJob?.isActive != true) {
                         getScreenCampaigns(currentScreen, emptyList())
                     }
                 } else {

@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AppStorys Flutter SDK — Implementation Guide</title>\
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #21253a;
+    --border: #2e3250;
+    --accent: #7c6af7;
+    --accent2: #56cfaa;
+    --accent3: #f0a05a;
+    --text: #e2e4f0;
+    --text-muted: #8b90b8;
+    --text-dim: #555b7e;
+    --danger: #f06a6a;
+    --sidebar-w: 280px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 15px;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    width: var(--sidebar-w);
+    height: 100vh;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 28px 0;
+    z-index: 100;
+  }
+
+  .sidebar-logo {
+    padding: 0 24px 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+
+  .sidebar-logo span {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+
+  .sidebar-logo h2 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .nav-section {
+    padding: 8px 24px 4px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-top: 12px;
+  }
+
+  .nav-item {
+    display: block;
+    padding: 7px 24px;
+    font-size: 13px;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+  }
+
+  .nav-item:hover,
+  .nav-item.active {
+    color: var(--text);
+    background: var(--surface2);
+    border-left-color: var(--accent);
+  }
+
+  /* ── Main ── */
+  .main {
+    margin-left: var(--sidebar-w);
+    padding: 60px 64px 100px;
+    max-width: calc(var(--sidebar-w) + 860px);
+  }
+
+  /* ── Hero ── */
+  .hero {
+    margin-bottom: 64px;
+    padding-bottom: 48px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(124,106,247,0.12);
+    border: 1px solid rgba(124,106,247,0.3);
+    border-radius: 100px;
+    padding: 5px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 20px;
+  }
+
+  .hero h1 {
+    font-size: 38px;
+    font-weight: 800;
+    line-height: 1.2;
+    color: var(--text);
+    margin-bottom: 16px;
+    letter-spacing: -0.02em;
+  }
+
+  .hero h1 span { color: var(--accent); }
+
+  .hero p {
+    font-size: 16px;
+    color: var(--text-muted);
+    max-width: 600px;
+    line-height: 1.8;
+  }
+
+  .hero-meta {
+    display: flex;
+    gap: 24px;
+    margin-top: 28px;
+  }
+
+  .meta-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .meta-pill .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent2);
+  }
+
+  /* ── Sections ── */
+  .section {
+    margin-bottom: 72px;
+    scroll-margin-top: 40px;
+  }
+
+  .section-number {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  h2 {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 16px;
+    letter-spacing: -0.01em;
+  }
+
+  h3 {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 32px 0 12px;
+  }
+
+  h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin: 24px 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  p { margin-bottom: 16px; color: var(--text-muted); }
+
+  strong { color: var(--text); font-weight: 600; }
+
+  /* ── Code ── */
+  pre {
+    background: #13151f !important;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    overflow-x: auto;
+    margin: 20px 0;
+    position: relative;
+  }
+
+  pre code {
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 13px !important;
+    line-height: 1.7 !important;
+  }
+
+  .code-label {
+    display: inline-block;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 3px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  code:not(pre code) {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 6px;
+    color: var(--accent2);
+  }
+
+  /* ── Architecture diagram ── */
+  .arch-diagram {
+    background: #13151f;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 28px 32px;
+    margin: 20px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+  }
+
+  .arch-layer {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 16px;
+    border-radius: 8px;
+    margin-bottom: 4px;
+    transition: background 0.15s;
+  }
+
+  .arch-layer:hover { background: var(--surface2); }
+
+  .layer-num {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .layer-name { font-weight: 600; color: var(--text); font-size: 14px; flex: 1; }
+  .layer-desc { font-size: 12px; color: var(--text-dim); }
+
+  .l1 .layer-num { background: rgba(124,106,247,0.2); color: var(--accent); }
+  .l2 .layer-num { background: rgba(86,207,170,0.2); color: var(--accent2); }
+  .l3 .layer-num { background: rgba(240,160,90,0.2); color: var(--accent3); }
+  .l4 .layer-num { background: rgba(240,106,106,0.2); color: var(--danger); }
+  .l5 .layer-num { background: rgba(124,106,247,0.15); color: #a899ff; }
+  .l6 .layer-num { background: rgba(86,207,170,0.15); color: #7de8c9; }
+
+  .arch-arrow {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 18px;
+    line-height: 1;
+    margin: 2px 0 2px 30px;
+  }
+
+  /* ── Flow diagram ── */
+  .flow {
+    background: #13151f;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin: 20px 0;
+    counter-reset: flow-step;
+  }
+
+  .flow-step {
+    display: flex;
+    gap: 16px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(46,50,80,0.5);
+  }
+
+  .flow-step:last-child { border-bottom: none; }
+
+  .flow-num {
+    counter-increment: flow-step;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: rgba(124,106,247,0.15);
+    border: 1px solid rgba(124,106,247,0.3);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .flow-content { flex: 1; }
+  .flow-title { font-weight: 600; color: var(--text); font-size: 13px; margin-bottom: 2px; }
+  .flow-detail { font-size: 12px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+
+  /* ── Callout boxes ── */
+  .callout {
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin: 20px 0;
+    display: flex;
+    gap: 14px;
+    font-size: 14px;
+  }
+
+  .callout-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+  .callout-body { flex: 1; }
+  .callout-body strong { display: block; margin-bottom: 4px; font-size: 14px; }
+  .callout-body p { margin: 0; font-size: 13.5px; color: inherit; }
+
+  .callout.info {
+    background: rgba(124,106,247,0.08);
+    border: 1px solid rgba(124,106,247,0.25);
+    color: #b5adff;
+  }
+
+  .callout.tip {
+    background: rgba(86,207,170,0.08);
+    border: 1px solid rgba(86,207,170,0.25);
+    color: #90dfc7;
+  }
+
+  .callout.warning {
+    background: rgba(240,160,90,0.08);
+    border: 1px solid rgba(240,160,90,0.25);
+    color: #f5c48a;
+  }
+
+  /* ── Comparison table ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-size: 13.5px;
+  }
+
+  th {
+    background: var(--surface2);
+    color: var(--text);
+    font-weight: 600;
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 2px solid var(--border);
+  }
+
+  td {
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-muted);
+    vertical-align: top;
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  td code { font-size: 12px; }
+
+  /* ── Channel comparison ── */
+  .channel-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 20px 0;
+  }
+
+  .channel-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+
+  .channel-card h4 {
+    font-size: 13px;
+    font-weight: 700;
+    margin: 0 0 8px;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--text);
+  }
+
+  .channel-card .tag {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+
+  .tag-method { background: rgba(124,106,247,0.15); color: var(--accent); }
+  .tag-event  { background: rgba(86,207,170,0.15);  color: var(--accent2); }
+
+  .channel-card p {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0;
+  }
+
+  /* ── Divider ── */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 48px 0;
+  }
+
+  /* ── Scroll ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <span>AppStorys SDK</span>
+    <h2>Flutter Guide</h2>
+  </div>
+
+  <span class="nav-section">Overview</span>
+  <a class="nav-item active" href="#architecture">Architecture</a>
+  <a class="nav-item" href="#bridge">The Bridge</a>
+
+  <span class="nav-section">Layers</span>
+  <a class="nav-item" href="#core">L1 — AppStorysCore</a>
+  <a class="nav-item" href="#plugin">L2 — Kotlin Plugin</a>
+  <a class="nav-item" href="#platform">L3 — Platform Interface</a>
+  <a class="nav-item" href="#methodchannel">L2 — Dart Bridge</a>
+  <a class="nav-item" href="#publicapi">L4 — Public API</a>
+  <a class="nav-item" href="#stream">Stream Pipeline</a>
+  <a class="nav-item" href="#mixin">CampaignsStreamMixin</a>
+  <a class="nav-item" href="#widgets">Campaign Widgets</a>
+  <a class="nav-item" href="#models">Models</a>
+
+  <span class="nav-section">Integration</span>
+  <a class="nav-item" href="#client">Client Usage</a>
+  <a class="nav-item" href="#dataflow">Full Data Flow</a>
+  <a class="nav-item" href="#screenchange">Screen Change</a>
+  <a class="nav-item" href="#decisions">Design Decisions</a>
+</nav>
+
+<!-- Main -->
+<main class="main">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">⚡ Complete Implementation Guide</div>
+    <h1>AppStorys <span>Flutter SDK</span></h1>
+    <p>A deep-dive into architecture, data flow, bridge communication, campaign widgets, and end-to-end client integration.</p>
+    <div class="hero-meta">
+      <div class="meta-pill"><span class="dot"></span> KMP Shared-Core v4.0.0-alpha04</div>
+      <div class="meta-pill"><span class="dot" style="background:var(--accent)"></span> Flutter Plugin</div>
+      <div class="meta-pill"><span class="dot" style="background:var(--accent3)"></span> Android</div>
+    </div>
+  </div>
+
+  <!-- 1. Architecture -->
+  <div class="section" id="architecture">
+    <div class="section-number">Section 01</div>
+    <h2>Architecture — The Big Picture</h2>
+    <p>The SDK is split into <strong>6 layers</strong>, each with a single responsibility. Flutter (Dart) and Android (Kotlin) are two separate runtimes — they cannot share memory. The bridge is how they communicate.</p>
+
+    <div style="background: #13151f; border: 1px solid var(--border); border-radius: 10px; padding: 28px 24px; margin: 24px 0;">
+      <div class="arch-layer l6">
+        <div class="layer-num">6</div>
+        <div class="layer-name">Example App <code style="font-size:11px">main.dart</code></div>
+        <div class="layer-desc">Client integration — initializes SDK, places widgets</div>
+      </div>
+      <div class="arch-arrow">↑</div>
+      <div class="arch-layer l5">
+        <div class="layer-num">5</div>
+        <div class="layer-name">Campaign Widgets</div>
+        <div class="layer-desc">AppStorysBanner, AppStorysFloater — subscribe & render</div>
+      </div>
+      <div class="arch-arrow">↑</div>
+      <div class="arch-layer l4">
+        <div class="layer-num">4</div>
+        <div class="layer-name">Public API <code style="font-size:11px">AppstorysFlutter</code></div>
+        <div class="layer-desc">What the client calls — validates inputs, owns stream cache</div>
+      </div>
+      <div class="arch-arrow">↑</div>
+      <div class="arch-layer l3">
+        <div class="layer-num">3</div>
+        <div class="layer-name">Platform Interface <code style="font-size:11px">AppstorysFlutterPlatform</code></div>
+        <div class="layer-desc">Abstract contract — enables platform swapping (Android/iOS/web/test)</div>
+      </div>
+      <div class="arch-arrow">↑</div>
+      <div class="arch-layer l2">
+        <div class="layer-num">2</div>
+        <div class="layer-name">MethodChannel Bridge <code style="font-size:11px">Dart ↔ Kotlin</code></div>
+        <div class="layer-desc">Wire — serialises calls across the runtime boundary</div>
+      </div>
+      <div class="arch-arrow">↑</div>
+      <div class="arch-layer l1">
+        <div class="layer-num">1</div>
+        <div class="layer-name">AppStorysCore <code style="font-size:11px">KMP shared-core</code></div>
+        <div class="layer-desc">Engine — all HTTP, state, campaign logic lives here</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. The Bridge -->
+  <div class="section" id="bridge">
+    <div class="section-number">Section 02</div>
+    <h2>The Bridge — MethodChannel &amp; EventChannel</h2>
+    <p>Two types of channels connect Dart and Kotlin. They solve different problems.</p>
+
+    <div class="channel-grid">
+      <div class="channel-card">
+        <div class="tag tag-method">MethodChannel</div>
+        <h4>Request / Response</h4>
+        <p>Flutter sends a named call with arguments. Kotlin handles it, resolves or rejects back. Like an HTTP API call — one request, one response, then done.</p>
+        <p style="margin-top:10px;"><strong>Used for:</strong> initialize, getScreenCampaigns, trackEvent, dismissCampaign</p>
+      </div>
+      <div class="channel-card">
+        <div class="tag tag-event">EventChannel</div>
+        <h4>Continuous Push</h4>
+        <p>Kotlin pushes data to Flutter whenever it wants. Flutter just listens. No request needed. Like a WebSocket — the server sends when ready.</p>
+        <p style="margin-top:10px;"><strong>Used for:</strong> campaigns stream — pushes JSON on every StateFlow update</p>
+      </div>
+    </div>
+
+    <pre><code class="language-plaintext">METHODCHANNEL (Request → Response)
+Flutter: invokeMethod('initialize', {appId, accountId, userId})
+                    ↓ crosses runtime boundary ↓
+Kotlin:  handleInitialize() → core.initialize() → result.success(null)
+                    ↓ back to Dart ↓
+Flutter: Future resolves ✓
+
+EVENTCHANNEL (Kotlin pushes, Flutter listens forever)
+Kotlin:  core.campaigns.collect { _ →
+             sink.success(core.getCampaignsJson())   // push on every change
+         }
+                    ↓ streams to Dart ↓
+Flutter: campaignsStream.listen((json) { ... })      // receives every push</code></pre>
+  </div>
+
+  <!-- 3. AppStorysCore -->
+  <div class="section" id="core">
+    <div class="section-number">Layer 01</div>
+    <h2>AppStorysCore — The Engine</h2>
+    <p>A KMP (Kotlin Multiplatform) library published to JitPack. It owns <strong>all business logic</strong> — HTTP calls, campaign state, user tracking. Flutter never touches the network directly.</p>
+
+    <div class="code-label">shared-core → AppStorysCore.kt</div>
+    <pre><code class="language-kotlin">class AppStorysCore(storage: PlatformStorage) {
+
+    // ─── The heartbeat of the whole system ───────────────────────────────────
+    // MutableStateFlow — any new collector immediately gets the current value
+    // (replay semantics). When this updates, every widget on screen rebuilds.
+    val campaigns: StateFlow&lt;List&lt;Campaign&gt;&gt; = MutableStateFlow(emptyList())
+
+    var sdkState: SdkState = SdkState.Uninitialized
+    var currentScreen: String = ""
+    private var campaignsJob: Job? = null
+
+    fun initialize(appId, accountId, userId) {
+        scope.launch {
+            // HTTP 1: POST validate-account  → receives access token
+            // HTTP 2: POST track-user-res    → registers user, gets eligibility
+            // Sets sdkState = Initialized
+        }
+    }
+
+    fun getScreenCampaigns(screenName, positionList) {
+        campaignsJob?.cancel()       // ← cancels previous screen's fetch
+        currentScreen = screenName
+        campaignsJob = scope.launch {
+            // HTTP 3: GET campaigns.json from CDN
+            // Filters campaigns for this screen + position
+            // _campaigns.value = filteredList  ← triggers StateFlow emission
+        }
+    }
+
+    fun getCampaignsJson(): String  // serializes _campaigns.value → JSON
+    fun trackEvent(...)             // POST to capture-event API
+    fun disableCampaign(id)         // adds to disabled set, re-emits StateFlow
+}</code></pre>
+
+    <div class="callout info">
+      <div class="callout-icon">💡</div>
+      <div class="callout-body">
+        <strong>StateFlow Replay Guarantee</strong>
+        <p>When a new widget subscribes to <code>campaigns.collect</code>, it immediately receives the <em>current</em> value — even if <code>getScreenCampaigns()</code> was called seconds earlier. Widgets never miss data regardless of when they mount.</p>
+      </div>
+    </div>
+
+    <div class="code-label">appstorys_flutter/android/build.gradle.kts</div>
+    <pre><code class="language-kotlin">// JitPack dependency — Flutter's Android plugin pulls in the KMP core
+implementation("com.github.appversal.AppStorysCrossPlatformSDK:appstorys-core-android:v4.0.0-alpha04")</code></pre>
+  </div>
+
+  <!-- 4. Kotlin Plugin -->
+  <div class="section" id="plugin">
+    <div class="section-number">Layer 02 — Kotlin Side</div>
+    <h2>AppstorysFlutterPlugin.kt — The Android Bridge</h2>
+    <p>This is the Android entry point. Flutter auto-registers it via the plugin manifest. It sets up both channels and delegates everything to <code>AppStorysCore</code>.</p>
+
+    <h3>MethodChannel Setup</h3>
+    <div class="code-label">AppstorysFlutterPlugin.kt</div>
+    <pre><code class="language-kotlin">class AppstorysFlutterPlugin : FlutterPlugin, MethodCallHandler {
+
+    private val core: AppStorysCore by lazy { AppStorysCore(PlatformStorage()) }
+
+    // Coroutine scope — SupervisorJob means one failure doesn't kill others
+    private val pluginScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+        // Channel name must match exactly what Dart uses
+        channel = MethodChannel(binding.binaryMessenger, "appstorys_flutter")
+        channel.setMethodCallHandler(this)
+        // ... EventChannel setup (see below)
+    }
+
+    override fun onMethodCall(call: MethodCall, result: Result) {
+        when (call.method) {
+            "initialize"          -> handleInitialize(call, result)
+            "getScreenCampaigns"  -> handleGetScreenCampaigns(call, result)
+            "trackEvent"          -> handleTrackEvent(call, result)
+            "dismissCampaign"     -> handleDismissCampaign(call, result)
+            // ... 13 more methods
+            else -> result.notImplemented()
+        }
+    }
+
+    // Every handler uses this — converts exceptions to PlatformException
+    private fun runBridgeCall(result: Result, block: () -> Any?) {
+        try {
+            result.success(block())
+        } catch (e: Exception) {
+            result.error("APPSTORYS_ERROR", e.message, null)
+        }
+    }
+
+    private fun handleGetScreenCampaigns(call: MethodCall, result: Result) {
+        val screenName = call.argument&lt;String&gt;("screenName")
+        runBridgeCall(result) {
+            core.getScreenCampaigns(screenName = screenName!!, positionList = positionList)
+            null   // void → Dart Future resolves with null
+        }
+    }
+
+    // Lifecycle — cancel everything when Flutter engine detaches
+    override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+        channel.setMethodCallHandler(null)
+        campaignsCollectionJob?.cancel()
+        pluginScope.cancel()
+    }
+}</code></pre>
+
+    <h3>EventChannel Setup — The Campaign Push</h3>
+    <div class="callout tip">
+      <div class="callout-icon">🔑</div>
+      <div class="callout-body">
+        <strong>This is the most important piece</strong>
+        <p>The EventChannel collects AppStorysCore's StateFlow and pushes JSON to Dart on every emission. This is why widgets update instantly without polling.</p>
+      </div>
+    </div>
+
+    <pre><code class="language-kotlin">campaignsEventChannel = EventChannel(
+    binding.binaryMessenger,
+    "appstorys_flutter/campaigns_stream"  // ← must match Dart
+)
+
+campaignsEventChannel.setStreamHandler(object : EventChannel.StreamHandler {
+
+    override fun onListen(arguments: Any?, sink: EventChannel.EventSink) {
+        campaignsCollectionJob?.cancel()
+        campaignsCollectionJob = pluginScope.launch {
+
+            // StateFlow.collect() — stays alive, fires on every campaign update.
+            // StateFlow semantics: replays current value immediately to new collectors.
+            core.campaigns.collect { _ ->
+                val json = core.getCampaignsJson()
+
+                // Must switch to Main thread — EventSink.success() requires it
+                withContext(Dispatchers.Main) {
+                    sink.success(json)   // ← pushes JSON string to Dart
+                }
+            }
+        }
+    }
+
+    override fun onCancel(arguments: Any?) {
+        campaignsCollectionJob?.cancel()   // Flutter unsubscribed — stop collecting
+    }
+})</code></pre>
+
+    <h3>Device Metadata on Initialize</h3>
+    <p>Before calling <code>core.initialize()</code>, the plugin injects device info into <code>PlatformStorage</code>. The core sends this with the <code>validate-account</code> request.</p>
+
+    <pre><code class="language-kotlin">val storage = PlatformStorage()
+storage.putString("app_version",    packageInfo?.versionName ?: "")
+storage.putString("package_name",   applicationContext.packageName)
+storage.putString("screen_width",   metrics.widthPixels.toString())
+storage.putString("screen_height",  metrics.heightPixels.toString())
+storage.putString("screen_density", metrics.densityDpi.toString())
+storage.putString("orientation",    if (portrait) "portrait" else "landscape")</code></pre>
+  </div>
+
+  <!-- 5. Platform Interface -->
+  <div class="section" id="platform">
+    <div class="section-number">Layer 03</div>
+    <h2>Platform Interface — The Abstract Contract</h2>
+    <p>Defines what every platform implementation must provide. The actual implementation is swapped via the <code>instance</code> setter.</p>
+
+    <div class="code-label">appstorys_flutter_platform_interface.dart</div>
+    <pre><code class="language-dart">abstract class AppstorysFlutterPlatform extends PlatformInterface {
+
+    // Token prevents unauthorized swapping of the instance
+    static final Object _token = Object();
+
+    // Default → MethodChannel (Android/iOS)
+    // Can be replaced for web or testing
+    static AppstorysFlutterPlatform _instance = MethodChannelAppstorysFlutter();
+
+    static set instance(AppstorysFlutterPlatform instance) {
+        PlatformInterface.verifyToken(instance, _token);  // security check
+        _instance = instance;
+    }
+
+    // Every method throws by default — concrete impl must override
+    Stream&lt;String&gt; get campaignsStream {
+        throw UnimplementedError('campaignsStream has not been implemented.');
+    }
+
+    Future&lt;void&gt; initialize({...}) {
+        throw UnimplementedError('initialize() has not been implemented.');
+    }
+    // ... 13 more methods
+}</code></pre>
+
+    <div class="callout warning">
+      <div class="callout-icon">🧪</div>
+      <div class="callout-body">
+        <strong>Testing Benefit</strong>
+        <p>In unit tests, swap the instance with a mock: <code>AppstorysFlutterPlatform.instance = MockAppstorys();</code> — no native code, no device needed.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Dart MethodChannel -->
+  <div class="section" id="methodchannel">
+    <div class="section-number">Layer 02 — Dart Side</div>
+    <h2>MethodChannelAppstorysFlutter — Dart Bridge</h2>
+    <p>The Dart half of the bridge. Translates method calls into platform messages that cross the Dart/Kotlin runtime boundary.</p>
+
+    <div class="code-label">appstorys_flutter_method_channel.dart</div>
+    <pre><code class="language-dart">class MethodChannelAppstorysFlutter extends AppstorysFlutterPlatform {
+
+    // Channel names must match Kotlin exactly
+    final methodChannel = const MethodChannel('appstorys_flutter');
+    static const EventChannel _campaignsEventChannel =
+        EventChannel('appstorys_flutter/campaigns_stream');
+
+    // EventChannel → Dart Stream&lt;String&gt;
+    @override
+    Stream&lt;String&gt; get campaignsStream {
+        // receiveBroadcastStream() creates a NEW native listener each call.
+        // This is why AppstorysFlutter caches it — to prevent duplicate listeners.
+        return _campaignsEventChannel
+            .receiveBroadcastStream()
+            .map((event) => event as String);
+    }
+
+    // Each method: invoke named string + Map → await → return typed result
+    @override
+    Future&lt;void&gt; getScreenCampaigns({required String screenName, ...}) async {
+        try {
+            await methodChannel.invokeMethod&lt;void&gt;(
+                'getScreenCampaigns',                    // matches Kotlin when() case
+                {'screenName': screenName, ...},         // Map → Kotlin Bundle
+            );
+        } on PlatformException catch (error) {
+            throw AppstorysException.fromPlatformException(error);
+        }
+    }
+}</code></pre>
+  </div>
+
+  <!-- 7. Public API -->
+  <div class="section" id="publicapi">
+    <div class="section-number">Layer 04</div>
+    <h2>AppstorysFlutter — The Public API</h2>
+    <p>This is what the client app imports. It adds validation and the broadcast stream cache on top of the raw channel calls. The client never touches layers below this.</p>
+
+    <div class="code-label">appstorys_flutter.dart</div>
+    <pre><code class="language-dart">class AppstorysFlutter {
+
+    // ─── Stream cache ────────────────────────────────────────────────────────
+    // receiveBroadcastStream() creates a new native listener every call.
+    // We cache once so Banner + Floater + any future widget all share ONE listener.
+    Stream&lt;String&gt;? _campaignsStreamCache;
+
+    Stream&lt;String&gt; get campaignsStream {
+        _campaignsStreamCache ??=
+            AppstorysFlutterPlatform.instance.campaignsStream
+                .asBroadcastStream();   // ← allows multiple simultaneous listeners
+        return _campaignsStreamCache!;
+    }
+
+    // ─── Validation before delegation ────────────────────────────────────────
+    Future&lt;void&gt; initialize({required String appId, required String accountId, String? userId}) {
+        _requireNonBlank(appId, 'appId');
+        _requireNonBlank(accountId, 'accountId');
+        if (userId != null &amp;&amp; userId.trim().isEmpty)
+            throw ArgumentError.value(userId, 'userId', 'userId cannot be blank.');
+
+        return AppstorysFlutterPlatform.instance.initialize(
+            appId: appId.trim(),
+            accountId: accountId.trim(),
+            userId: userId?.trim(),
+        );
+    }
+
+    Future&lt;void&gt; trackEvent({required String event, String? campaignId, Map&lt;String, Object?&gt;? metadata}) {
+        _requireNonBlank(event, 'event');
+        _validateMetadata(metadata);   // recursive — checks nested Lists and Maps too
+        return AppstorysFlutterPlatform.instance.trackEvent(
+            event: event.trim(),
+            campaignId: campaignId?.trim(),
+            metadata: metadata,
+        );
+    }
+
+    // Throws ArgumentError for blank values
+    void _requireNonBlank(String value, String name) {
+        if (value.trim().isEmpty)
+            throw ArgumentError.value(value, name, '$name cannot be blank.');
+    }
+}</code></pre>
+
+    <div class="callout info">
+      <div class="callout-icon">⚡</div>
+      <div class="callout-body">
+        <strong>Why <code>asBroadcastStream()</code> matters</strong>
+        <p>A standard Dart stream allows only one listener. Without <code>asBroadcastStream()</code>, the second widget to subscribe (e.g. Floater after Banner) throws <em>"Bad state: Stream already has a listener"</em>. The broadcast version allows unlimited simultaneous listeners on one native EventChannel.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. Stream Pipeline -->
+  <div class="section" id="stream">
+    <div class="section-number">Section 08</div>
+    <h2>The Stream Pipeline</h2>
+    <p>This pipeline is the core of the reactive architecture. It connects <code>AppStorysCore</code>'s internal state all the way to widget renders — with zero polling.</p>
+
+    <pre><code class="language-plaintext">AppStorysCore
+  _campaigns: MutableStateFlow&lt;List&lt;Campaign&gt;&gt;
+        │
+        │  getScreenCampaigns() → CDN fetch completes
+        │  _campaigns.value = filteredList        ← StateFlow emits
+        ▼
+AppstorysFlutterPlugin.kt
+  core.campaigns.collect { _ →
+      val json = core.getCampaignsJson()          ← serialize to JSON
+      withContext(Main) { sink.success(json) }    ← push to Dart
+  }
+        │
+        │  EventChannel: "appstorys_flutter/campaigns_stream"
+        ▼
+MethodChannelAppstorysFlutter.campaignsStream
+  _campaignsEventChannel.receiveBroadcastStream()
+        │
+        │  .map((event) → event as String)
+        ▼
+AppstorysFlutter.campaignsStream   (broadcast, cached)
+        │
+        ├────────────────────────────────────┐
+        ▼                                    ▼
+_AppStorysBannerState               _AppStorysFloaterState
+_onCampaignsUpdate(json)            _onCampaignsUpdate(json)
+  filter 'BAN'                        filter 'FLT'
+  parse BannerCampaign                parse FloaterCampaign
+  trackEvent('viewed')                trackEvent('viewed')
+  setState() → renders banner         setState() → renders floater</code></pre>
+
+    <p>The pipeline fires on <strong>two triggers</strong>:</p>
+    <table>
+      <thead><tr><th>Trigger</th><th>What happens</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>getScreenCampaigns()</code> completes</td>
+          <td>StateFlow updates with new screen's campaigns → all widgets rebuild</td>
+        </tr>
+        <tr>
+          <td><code>dismissCampaign(id)</code> called</td>
+          <td>Core removes campaign from list → re-emits StateFlow → widget hides</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 9. CampaignsStreamMixin -->
+  <div class="section" id="mixin">
+    <div class="section-number">Section 09</div>
+    <h2>CampaignsStreamMixin</h2>
+    <p>Every campaign widget needs the same lifecycle wiring — subscribe on init, cancel on dispose. The mixin eliminates this boilerplate.</p>
+
+    <div class="code-label">lib/src/utils/campaigns_stream_mixin.dart</div>
+    <pre><code class="language-dart">mixin CampaignsStreamMixin&lt;T extends StatefulWidget&gt; on State&lt;T&gt; {
+    StreamSubscription&lt;String&gt;? _campaignsSub;
+
+    void subscribeToCampaigns(
+        Stream&lt;String&gt; stream,
+        void Function(String json) onUpdate, {
+        void Function()? onError,       // optional — Banner uses it, Floater doesn't
+    }) {
+        _campaignsSub = stream.listen(
+            onUpdate,
+            onError: (Object _) =&gt; onError?.call(),
+        );
+    }
+
+    @override
+    void dispose() {
+        _campaignsSub?.cancel();    // always cancels — prevents setState after unmount
+        super.dispose();
+    }
+}</code></pre>
+
+    <p>Before vs After:</p>
+    <pre><code class="language-dart">// ❌ BEFORE — copy-pasted boilerplate in every widget
+class _SomeCampaignState extends State&lt;SomeCampaign&gt; {
+    StreamSubscription&lt;String&gt;? _sub;
+
+    @override
+    void initState() {
+        super.initState();
+        _sub = widget.appStorys.campaignsStream.listen(
+            _onCampaignsUpdate,
+            onError: (Object _) {},
+        );
+    }
+
+    @override
+    void dispose() {
+        _sub?.cancel();
+        super.dispose();
+    }
+}
+
+// ✅ AFTER — 1 line, mixin handles the rest
+class _SomeCampaignState extends State&lt;SomeCampaign&gt;
+    with CampaignsStreamMixin {
+
+    @override
+    void initState() {
+        super.initState();
+        subscribeToCampaigns(widget.appStorys.campaignsStream, _onCampaignsUpdate);
+    }
+    // dispose() — gone. Mixin handles it.
+}</code></pre>
+
+    <div class="callout tip">
+      <div class="callout-icon">✅</div>
+      <div class="callout-body">
+        <strong>Every future widget uses this</strong>
+        <p>CSAT, Modal, Survey, BottomSheet — any new campaign type just adds <code>with CampaignsStreamMixin</code> and calls <code>subscribeToCampaigns</code>. No subscription management ever again.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 10. Campaign Widgets -->
+  <div class="section" id="widgets">
+    <div class="section-number">Layer 05</div>
+    <h2>Campaign Widgets</h2>
+
+    <h3>AppStorysBanner</h3>
+    <div class="code-label">lib/src/widgets/app_storys_banner.dart</div>
+    <pre><code class="language-dart">class _AppStorysBannerState extends State&lt;AppStorysBanner&gt;
+    with CampaignsStreamMixin {
+
+    BannerCampaign? _currentBanner;
+    bool _showBanner = true;   // false once user taps the close button
+    bool _isLoading = true;    // true until first stream emission arrives
+
+    @override
+    void initState() {
+        super.initState();
+        subscribeToCampaigns(
+            widget.appStorys.campaignsStream,
+            _onCampaignsUpdate,
+            onError: () { if (mounted) setState(() =&gt; _isLoading = false); },
+        );
+    }
+
+    void _onCampaignsUpdate(String json) {
+        final all = jsonDecode(json) as List;
+
+        // Stream carries ALL campaign types — filter for BAN only
+        final banners = all
+            .whereType&lt;Map&gt;()
+            .where((c) =&gt; c['campaign_type'] == 'BAN')
+            .toList();
+
+        if (banners.isEmpty) {
+            // Screen changed with no banner — clear and reset _showBanner
+            // so it reappears if user navigates back
+            setState(() { _currentBanner = null; _showBanner = true; _isLoading = false; });
+            return;
+        }
+
+        // Flatten: details map + variant + campaign-level id
+        final normalized = { ...details, ...firstVariant, 'id': rawCampaign['id'] };
+        final banner = BannerCampaign.fromJson(normalized);
+
+        setState(() { _currentBanner = banner; _isLoading = false; });
+        widget.appStorys.trackEvent(event: 'viewed', campaignId: banner.id);
+    }
+
+    @override
+    Widget build(BuildContext context) {
+        // Guard — invisible until a campaign is ready and not dismissed
+        if (!_showBanner || _currentBanner == null || _isLoading)
+            return const SizedBox.shrink();
+
+        // Renders:
+        // - NetworkImage with responsive aspect-ratio height
+        // - Border radius from campaign styling
+        // - Cross button (if enabled) positioned via CrossButtonMargin
+        // - Tapping tracks 'clicked' event
+    }
+}</code></pre>
+
+    <h3>AppStorysFloater</h3>
+    <div class="code-label">lib/src/widgets/app_storys_floater.dart</div>
+    <pre><code class="language-dart">class _AppStorysFloaterState extends State&lt;AppStorysFloater&gt;
+    with CampaignsStreamMixin {
+
+    FloaterCampaign? _floater;
+    bool _visible = false;
+
+    void _onCampaignsUpdate(String json) {
+        final fltCampaigns = all
+            .whereType&lt;Map&gt;()
+            .where((c) =&gt; c['campaign_type'] == 'FLT')
+            .toList();
+
+        if (fltCampaigns.isEmpty) {
+            setState(() { _floater = null; _visible = false; });
+            return;
+        }
+
+        // Merge details + id (id lives outside details in raw JSON)
+        final normalized = { ...details, 'id': raw['id'] };
+        final floater = FloaterCampaign.fromJson(normalized);
+
+        setState(() { _floater = floater; _visible = true; });
+        widget.appStorys.trackEvent(event: 'viewed', campaignId: floater.id);
+    }
+
+    @override
+    Widget build(BuildContext context) {
+        if (!_visible || _floater == null) return const SizedBox.shrink();
+
+        return Align(
+            // position from dashboard config: "left" or "right"
+            alignment: isLeft ? Alignment.bottomLeft : Alignment.bottomRight,
+            child: Padding(
+                padding: EdgeInsets.only(
+                    bottom: s?.marginBottom ?? 0,
+                    left:   isLeft ? (s?.marginLeft ?? 0)  : 0,
+                    right:  isLeft ? 0 : (s?.marginRight ?? 0),
+                ),
+                child: GestureDetector(
+                    onTap: _onTap,    // tracks 'clicked', calls widget.onTap(link)
+                    child: Image.network(floater.image!),
+                ),
+            ),
+        );
+    }
+
+    void _onTap() {
+        widget.appStorys.trackEvent(event: 'clicked', campaignId: _floater!.id);
+        // Navigation is host app's responsibility — SDK never controls routing
+        if (link != null &amp;&amp; widget.onTap != null) widget.onTap!(link!);
+    }
+}</code></pre>
+  </div>
+
+  <!-- 11. Models -->
+  <div class="section" id="models">
+    <div class="section-number">Section 11</div>
+    <h2>Models Layer</h2>
+    <p>Each campaign type has its own model. The pattern is always: extract <code>details</code> map → merge campaign-level <code>id</code> → <code>Model.fromJson(normalized)</code>.</p>
+
+    <div class="callout warning">
+      <div class="callout-icon">⚠️</div>
+      <div class="callout-body">
+        <strong>KMP Serialization Quirk</strong>
+        <p><code>FloaterStyling</code> — all numeric fields are declared as <code>String?</code> in KMP, not <code>Int?</code> or <code>Double?</code>. Direct cast to <code>num</code> throws at runtime. Always use safe parsing.</p>
+      </div>
+    </div>
+
+    <div class="code-label">lib/src/models/floater_models.dart — safe numeric parsing</div>
+    <pre><code class="language-dart">factory FloaterStyling.fromJson(Map&lt;String, dynamic&gt; json) {
+    // KMP sends all values as String? — handle both String and num defensively
+    double v(String key) {
+        final val = json[key];
+        if (val == null) return 0;
+        if (val is num) return val.toDouble();
+        return double.tryParse(val.toString()) ?? 0;  // safe parse
+    }
+
+    return FloaterStyling(
+        topLeftRadius:     v('topLeftRadius'),
+        topRightRadius:    v('topRightRadius'),
+        bottomLeftRadius:  v('bottomLeftRadius'),
+        bottomRightRadius: v('bottomRightRadius'),
+        // ⚠️ KMP field names differ from dashboard JSON keys
+        marginBottom: v('floaterBottomPadding'),   // NOT 'marginBottom'
+        marginLeft:   v('floaterLeftPadding'),      // NOT 'marginLeft'
+        marginRight:  v('floaterRightPadding'),     // NOT 'marginRight'
+    );
+}</code></pre>
+
+    <p>The <code>id</code> lives <em>outside</em> the <code>details</code> map in the raw campaign JSON. It must be explicitly merged:</p>
+    <pre><code class="language-dart">// Raw JSON structure from the stream:
+// {
+//   "id": "abc-123",           ← top-level
+//   "campaign_type": "FLT",
+//   "details": {               ← everything else lives here
+//     "image": "...",
+//     "link": "...",
+//     "styling": { ... }
+//   }
+// }
+
+final normalized = &lt;String, dynamic&gt;{
+    ...details,                                        // spread details
+    'id': (raw['id'] ?? details['id'])?.toString(),   // lift id into same map
+};</code></pre>
+  </div>
+
+  <hr class="divider">
+
+  <!-- 12. Client Usage -->
+  <div class="section" id="client">
+    <div class="section-number">Section 12</div>
+    <h2>Client Integration — End to End</h2>
+
+    <h3>Step 1 — Add dependencies</h3>
+    <div class="code-label">pubspec.yaml</div>
+    <pre><code class="language-yaml">dependencies:
+  appstorys_flutter: ^1.0.0
+  url_launcher: ^6.3.1    # for opening campaign links</code></pre>
+
+    <h3>Step 2 — Initialize once at app root</h3>
+    <div class="code-label">main.dart</div>
+    <pre><code class="language-dart">class _MyAppState extends State&lt;MyApp&gt; {
+    // One instance, passed down to every widget that needs it
+    late final AppstorysFlutter _appstorys;
+
+    @override
+    void initState() {
+        super.initState();
+        _appstorys = AppstorysFlutter();
+        _init();
+    }
+
+    Future&lt;void&gt; _init() async {
+        // Await blocks until validate-account + track-user-res complete
+        await _appstorys.initialize(
+            appId: 'your-app-id',
+            accountId: 'your-account-id',
+            userId: 'user123',   // optional — can call setUserId() after login
+        );
+
+        // Fetch campaigns for the first screen
+        // Widgets already subscribed will receive data via stream
+        await _appstorys.getScreenCampaigns(screenName: 'Home Screen');
+    }
+}</code></pre>
+
+    <h3>Step 3 — Place widgets in a Stack</h3>
+    <pre><code class="language-dart">Scaffold(
+    body: Stack(
+        children: [
+            YourPageContent(),            // your app UI, rendered first (behind)
+
+            // Banner — sits at bottom, auto-shows/hides based on campaigns
+            AppStorysBanner(
+                appStorys: _appstorys,
+                height: 120,              // fallback height if no campaign
+                onDismissed: () {},       // optional dismiss callback
+            ),
+
+            // Floater — corner position comes from dashboard config
+            AppStorysFloater(
+                appStorys: _appstorys,
+                onTap: (link) async {
+                    // Navigation is YOUR responsibility — SDK never routes
+                    final uri = Uri.tryParse(link);
+                    if (uri != null)
+                        await launchUrl(uri, mode: LaunchMode.externalApplication);
+                },
+            ),
+        ],
+    ),
+)</code></pre>
+
+    <h3>Step 4 — Refresh campaigns on screen change</h3>
+    <pre><code class="language-dart">Future&lt;void&gt; _onTabTapped(int index) async {
+    setState(() =&gt; _selectedIndex = index);
+
+    // This triggers a new CDN fetch (or serves from cache)
+    // Both Banner and Floater update automatically via stream — no extra calls needed
+    await _appstorys.getScreenCampaigns(screenName: _screenNames[index]);
+}</code></pre>
+
+    <h3>Step 5 — Optional SDK interactions</h3>
+    <pre><code class="language-dart">// Track custom events with optional metadata
+await _appstorys.trackEvent(
+    event: 'purchase_completed',
+    metadata: {'amount': 499, 'currency': 'INR'},
+);
+
+// Switch user after login
+await _appstorys.setUserId(userId: 'logged_in_user_id');
+
+// Personalize text using dashboard variables
+final greeting = await _appstorys.personalizeText('Hello {{first_name}}!');
+
+// Get current userId (needed for CSAT / Survey responses)
+final userId = await _appstorys.getUserId();
+
+// Submit CSAT rating
+await _appstorys.captureCsatResponse(
+    csatId: campaign.id,
+    userId: userId!,
+    rating: 4.5,
+    feedbackOption: 'Great experience',
+    additionalComments: 'Very smooth checkout',
+);
+
+// Submit Survey response
+await _appstorys.captureSurveyResponse(
+    surveyId: campaign.id,
+    userId: userId!,
+    responseOptions: ['option_a', 'option_c'],
+    comment: 'Both options apply to me',
+);
+
+// Dismiss campaign for this session
+await _appstorys.dismissCampaign(campaignId);</code></pre>
+  </div>
+
+  <!-- 13. Full Data Flow -->
+  <div class="section" id="dataflow">
+    <div class="section-number">Section 13</div>
+    <h2>Full Data Flow — App Launch to Campaign Visible</h2>
+
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-num">1</div>
+        <div class="flow-content">
+          <div class="flow-title">App launches → <code>_MyAppState.initState()</code></div>
+          <div class="flow-detail">AppstorysFlutter instance created. Broadcast stream cache initialized.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">2</div>
+        <div class="flow-content">
+          <div class="flow-title">Widgets mount → stream subscriptions start</div>
+          <div class="flow-detail">AppStorysBanner and AppStorysFloater both call subscribeToCampaigns(). Both listen to same broadcast stream.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">3</div>
+        <div class="flow-content">
+          <div class="flow-title"><code>await initialize()</code> → MethodChannel → Kotlin</div>
+          <div class="flow-detail">HTTP 1: POST validate-account → access token. HTTP 2: POST track-user-res → user registered. sdkState = Initialized. Dart Future resolves.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">4</div>
+        <div class="flow-content">
+          <div class="flow-title"><code>await getScreenCampaigns('Home Screen')</code> → Kotlin</div>
+          <div class="flow-detail">core.getScreenCampaigns() launches campaignsJob. HTTP 3: GET campaigns.json from CDN. Filters for 'Home Screen'. _campaigns.value = [...]. Dart Future resolves.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">5</div>
+        <div class="flow-content">
+          <div class="flow-title">StateFlow emits → EventChannel → Dart stream fires</div>
+          <div class="flow-detail">Kotlin: campaigns.collect fires. getCampaignsJson() → JSON string. sink.success(json) on Main thread. Dart campaignsStream emits.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">6</div>
+        <div class="flow-content">
+          <div class="flow-title">Both widgets receive emission simultaneously</div>
+          <div class="flow-detail">Banner filters 'BAN' → parses → trackEvent viewed → setState → renders. Floater filters 'FLT' → parses → trackEvent viewed → setState → renders.</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">7</div>
+        <div class="flow-content">
+          <div class="flow-title">User taps floater → link opens</div>
+          <div class="flow-detail">_onTap() fires. trackEvent('clicked', id). widget.onTap(link) called. Host app handles navigation (launchUrl, pushNamed, etc.).</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 14. Screen Change -->
+  <div class="section" id="screenchange">
+    <div class="section-number">Section 14</div>
+    <h2>What Happens on Every Screen Change</h2>
+
+    <pre><code class="language-plaintext">User taps tab → _onTabTapped(1)
+    ├── setState() → UI switches to Shop tab
+    └── await getScreenCampaigns('Products')
+            │
+            ├─ Kotlin cancels previous campaignsJob
+            ├─ _campaigns.value = []   ← clears while new fetch in progress
+            │       │
+            │       └─ StateFlow emits []
+            │               │
+            │               ├─ Banner: bannerCampaigns.isEmpty
+            │               │         → _currentBanner = null, _showBanner = true
+            │               │         → SizedBox.shrink() (invisible)
+            │               │
+            │               └─ Floater: fltCampaigns.isEmpty
+            │                         → _floater = null, _visible = false
+            │                         → SizedBox.shrink() (invisible)
+            │
+            └─ CDN fetch completes for 'Products'
+                    _campaigns.value = [FLT campaign for Products]
+                    │
+                    └─ StateFlow emits again
+                            │
+                            ├─ Banner: no BAN → stays hidden
+                            │
+                            └─ Floater: FLT found
+                                       → parse FloaterCampaign
+                                       → trackEvent('viewed')
+                                       → setState _visible = true
+                                       → renders at bottom corner</code></pre>
+  </div>
+
+  <!-- 15. Design Decisions -->
+  <div class="section" id="decisions">
+    <div class="section-number">Section 15</div>
+    <h2>Key Design Decisions</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Decision</th>
+          <th>Why</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>EventChannel over polling</strong></td>
+          <td>Campaigns appear the instant core's StateFlow fires — no fixed wait, no missed updates, no wasted HTTP calls</td>
+        </tr>
+        <tr>
+          <td><strong>Single broadcast stream</strong></td>
+          <td>One native listener, unlimited Dart subscribers without duplication or extra EventChannels</td>
+        </tr>
+        <tr>
+          <td><code>asBroadcastStream()</code> cached</td>
+          <td><code>receiveBroadcastStream()</code> creates a new native listener each call — caching prevents duplicate listeners</td>
+        </tr>
+        <tr>
+          <td><strong>StateFlow replay on subscribe</strong></td>
+          <td>Widgets get current campaigns immediately on mount, even if <code>getScreenCampaigns()</code> completed before they built</td>
+        </tr>
+        <tr>
+          <td><strong>Filtering in widget, not core</strong></td>
+          <td>One stream carries all types — each widget self-selects its type. Simpler than multiple EventChannels per campaign type</td>
+        </tr>
+        <tr>
+          <td><strong>CampaignsStreamMixin</strong></td>
+          <td>Subscription lifecycle is identical across all campaign widgets — extracted once, zero copy-paste for every future type</td>
+        </tr>
+        <tr>
+          <td><strong>Validation in AppstorysFlutter, not MethodChannel</strong></td>
+          <td>Keep the bridge thin. All business rules live in Dart before any cross-runtime call</td>
+        </tr>
+        <tr>
+          <td><strong>Navigation via <code>onTap</code> callback</strong></td>
+          <td>SDK never controls routing — the host app owns its navigator, deep links, and internal routes</td>
+        </tr>
+        <tr>
+          <td><strong>Platform Interface abstraction</strong></td>
+          <td>Enables mock implementations for unit testing without native code or a real device</td>
+        </tr>
+        <tr>
+          <td><strong>SupervisorJob in pluginScope</strong></td>
+          <td>One failed coroutine (e.g. a single event send) doesn't cancel the entire plugin scope and kill all other operations</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</main>
+
+<script>
+  // Highlight active nav item on scroll
+  const sections = document.querySelectorAll('.section[id]');
+  const navItems = document.querySelectorAll('.nav-item');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navItems.forEach(item => item.classList.remove('active'));
+        const activeLink = document.querySelector(`.nav-item[href="#${entry.target.id}"]`);
+        if (activeLink) activeLink.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+
+  sections.forEach(section => observer.observe(section));
+</script>
+</body>
+</html>

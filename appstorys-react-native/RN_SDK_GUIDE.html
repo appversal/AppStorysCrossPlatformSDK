@@ -1,0 +1,1646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AppStorys React Native SDK — Complete Guide</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/kotlin.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/typescript.min.js"></script>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1c2128;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --accent: #58a6ff;
+    --accent2: #f78166;
+    --accent3: #7ee787;
+    --accent4: #ffa657;
+    --accent5: #d2a8ff;
+    --tag-bg: #1f2937;
+    --tag-kt: #4c1d95;
+    --tag-ts: #1d4ed8;
+    --sidebar-w: 280px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    min-height: 100vh;
+  }
+  /* ── SIDEBAR ── */
+  nav {
+    width: var(--sidebar-w);
+    min-width: var(--sidebar-w);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 24px 0 40px;
+    flex-shrink: 0;
+  }
+  nav::-webkit-scrollbar { width: 4px; }
+  nav::-webkit-scrollbar-track { background: transparent; }
+  nav::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .nav-header {
+    padding: 0 20px 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+  .nav-header .logo { font-size: 13px; color: var(--accent4); font-weight: 700; letter-spacing: .5px; text-transform: uppercase; }
+  .nav-header h2 { font-size: 15px; color: var(--text); margin-top: 4px; line-height: 1.3; }
+  .nav-header .platform-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(88,166,255,.12); border: 1px solid rgba(88,166,255,.3);
+    border-radius: 20px; padding: 3px 10px; margin-top: 8px; font-size: 11px; color: var(--accent);
+  }
+  nav a {
+    display: block; padding: 7px 20px; font-size: 13px; color: var(--text-muted);
+    text-decoration: none; transition: all .15s; border-left: 2px solid transparent;
+    line-height: 1.4;
+  }
+  nav a:hover { color: var(--text); background: var(--surface2); }
+  nav a.active { color: var(--accent); border-left-color: var(--accent); background: rgba(88,166,255,.06); }
+  .nav-section { padding: 16px 20px 6px; font-size: 10px; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; }
+  /* ── MAIN ── */
+  main { flex: 1; min-width: 0; padding: 48px 56px 80px; max-width: 1000px; }
+  .page-header { margin-bottom: 48px; }
+  .page-header .kicker { font-size: 12px; color: var(--accent4); font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 12px; }
+  .page-header h1 { font-size: 36px; font-weight: 800; line-height: 1.2; background: linear-gradient(135deg, var(--text) 40%, var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .page-header p { margin-top: 14px; font-size: 16px; color: var(--text-muted); line-height: 1.7; max-width: 680px; }
+  .badges { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+  .badge { display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .badge-rn { background: rgba(97,218,251,.12); border: 1px solid rgba(97,218,251,.3); color: #61dafb; }
+  .badge-kt { background: rgba(147,51,234,.15); border: 1px solid rgba(147,51,234,.35); color: var(--accent5); }
+  .badge-ts { background: rgba(29,78,216,.15); border: 1px solid rgba(29,78,216,.35); color: #93c5fd; }
+  .badge-core { background: rgba(126,231,135,.12); border: 1px solid rgba(126,231,135,.3); color: var(--accent3); }
+  /* ── SECTIONS ── */
+  section { margin-bottom: 64px; scroll-margin-top: 24px; }
+  section h2 { font-size: 24px; font-weight: 700; color: var(--text); margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
+  section h2 .section-num { font-size: 12px; color: var(--accent4); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; background: rgba(255,166,87,.1); border: 1px solid rgba(255,166,87,.25); border-radius: 4px; padding: 2px 7px; }
+  section h3 { font-size: 16px; font-weight: 600; color: var(--text); margin: 28px 0 10px; }
+  section h4 { font-size: 14px; font-weight: 600; color: var(--accent4); margin: 20px 0 8px; }
+  .divider { height: 1px; background: var(--border); margin-bottom: 24px; }
+  p { color: var(--text-muted); line-height: 1.75; margin-bottom: 14px; font-size: 14.5px; }
+  strong { color: var(--text); }
+  /* ── CODE ── */
+  .code-block { margin: 16px 0 24px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+  .code-label { background: var(--surface2); padding: 8px 16px; font-size: 11px; font-weight: 700; color: var(--text-muted); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); letter-spacing: .5px; }
+  .code-label .lang-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .lang-dot-kt { background: var(--accent5); }
+  .lang-dot-ts { background: #61dafb; }
+  .lang-dot-tsx { background: #61dafb; }
+  .lang-dot-txt { background: var(--text-muted); }
+  pre { margin: 0 !important; }
+  pre code.hljs { padding: 18px 20px !important; font-size: 13px !important; line-height: 1.6 !important; background: #0d1117 !important; }
+  code:not(.hljs) { font-family: 'Fira Code', 'Cascadia Code', 'SF Mono', monospace; font-size: 13px; background: var(--surface2); color: var(--accent2); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border); }
+  /* ── CALLOUTS ── */
+  .callout { border-radius: 8px; padding: 14px 18px; margin: 18px 0; display: flex; gap: 12px; font-size: 13.5px; line-height: 1.65; }
+  .callout .icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+  .callout.info { background: rgba(88,166,255,.08); border: 1px solid rgba(88,166,255,.2); }
+  .callout.info .icon { color: var(--accent); }
+  .callout.warning { background: rgba(255,166,87,.08); border: 1px solid rgba(255,166,87,.2); }
+  .callout.warning .icon { color: var(--accent4); }
+  .callout.success { background: rgba(126,231,135,.08); border: 1px solid rgba(126,231,135,.2); }
+  .callout.success .icon { color: var(--accent3); }
+  .callout.tip { background: rgba(210,168,255,.08); border: 1px solid rgba(210,168,255,.2); }
+  .callout.tip .icon { color: var(--accent5); }
+  .callout-body { color: var(--text-muted); }
+  .callout-body strong { color: var(--text); }
+  /* ── TABLES ── */
+  .table-wrap { overflow-x: auto; margin: 16px 0 24px; border-radius: 8px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: var(--surface2); padding: 10px 14px; text-align: left; font-weight: 600; color: var(--text); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { padding: 9px 14px; color: var(--text-muted); border-bottom: 1px solid rgba(48,54,61,.5); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,.02); }
+  /* ── FLOW DIAGRAM ── */
+  .flow { display: flex; align-items: stretch; gap: 0; margin: 20px 0; flex-wrap: wrap; }
+  .flow-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; min-width: 130px; text-align: center; }
+  .flow-box .layer { font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+  .flow-box .name { font-size: 13px; font-weight: 600; color: var(--text); }
+  .flow-box .sub { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+  .flow-box.highlight-kt { border-color: rgba(147,51,234,.5); background: rgba(147,51,234,.08); }
+  .flow-box.highlight-ts { border-color: rgba(97,218,251,.4); background: rgba(97,218,251,.06); }
+  .flow-box.highlight-core { border-color: rgba(126,231,135,.4); background: rgba(126,231,135,.06); }
+  .flow-arrow { display: flex; align-items: center; padding: 0 8px; color: var(--text-muted); font-size: 18px; }
+  .flow-arrow .label { font-size: 10px; color: var(--text-muted); text-align: center; }
+  .flow-vert { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; }
+  .flow-vert-item { display: flex; align-items: center; gap: 12px; }
+  .flow-vert-item .connector { width: 2px; height: 20px; background: var(--border); margin-left: 60px; }
+  /* ── COMPARISON ── */
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 16px 0; }
+  .compare-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+  .compare-card .platform { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+  .compare-card .platform.fl { color: #61dafb; }
+  .compare-card .platform.rn { color: #61dafb; }
+  .compare-card .platform.and { color: var(--accent3); }
+  .compare-card .item { font-size: 12.5px; color: var(--text-muted); margin-bottom: 5px; }
+  .compare-card .item strong { color: var(--text); }
+  /* ── CHIPS ── */
+  .chip { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; margin: 2px; }
+  .chip-type { background: rgba(255,166,87,.12); border: 1px solid rgba(255,166,87,.25); color: var(--accent4); }
+  /* ── MISC ── */
+  .method-sig { background: var(--surface2); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 6px; padding: 10px 14px; margin: 10px 0; font-family: 'Fira Code', monospace; font-size: 13px; color: var(--text); }
+  .file-path { font-family: monospace; font-size: 12px; color: var(--text-muted); background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 2px 8px; }
+  ul, ol { padding-left: 20px; margin-bottom: 14px; }
+  li { color: var(--text-muted); font-size: 14px; line-height: 1.8; }
+  li strong { color: var(--text); }
+  @media (max-width: 900px) {
+    nav { display: none; }
+    main { padding: 24px 20px; }
+    .compare-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════ SIDEBAR ═══════════════════════ -->
+<nav id="sidebar">
+  <div class="nav-header">
+    <div class="logo">AppStorys SDK</div>
+    <h2>React Native Complete Guide</h2>
+    <span class="platform-badge">⚛️ React Native</span>
+  </div>
+
+  <div class="nav-section">Architecture</div>
+  <a href="#s01">01 · Layer Stack</a>
+  <a href="#s02">02 · How RN Differs from Flutter</a>
+  <a href="#s03">03 · EventEmitter Pipeline</a>
+
+  <div class="nav-section">Native Bridge</div>
+  <a href="#s04">04 · AppStorysModule.kt</a>
+  <a href="#s05">05 · campaigns StateFlow → JS</a>
+
+  <div class="nav-section">JavaScript Layer</div>
+  <a href="#s06">06 · index.ts — JS API Facade</a>
+  <a href="#s07">07 · CampaignData Model</a>
+  <a href="#s08">08 · campaignParser Utilities</a>
+
+  <div class="nav-section">Hooks</div>
+  <a href="#s09">09 · useCampaigns (EventEmitter)</a>
+  <a href="#s10">10 · useAppStorys</a>
+
+  <div class="nav-section">Components</div>
+  <a href="#s11">11 · Banner</a>
+  <a href="#s12">12 · Floater</a>
+  <a href="#s13">13 · Stories</a>
+  <a href="#s14">14 · Modal &amp; BottomSheet</a>
+  <a href="#s15">15 · CSAT &amp; Survey</a>
+  <a href="#s16">16 · Reels, PiP, ScratchCard, SpinWheel</a>
+  <a href="#s17">17 · Widgets</a>
+
+  <div class="nav-section">Features</div>
+  <a href="#s18">18 · Event Tracking</a>
+  <a href="#s19">19 · User Management</a>
+  <a href="#s20">20 · Personalization</a>
+
+  <div class="nav-section">Integration</div>
+  <a href="#s21">21 · Example App End-to-End</a>
+  <a href="#s22">22 · Full Data Flow</a>
+  <a href="#s23">23 · Campaign Types Reference</a>
+  <a href="#s24">24 · Cross-Platform Comparison</a>
+  <a href="#s25">25 · API Quick Reference</a>
+</nav>
+
+<!-- ═══════════════════════ MAIN ═══════════════════════ -->
+<main>
+
+<div class="page-header">
+  <div class="kicker">AppStorys SDK</div>
+  <h1>React Native SDK<br>Complete Guide</h1>
+  <p>Architecture, data flow, native bridge internals, hooks, UI components, event tracking, and end-to-end client integration — everything in one place.</p>
+  <div class="badges">
+    <span class="badge badge-rn">⚛️ React Native</span>
+    <span class="badge badge-kt">Kotlin Bridge</span>
+    <span class="badge badge-ts">TypeScript API</span>
+    <span class="badge badge-core">AppStorysCore (KMP)</span>
+  </div>
+</div>
+
+<!-- ═══ 01 ═══ -->
+<section id="s01">
+  <h2><span class="section-num">01</span> Layer Stack</h2>
+  <div class="divider"></div>
+
+  <p>The RN SDK is a 5-layer stack. Each layer has a single responsibility. Data flows down from the shared Kotlin core to your React components.</p>
+
+  <div class="flow">
+    <div class="flow-box highlight-core">
+      <div class="layer">Shared Core</div>
+      <div class="name">AppStorysCore</div>
+      <div class="sub">KMP · StateFlow</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box highlight-kt">
+      <div class="layer">Kotlin Bridge</div>
+      <div class="name">AppStorysModule</div>
+      <div class="sub">@ReactMethod · Emitter</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box highlight-ts">
+      <div class="layer">JS Facade</div>
+      <div class="name">index.ts</div>
+      <div class="sub">NativeModules API</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box highlight-ts">
+      <div class="layer">React Hooks</div>
+      <div class="name">useCampaigns</div>
+      <div class="sub">EventEmitter sub</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box highlight-ts">
+      <div class="layer">UI Components</div>
+      <div class="name">Banner, Floater…</div>
+      <div class="sub">Pure display</div>
+    </div>
+  </div>
+
+  <div class="callout info">
+    <span class="icon">💡</span>
+    <div class="callout-body">
+      <strong>AppStorysCore is shared between all platforms</strong> — Android, Flutter, and React Native all use the same Kotlin code compiled via KMP. The RN SDK wraps it with <code>@ReactMethod</code> annotations instead of Flutter's MethodChannel/EventChannel.
+    </div>
+  </div>
+
+  <h3>File Map</h3>
+  <div class="table-wrap">
+    <table>
+      <tr><th>File</th><th>Layer</th><th>Language</th><th>Purpose</th></tr>
+      <tr><td><span class="file-path">shared-core/…/AppStorysCore.kt</span></td><td>Core</td><td>Kotlin KMP</td><td>All business logic, StateFlows, API calls</td></tr>
+      <tr><td><span class="file-path">android/…/AppStorysModule.kt</span></td><td>Bridge</td><td>Kotlin</td><td>@ReactMethod bridge + EventEmitter push</td></tr>
+      <tr><td><span class="file-path">src/index.ts</span></td><td>JS API</td><td>TypeScript</td><td>NativeModules wrapper, typed JS API</td></tr>
+      <tr><td><span class="file-path">src/hooks/useCampaigns.ts</span></td><td>Hook</td><td>TypeScript</td><td>EventEmitter subscription, state management</td></tr>
+      <tr><td><span class="file-path">src/hooks/useAppStorys.ts</span></td><td>Hook</td><td>TypeScript</td><td>Initialize + SDK ready state</td></tr>
+      <tr><td><span class="file-path">src/utils/campaignParser.ts</span></td><td>Utils</td><td>TypeScript</td><td>JSON parsing, normalization, filtering</td></tr>
+      <tr><td><span class="file-path">src/utils/personalization.ts</span></td><td>Utils</td><td>TypeScript</td><td>Template token replacement</td></tr>
+      <tr><td><span class="file-path">src/components/*.tsx</span></td><td>UI</td><td>TypeScript/JSX</td><td>11 pre-built campaign display components</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ═══ 02 ═══ -->
+<section id="s02">
+  <h2><span class="section-num">02</span> How RN Differs from Flutter</h2>
+  <div class="divider"></div>
+
+  <p>Understanding the difference between the Flutter and RN SDKs explains why the architecture looks the way it does.</p>
+
+  <div class="compare-grid">
+    <div class="compare-card">
+      <div class="platform fl">Flutter</div>
+      <div class="item"><strong>Bridge:</strong> MethodChannel (request/response)</div>
+      <div class="item"><strong>Stream:</strong> EventChannel (native push)</div>
+      <div class="item"><strong>Subscription:</strong> CampaignsStreamMixin</div>
+      <div class="item"><strong>Replay:</strong> StateFlow → EventChannel (auto)</div>
+      <div class="item"><strong>UI Host:</strong> Widget tree</div>
+    </div>
+    <div class="compare-card">
+      <div class="platform rn">React Native</div>
+      <div class="item"><strong>Bridge:</strong> NativeModules (@ReactMethod)</div>
+      <div class="item"><strong>Stream:</strong> DeviceEventEmitter (native push)</div>
+      <div class="item"><strong>Subscription:</strong> NativeEventEmitter in useCampaigns</div>
+      <div class="item"><strong>Replay:</strong> getScreenCampaigns triggers re-emit</div>
+      <div class="item"><strong>UI Host:</strong> React component tree</div>
+    </div>
+    <div class="compare-card">
+      <div class="platform and">Android (Compose)</div>
+      <div class="item"><strong>Bridge:</strong> Direct Kotlin call</div>
+      <div class="item"><strong>Stream:</strong> collectAsState()</div>
+      <div class="item"><strong>Subscription:</strong> Compose state collection</div>
+      <div class="item"><strong>Replay:</strong> StateFlow native replay</div>
+      <div class="item"><strong>UI Host:</strong> overlayElements() composable</div>
+    </div>
+  </div>
+
+  <h3>The NativeModules Bridge</h3>
+  <p>Flutter uses <code>MethodChannel</code> — a typed, named bridge. React Native uses <code>NativeModules</code>, which exposes any method annotated with <code>@ReactMethod</code> as a JavaScript-callable function that returns a <code>Promise</code>.</p>
+
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-kt"></span>Kotlin — @ReactMethod (equivalent to Flutter MethodChannel handler)</div>
+    <pre><code class="language-kotlin">@ReactMethod
+fun getUserId(promise: Promise) {
+    promise.resolve(core.userId)   // Promise = Flutter's result.success()
+}</code></pre>
+  </div>
+
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-ts"></span>TypeScript — NativeModules call (equivalent to Flutter MethodChannel.invokeMethod)</div>
+    <pre><code class="language-typescript">const { AppStorysReactNative } = NativeModules;
+const userId: string = await AppStorysReactNative.getUserId();
+// Equivalent Flutter: await platform.invokeMethod('getUserId')</code></pre>
+  </div>
+
+  <h3>Why No overlayElements()</h3>
+  <p>Android wraps all campaign UI in an <code>overlayElements()</code> composable placed outside the NavHost so floating campaigns always render above all screens. React Native doesn't need this — you place components (<code>&lt;Floater&gt;</code>, <code>&lt;Modal&gt;</code>, etc.) inside your screen JSX directly. The component returns <code>null</code> when no campaign is active so it has zero cost when hidden.</p>
+</section>
+
+<!-- ═══ 03 ═══ -->
+<section id="s03">
+  <h2><span class="section-num">03</span> EventEmitter Pipeline</h2>
+  <div class="divider"></div>
+
+  <p>This is the most important architectural concept in the RN SDK. The EventEmitter pipeline is the equivalent of Flutter's <code>EventChannel → campaignsStream</code> and it replaced the original 1500ms polling hack.</p>
+
+  <h3>The Problem It Solves</h3>
+  <p><strong>Before</strong> — <code>getScreenCampaigns()</code> in Kotlin launches a coroutine and returns immediately. The JS side received <code>true</code> immediately — before any network call had even started — and had no way to know when data was actually ready. The old hook guessed 1500ms:</p>
+
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-ts"></span>TypeScript — OLD (polling hack, now removed)</div>
+    <pre><code class="language-typescript">await AppStorys.getScreenCampaigns(screenName);
+// ❌ Hardcoded guess — wrong on slow networks, wasteful on fast ones
+await new Promise(resolve => setTimeout(resolve, 1500));
+const data = await AppStorys.getCampaigns();</code></pre>
+  </div>
+
+  <h3>The Solution — StateFlow → EventEmitter</h3>
+  <p>The Kotlin bridge now collects <code>core.campaigns</code> (a <code>StateFlow&lt;List&lt;Campaign&gt;&gt;</code>) and emits <code>"onCampaignsUpdate"</code> events to JS every time the state changes. The JS hook subscribes to these events rather than polling.</p>
+
+  <div class="flow">
+    <div class="flow-box highlight-core">
+      <div class="layer">Core</div>
+      <div class="name">_campaigns</div>
+      <div class="sub">MutableStateFlow</div>
+    </div>
+    <div class="flow-arrow">
+      <div>.collect {}</div>
+    </div>
+    <div class="flow-box highlight-kt">
+      <div class="layer">Kotlin</div>
+      <div class="name">emitCampaigns()</div>
+      <div class="sub">getCampaignsJson()</div>
+    </div>
+    <div class="flow-arrow">
+      <div>.emit()</div>
+    </div>
+    <div class="flow-box highlight-kt">
+      <div class="layer">RCT Bridge</div>
+      <div class="name">DeviceEvent<br>Manager</div>
+      <div class="sub">"onCampaignsUpdate"</div>
+    </div>
+    <div class="flow-arrow">
+      <div>JS thread</div>
+    </div>
+    <div class="flow-box highlight-ts">
+      <div class="layer">JS Hook</div>
+      <div class="name">useCampaigns</div>
+      <div class="sub">addListener()</div>
+    </div>
+    <div class="flow-arrow">
+      <div>setState</div>
+    </div>
+    <div class="flow-box highlight-ts">
+      <div class="layer">React</div>
+      <div class="name">Component</div>
+      <div class="sub">re-renders</div>
+    </div>
+  </div>
+
+  <h3>Timing — Subscribe Before Fetch</h3>
+  <p>The hook registers the subscription <strong>before</strong> calling <code>getScreenCampaigns()</code>. This is critical — if you reversed the order there would be a window where the native side emits before JS is listening and the update would be dropped.</p>
+
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-ts"></span>TypeScript — correct order (from useCampaigns.ts)</div>
+    <pre><code class="language-typescript">// ✅ Subscribe FIRST
+const subscription = emitter.addListener('onCampaignsUpdate', (json: string) => {
+    setCampaigns(parseCampaignsJson(json));
+    setLoading(false);
+});
+
+// ✅ THEN trigger the fetch
+AppStorys.getScreenCampaigns(screenName);</code></pre>
+  </div>
+
+  <div class="callout info">
+    <span class="icon">🔄</span>
+    <div class="callout-body">
+      <strong>Multiple components, one native listener.</strong> Because <code>NativeEventEmitter</code> is created at module level (outside the hook), all instances of <code>useCampaigns</code> across all mounted components share the same native EventEmitter. The core's coroutine collector runs once regardless of how many components subscribe — exactly like Flutter's <code>asBroadcastStream()</code> cache.
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 04 ═══ -->
+<section id="s04">
+  <h2><span class="section-num">04</span> AppStorysModule.kt</h2>
+  <div class="divider"></div>
+
+  <p>The Kotlin bridge class. Every <code>@ReactMethod</code> here becomes callable from JS as <code>AppStorysReactNative.methodName()</code> and returns a <code>Promise</code>.</p>
+
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-kt"></span>Kotlin — AppStorysModule.kt (full class structure)</div>
+    <pre><code class="language-kotlin">class AppStorysModule(reactContext: ReactApplicationContext) :
+    ReactContextBaseJavaModule(reactContext) {
+
+    private val core: AppStorysCore             // shared KMP core
+    private val moduleScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var campaignsCollectorJob: Job? = null
+
+    init {
+        val storage = PlatformStorage()
+        core = AppStorysCore(storage)
+    }
+
+    override fun getName() = "AppStorysReactNative"  // JS module name
+
+    // ── EventEmitter pipeline ──────────────────────────────────────
+    private fun emitCampaigns() {
+        try {
+            reactApplicationContext
+                .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+                .emit("onCampaignsUpdate", core.getCampaignsJson())
+        } catch (_: Exception) { }   // bridge may be torn down during app background
+    }
+
+    private fun startCampaignsEmitter() {
+        campaignsCollectorJob?.cancel()
+        campaignsCollectorJob = moduleScope.launch {
+            core.campaigns.collect { emitCampaigns() }
+        }
+    }
+
+    // Required stubs — RN warns without these when NativeEventEmitter is used in JS
+    @ReactMethod fun addListener(eventName: String) {}
+    @ReactMethod fun removeListeners(count: Int) {}
+
+    // ── Initialize ─────────────────────────────────────────────────
+    @ReactMethod
+    fun initialize(appId: String, accountId: String, userId: String, promise: Promise) {
+        try {
+            // Store device info for enrichment
+            val storage = PlatformStorage()
+            storage.putString("app_version", ...)
+            storage.putString("package_name", ...)
+            storage.putString("screen_width", ...)
+
+            core.initialize(appId = appId, accountId = accountId, userId = userId)
+            startCampaignsEmitter()   // ← start listening to StateFlow AFTER core is set up
+            promise.resolve(true)
+        } catch (e: Exception) { promise.reject("ERROR", e.message) }
+    }
+}</code></pre>
+  </div>
+
+  <h3>moduleScope vs core's scope</h3>
+  <p>The core has its own <code>CoroutineScope(SupervisorJob() + Dispatchers.Default)</code> for all business logic. The module creates a separate <code>moduleScope</code> with <code>Dispatchers.IO</code> specifically for the campaigns collector coroutine. They are independent — if the collector crashes, it doesn't affect core operations and vice versa (<code>SupervisorJob</code> provides this isolation).</p>
+
+  <h3>The addListener / removeListeners Stubs</h3>
+  <p>React Native's <code>NativeEventEmitter</code> on the JS side calls <code>addListener(eventName)</code> and <code>removeListeners(count)</code> on the native module as bookkeeping methods. In newer RN versions (0.65+) the bridge emits a warning if these methods are missing. They don't need to do anything — the <code>campaignsCollectorJob</code> manages its own lifecycle.</p>
+
+  <h3>All @ReactMethod Methods</h3>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Method</th><th>Returns</th><th>Description</th></tr>
+      <tr><td><code>initialize(appId, accountId, userId)</code></td><td><code>Promise&lt;Boolean&gt;</code></td><td>Validates account, gets access token, starts emitter</td></tr>
+      <tr><td><code>getScreenCampaigns(screenName)</code></td><td><code>Promise&lt;Boolean&gt;</code></td><td>Triggers fetch; result arrives via EventEmitter</td></tr>
+      <tr><td><code>getCampaignsJson()</code></td><td><code>Promise&lt;String&gt;</code></td><td>Returns current _campaigns StateFlow as JSON</td></tr>
+      <tr><td><code>getCampaignsByTypeJson(type)</code></td><td><code>Promise&lt;String&gt;</code></td><td>Filtered campaigns by type code (BAN, FLT, etc.)</td></tr>
+      <tr><td><code>getPersonalizationDataJson()</code></td><td><code>Promise&lt;String&gt;</code></td><td>Returns personalization key-value map as JSON</td></tr>
+      <tr><td><code>getUserId()</code></td><td><code>Promise&lt;String&gt;</code></td><td>Current userId from shared-core</td></tr>
+      <tr><td><code>isReady()</code></td><td><code>Promise&lt;Boolean&gt;</code></td><td>True when sdkState == Initialized</td></tr>
+      <tr><td><code>trackEvent(campaignId, event, metadata)</code></td><td><code>Promise&lt;Boolean&gt;</code></td><td>Fires event to API + updates _trackedEvents</td></tr>
+      <tr><td><code>setUserId(userId)</code></td><td><code>Promise&lt;Boolean&gt;</code></td><td>Updates userId; reconciles anonymous user if needed</td></tr>
+      <tr><td><code>setUserProperties(attributes)</code></td><td><code>Promise&lt;Boolean&gt;</code></td><td>Sends attribute map to API</td></tr>
+      <tr><td><code>dismissCampaign(campaignId)</code></td><td><code>Promise&lt;Boolean&gt;</code></td><td>Adds to _disabledCampaigns in core</td></tr>
+      <tr><td><code>captureCsatResponse(csatId, userId, rating, …)</code></td><td><code>Promise&lt;Boolean&gt;</code></td><td>Submits CSAT rating to API</td></tr>
+      <tr><td><code>captureSurveyResponse(surveyId, userId, options, …)</code></td><td><code>Promise&lt;Boolean&gt;</code></td><td>Submits survey answers to API</td></tr>
+      <tr><td><code>sendReelLikeStatus(campaignId, userId, isLiked)</code></td><td><code>Promise&lt;Boolean&gt;</code></td><td>Like/unlike a Reels campaign</td></tr>
+      <tr><td><code>personalizeText(text)</code></td><td><code>Promise&lt;String&gt;</code></td><td>Replaces {{token}} placeholders with personalization values</td></tr>
+      <tr><td><code>addListener(eventName)</code></td><td><code>void</code></td><td>Required RN stub for NativeEventEmitter</td></tr>
+      <tr><td><code>removeListeners(count)</code></td><td><code>void</code></td><td>Required RN stub for NativeEventEmitter</td></tr>
+    </table>
+  </div>
+
+  <h3>invokeCoreMethodOrThrow — Reflection Bridge</h3>
+  <p>Some methods (CSAT, Survey, Reels) use reflection to call core methods. This allows the module to call methods that were added to a newer core version without causing compile-time errors if the method doesn't exist in an older core.</p>
+
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-kt"></span>Kotlin — reflection bridge (used for captureCsatResponse, captureSurveyResponse, sendReelLikeStatus)</div>
+    <pre><code class="language-kotlin">private fun invokeCoreMethodOrThrow(methodName: String, vararg args: Any?) {
+    val method = core.javaClass.methods.firstOrNull {
+        it.name == methodName && it.parameterTypes.size == args.size
+    } ?: throw NoSuchMethodException("$methodName not available in this AppStorysCore version")
+
+    method.invoke(core, *args)
+}
+
+// Usage:
+invokeCoreMethodOrThrow("captureCsatResponse", csatId, userId, rating, feedbackOption, additionalComments)</code></pre>
+  </div>
+</section>
+
+<!-- ═══ 05 ═══ -->
+<section id="s05">
+  <h2><span class="section-num">05</span> campaigns StateFlow → JS</h2>
+  <div class="divider"></div>
+
+  <p>The <code>core.campaigns</code> property is a <code>StateFlow&lt;List&lt;Campaign&gt;&gt;</code>. It lives in <code>AppStorysCore</code> and is the single source of truth for all campaign data. Every time <code>_campaigns.emit()</code> is called inside <code>getScreenCampaigns()</code>, the <code>collect</code> lambda in the module fires.</p>
+
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-kt"></span>Kotlin — full emission chain from core to JS</div>
+    <pre><code class="language-kotlin">// Inside AppStorysCore.getScreenCampaigns() — shared-core
+_campaigns.emit(campaignsList)    // ← Step 1: core updates state
+
+// Inside AppStorysModule.startCampaignsEmitter()
+core.campaigns.collect {          // ← Step 2: collect fires
+    emitCampaigns()
+}
+
+private fun emitCampaigns() {
+    reactApplicationContext
+        .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+        .emit("onCampaignsUpdate", core.getCampaignsJson())   // ← Step 3: push JSON to JS
+}
+
+// getCampaignsJson() in AppStorysCore:
+fun getCampaignsJson(): String {
+    return SdkJson.encodeToString(          // ← Kotlin serialization → JSON string
+        ListSerializer(CampaignDeserializer),
+        _campaigns.value                     // reads current StateFlow value
+    )
+}</code></pre>
+  </div>
+
+  <p>The JSON string arrives on the JS thread and is parsed by <code>parseCampaignsJson()</code> in the hook. The whole round trip — CDN fetch → StateFlow emit → Kotlin collector → RCT bridge → JS parse → React setState — completes in one pass, no polling.</p>
+
+  <h3>When Does the StateFlow Emit?</h3>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Trigger</th><th>Effect on StateFlow</th></tr>
+      <tr><td><code>getScreenCampaigns(screen)</code> — screen changes</td><td>Emits <code>[]</code> immediately (screen cleared), then emits data after CDN fetch</td></tr>
+      <tr><td><code>getScreenCampaigns(screen)</code> — same screen, refresh</td><td>Emits updated campaigns after CDN fetch</td></tr>
+      <tr><td><code>onAppStopped()</code></td><td>Emits <code>[]</code> (cleared)</td></tr>
+      <tr><td><code>onAppResumed()</code></td><td>Re-fetches; emits fresh data</td></tr>
+      <tr><td><code>disableCampaign(id)</code></td><td>Does NOT emit — only updates <code>_disabledCampaigns</code></td></tr>
+    </table>
+  </div>
+
+  <div class="callout warning">
+    <span class="icon">⚠️</span>
+    <div class="callout-body">
+      <strong>No StateFlow replay on new subscribers.</strong> Unlike Flutter's EventChannel (which has StateFlow replay semantics), the RN EventEmitter doesn't replay the last value to new subscribers. This is why the hook calls <code>AppStorys.getScreenCampaigns(screenName)</code> in <code>useEffect</code> — it explicitly triggers a new fetch (and therefore a new emit) when the component mounts.
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 06 ═══ -->
+<section id="s06">
+  <h2><span class="section-num">06</span> index.ts — JS API Facade</h2>
+  <div class="divider"></div>
+
+  <p>The <code>AppStorys</code> object in <code>src/index.ts</code> is the only public surface that client developers interact with. It wraps the raw <code>NativeModules.AppStorysReactNative</code> calls with typed signatures and handles JSON parsing for array/map returns.</p>
+
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-ts"></span>TypeScript — src/index.ts (complete facade)</div>
+    <pre><code class="language-typescript">const { AppStorysReactNative } = NativeModules;
+
+export const AppStorys = {
+    // ── Lifecycle ────────────────────────────────────────────────
+    initialize: (appId: string, accountId: string, userId = ''): Promise&lt;boolean&gt; =>
+        AppStorysReactNative.initialize(appId, accountId, userId),
+
+    getScreenCampaigns: (screenName: string): Promise&lt;boolean&gt; =>
+        AppStorysReactNative.getScreenCampaigns(screenName),
+
+    isReady: (): Promise&lt;boolean&gt; =>
+        AppStorysReactNative.isReady(),
+
+    // ── Data Access ──────────────────────────────────────────────
+    getCampaigns: async (): Promise&lt;CampaignData[]&gt; => {
+        const json = await AppStorysReactNative.getCampaignsJson();
+        if (!json || json === '[]') return [];
+        return JSON.parse(json);
+    },
+
+    getCampaignsByType: async (type: string): Promise&lt;CampaignData[]&gt; => {
+        const json = await AppStorysReactNative.getCampaignsByTypeJson(type);
+        if (!json || json === '[]') return [];
+        return JSON.parse(json);
+    },
+
+    getPersonalizationData: async (): Promise&lt;Record&lt;string, string&gt;&gt; => {
+        const json = await AppStorysReactNative.getPersonalizationDataJson();
+        if (!json || json === '{}') return {};
+        return JSON.parse(json);
+    },
+
+    getUserId: (): Promise&lt;string&gt; =>
+        AppStorysReactNative.getUserId(),
+
+    // ── User ─────────────────────────────────────────────────────
+    setUserId: (userId: string): Promise&lt;boolean&gt; =>
+        AppStorysReactNative.setUserId(userId),
+
+    setUserProperties: (attributes: Record&lt;string, any&gt;): Promise&lt;boolean&gt; =>
+        AppStorysReactNative.setUserProperties(attributes),
+
+    // ── Events ───────────────────────────────────────────────────
+    trackEvent: (event: string, campaignId?: string | null, metadata?: Record&lt;string, any&gt;) =>
+        AppStorysReactNative.trackEvent(campaignId ?? null, event, metadata ?? null),
+
+    dismissCampaign: (campaignId: string): Promise&lt;boolean&gt; =>
+        AppStorysReactNative.dismissCampaign(campaignId),
+
+    // ── Response Capture ─────────────────────────────────────────
+    captureCsatResponse: (csatId, rating, feedbackOption?, additionalComments?) =>
+        AppStorysReactNative.captureCsatResponse(csatId, '', rating, feedbackOption ?? null, ...),
+
+    captureSurveyResponse: (surveyId, responseOptions, comment?) =>
+        AppStorysReactNative.captureSurveyResponse(surveyId, '', responseOptions, comment ?? null),
+
+    sendReelLikeStatus: (campaignId, isLiked) =>
+        AppStorysReactNative.sendReelLikeStatus(campaignId, '', isLiked),
+
+    personalizeText: (text: string): Promise&lt;string&gt; =>
+        AppStorysReactNative.personalizeText(text),
+
+    // ── Navigation ───────────────────────────────────────────────
+    handleNavigation: async (link: string): Promise&lt;void&gt; => {
+        if (link.startsWith('http://') || link.startsWith('https://')) {
+            await Linking.openURL(link);
+        }
+    },
+};</code></pre>
+  </div>
+
+  <div class="callout tip">
+    <span class="icon">📌</span>
+    <div class="callout-body">
+      <strong>userId is passed as empty string to captureCsatResponse and captureSurveyResponse</strong> in the facade. This is because the Kotlin bridge uses <code>core.userId</code> internally — the JS doesn't need to pass it. The parameter exists in the native method signature for forward-compatibility.
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 07 ═══ -->
+<section id="s07">
+  <h2><span class="section-num">07</span> CampaignData Model</h2>
+  <div class="divider"></div>
+
+  <p>The TypeScript type that represents a single campaign returned from the native JSON bridge. All fields are optional because different campaign types use different subsets.</p>
+
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-ts"></span>TypeScript — CampaignData interface (src/index.ts)</div>
+    <pre><code class="language-typescript">export interface CampaignData {
+    id?: string;               // campaign UUID
+    campaign_id?: string;      // alias for id (may differ depending on campaign type)
+    campaign_type?: string;    // "BAN" | "FLT" | "MOD" | "CSAT" | "SUR" | "STR" | ...
+    screen?: string;           // screen name the campaign is registered to
+    position?: string;         // for WID type — widget position identifier
+    trigger_event?: string;    // event name or JSON condition that shows the campaign
+    details?: Record&lt;string, any&gt;;   // type-specific data (image, link, styling, etc.)
+    image?: string;            // convenience — may also be inside details.image
+    link?: string;             // CTA destination URL or deep link
+    width?: number;            // campaign media width in dp/points
+    height?: number;           // campaign media height in dp/points
+    styling?: Record&lt;string, any&gt;; // border radii, margins, cross button config
+    lottie_data?: string;      // Lottie animation URL (if applicable)
+}</code></pre>
+  </div>
+
+  <h3>Why Two ID Fields?</h3>
+  <p>Shared-core serializes the campaign <code>id</code> field. Some campaign types nest the ID differently. The <code>normalizeCampaign()</code> utility in <code>campaignParser.ts</code> ensures that <code>campaign_id</code> is always set to <code>id</code> if not already present, so components can safely read either one.</p>
+
+  <h3>Reading Campaign Details</h3>
+  <p>Campaign-specific data lives in <code>details</code>. The same data is also flattened to top-level fields (<code>image</code>, <code>link</code>, <code>width</code>, <code>height</code>, <code>styling</code>) by the core before emitting. Components always check both:</p>
+
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-ts"></span>TypeScript — reading campaign data safely</div>
+    <pre><code class="language-typescript">const campaign = campaigns.find(c => c.campaign_type === 'BAN');
+const details = (campaign?.details as Record&lt;string, any&gt;) ?? campaign ?? {};
+
+// Always check details first, fall back to top-level
+const imageUrl = details.image ?? campaign?.image;
+const link     = details.link  ?? campaign?.link;
+const styling  = details.styling ?? campaign?.styling ?? {};</code></pre>
+  </div>
+</section>
+
+<!-- ═══ 08 ═══ -->
+<section id="s08">
+  <h2><span class="section-num">08</span> campaignParser Utilities</h2>
+  <div class="divider"></div>
+
+  <p>Three pure utility functions in <code>src/utils/campaignParser.ts</code> used throughout the SDK and available for client code.</p>
+
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-ts"></span>TypeScript — src/utils/campaignParser.ts</div>
+    <pre><code class="language-typescript">// 1. Parse a raw JSON string into a CampaignData array.
+// Returns [] on empty, null, or parse error — never throws.
+export function parseCampaignsJson(json: string | null | undefined): CampaignData[] {
+    if (!json || json === '[]') return [];
+    try {
+        const raw = JSON.parse(json);
+        if (!Array.isArray(raw)) return [];
+        return raw.map(item => normalizeCampaign(item ?? {}));
+    } catch { return []; }
+}
+
+// 2. Normalize a raw campaign object — flattens details to top-level,
+// ensures campaign_id is always set, coerces width/height to numbers.
+export function normalizeCampaign(input: Partial&lt;CampaignData&gt; & Record&lt;string, any&gt;): CampaignData {
+    const details = (input.details ?? {}) as Record&lt;string, any&gt;;
+    return {
+        id: input.id,
+        campaign_id: input.campaign_id ?? input.id,
+        campaign_type: input.campaign_type,
+        screen: input.screen,
+        position: input.position,
+        trigger_event: input.trigger_event,
+        details,
+        image: input.image ?? details.image,
+        link: input.link ?? details.link,
+        width: toNumber(input.width ?? details.width),
+        height: toNumber(input.height ?? details.height),
+        styling: input.styling ?? details.styling,
+        lottie_data: input.lottie_data ?? details.lottie_data,
+    };
+}
+
+// 3. Filter an array of campaigns by campaign_type code.
+export function filterCampaignsByType(campaigns: CampaignData[], type: string): CampaignData[] {
+    return campaigns.filter(c => c.campaign_type === type);
+}</code></pre>
+  </div>
+</section>
+
+<!-- ═══ 09 ═══ -->
+<section id="s09">
+  <h2><span class="section-num">09</span> useCampaigns (EventEmitter)</h2>
+  <div class="divider"></div>
+
+  <p>The primary hook. Every screen that needs campaigns uses this. It manages the EventEmitter subscription lifecycle and exposes <code>campaigns</code>, <code>loading</code>, <code>refresh</code>, and <code>getCampaignsByType</code>.</p>
+
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-ts"></span>TypeScript — src/hooks/useCampaigns.ts (complete)</div>
+    <pre><code class="language-typescript">import { useState, useEffect, useCallback } from 'react';
+import { NativeEventEmitter, NativeModules } from 'react-native';
+import AppStorys, { CampaignData } from '../index';
+import { parseCampaignsJson, filterCampaignsByType } from '../utils/campaignParser';
+
+const { AppStorysReactNative } = NativeModules;
+
+// Module-level singleton — all hook instances share one native listener.
+// Equivalent to Flutter's asBroadcastStream() cache.
+const emitter = new NativeEventEmitter(AppStorysReactNative);
+
+export function useCampaigns(screenName: string) {
+    const [campaigns, setCampaigns] = useState&lt;CampaignData[]&gt;([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        setLoading(true);
+        setCampaigns([]);  // clear stale data from previous screen
+
+        // ✅ Subscribe BEFORE triggering fetch — no emission is missed.
+        // Equivalent to Flutter's CampaignsStreamMixin.subscribeToCampaigns()
+        const subscription = emitter.addListener('onCampaignsUpdate', (json: string) => {
+            setCampaigns(parseCampaignsJson(json));
+            setLoading(false);
+        });
+
+        // Trigger the native fetch. Data arrives via the subscription above.
+        AppStorys.getScreenCampaigns(screenName).catch(() => setLoading(false));
+
+        // Cleanup when component unmounts or screenName changes.
+        // Equivalent to Flutter's CampaignsStreamMixin.dispose()
+        return () => subscription.remove();
+    }, [screenName]);
+
+    const getCampaignsByType = useCallback(
+        (type: string) => filterCampaignsByType(campaigns, type),
+        [campaigns]
+    );
+
+    // Force a re-fetch (e.g. pull-to-refresh)
+    const refresh = useCallback(() => {
+        setLoading(true);
+        AppStorys.getScreenCampaigns(screenName).catch(() => setLoading(false));
+    }, [screenName]);
+
+    return { campaigns, loading, refresh, getCampaignsByType };
+}</code></pre>
+  </div>
+
+  <h3>Lifecycle of the Hook</h3>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Event</th><th>What Happens</th></tr>
+      <tr><td>Component mounts</td><td>useEffect runs: subscribes to emitter, calls getScreenCampaigns</td></tr>
+      <tr><td>Native CDN fetch completes</td><td>StateFlow emits → Kotlin collector → emitCampaigns() → onCampaignsUpdate event → setCampaigns()</td></tr>
+      <tr><td>screenName prop changes</td><td>useEffect re-runs: old subscription removed, new one created, new fetch triggered</td></tr>
+      <tr><td>Component unmounts</td><td>subscription.remove() — no more events delivered to this component</td></tr>
+      <tr><td>refresh() called</td><td>setLoading(true), new getScreenCampaigns call → new emission</td></tr>
+    </table>
+  </div>
+
+  <h3>getCampaignsByType</h3>
+  <p>A convenience method on the hook return value. It filters the current <code>campaigns</code> array in memory — no extra network call. The result is memoized with <code>useCallback</code> so it doesn't re-create on every render.</p>
+
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-ts"></span>TypeScript — using getCampaignsByType</div>
+    <pre><code class="language-typescript">const { campaigns, loading, getCampaignsByType } = useCampaigns('HomeScreen');
+
+const banners   = getCampaignsByType('BAN');
+const floaters  = getCampaignsByType('FLT');
+const modals    = getCampaignsByType('MOD');
+// All read from the same campaigns array — no re-fetching</code></pre>
+  </div>
+</section>
+
+<!-- ═══ 10 ═══ -->
+<section id="s10">
+  <h2><span class="section-num">10</span> useAppStorys</h2>
+  <div class="divider"></div>
+
+  <p>A lifecycle hook for initialization. Handles the async initialize flow and exposes <code>ready</code>, <code>initializing</code>, and <code>error</code> state. Typically used once in your root component.</p>
+
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-ts"></span>TypeScript — src/hooks/useAppStorys.ts</div>
+    <pre><code class="language-typescript">export function useAppStorys(options: UseAppStorysOptions) {
+    const { appId, accountId, userId = '', autoInitialize = true } = options;
+    const [initializing, setInitializing] = useState(false);
+    const [ready, setReady] = useState(false);
+    const [error, setError] = useState&lt;Error | null&gt;(null);
+
+    const initialize = useCallback(async () => {
+        setInitializing(true);
+        try {
+            await AppStorys.initialize(appId, accountId, userId);
+            const sdkReady = await AppStorys.isReady();   // poll core sdkState
+            setReady(sdkReady);
+        } catch (e) {
+            setError(e instanceof Error ? e : new Error('Failed to initialize'));
+            setReady(false);
+        } finally { setInitializing(false); }
+    }, [appId, accountId, userId]);
+
+    useEffect(() => {
+        if (autoInitialize) initialize();
+    }, [autoInitialize, initialize]);
+
+    return { initialize, initializing, ready, error };
+}</code></pre>
+  </div>
+
+  <div class="callout info">
+    <span class="icon">💡</span>
+    <div class="callout-body">
+      <strong>initialize() resolves immediately</strong> — the underlying Kotlin <code>core.initialize()</code> launches its coroutine and returns. The <code>isReady()</code> call that follows reads <code>core.sdkState</code>, but the token fetch may not have completed yet. For production apps, use <code>useCampaigns</code> which doesn't depend on <code>ready</code> — the EventEmitter handles the timing.
+    </div>
+  </div>
+
+  <h3>Usage</h3>
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-ts"></span>TypeScript — typical root component usage</div>
+    <pre><code class="language-typescript">export default function App() {
+    const { ready, initializing, error } = useAppStorys({
+        appId: 'your-app-id',
+        accountId: 'your-account-id',
+        userId: 'user-123',
+    });
+
+    if (initializing) return &lt;LoadingScreen /&gt;;
+    if (error) return &lt;ErrorScreen message={error.message} /&gt;;
+    return &lt;MainNavigator /&gt;;
+}</code></pre>
+  </div>
+</section>
+
+<!-- ═══ 11 ═══ -->
+<section id="s11">
+  <h2><span class="section-num">11</span> Banner Component</h2>
+  <div class="divider"></div>
+
+  <p>Displays a BAN-type campaign as a full-width image with optional close button. Tracks <code>viewed</code> on mount and <code>clicked</code> on tap. Width, height, and border radii are read from campaign styling for pixel-perfect presentation.</p>
+
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-tsx"></span>TypeScript — Banner.tsx key logic</div>
+    <pre><code class="language-typescript">export function Banner({ campaigns, onDismiss }: BannerProps) {
+    const [visible, setVisible] = useState(true);
+
+    const banner = useMemo(
+        () => campaigns.find(c => c.campaign_type === 'BAN'),
+        [campaigns]
+    );
+    const details  = (banner?.details ?? banner ?? {}) as Record&lt;string, any&gt;;
+    const styling  = (details.styling ?? banner?.styling ?? {}) as Record&lt;string, any&gt;;
+    const imageUrl = details.image ?? banner?.image;
+
+    // Track viewed on mount
+    useEffect(() => {
+        if (campaignId) AppStorys.trackEvent('viewed', campaignId);
+    }, [campaignId]);
+
+    if (!banner || !visible || !imageUrl) return null;
+
+    // Responsive height from campaign dimensions
+    const availableWidth = screenWidth - ml - mr;
+    const imageHeight = w > 0 && h > 0 ? availableWidth * (h / w) : h || undefined;
+
+    const handlePress = async () => {
+        await AppStorys.trackEvent('clicked', campaignId);
+        await AppStorys.handleNavigation(link);
+    };
+
+    const handleDismiss = async () => {
+        await AppStorys.dismissCampaign(campaignId);
+        setVisible(false);
+        onDismiss?.(campaignId);
+    };
+
+    return (
+        &lt;View style={{ marginBottom: mb, marginLeft: ml, marginRight: mr }}&gt;
+            &lt;TouchableOpacity onPress={handlePress}&gt;
+                &lt;Image source={{ uri: imageUrl }} style={{ height: imageHeight, borderRadius: ... }} /&gt;
+            &lt;/TouchableOpacity&gt;
+            {showClose &amp;&amp; &lt;CloseButton onPress={handleDismiss} /&gt;}
+        &lt;/View&gt;
+    );
+}</code></pre>
+  </div>
+
+  <h3>Using Banner</h3>
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-tsx"></span>TypeScript — Banner in a screen</div>
+    <pre><code class="language-typescript">function HomeScreen() {
+    const { campaigns } = useCampaigns('HomeScreen');
+    return (
+        &lt;View&gt;
+            &lt;Banner
+                campaigns={campaigns}
+                onDismiss={(id) => console.log('dismissed', id)}
+            /&gt;
+            {/* rest of screen */}
+        &lt;/View&gt;
+    );
+}</code></pre>
+  </div>
+</section>
+
+<!-- ═══ 12 ═══ -->
+<section id="s12">
+  <h2><span class="section-num">12</span> Floater Component</h2>
+  <div class="divider"></div>
+
+  <p>Displays a FLT-type campaign as a fixed circular overlay anchored to the bottom-right corner. Unlike the Flutter version which uses an <code>Align</code> widget inside a Stack, the RN Floater uses <code>position: 'absolute'</code> in StyleSheet.</p>
+
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-tsx"></span>TypeScript — Floater.tsx</div>
+    <pre><code class="language-typescript">export function Floater({ campaigns }: FloaterProps) {
+    const campaign = campaigns.find(c => c.campaign_type === 'FLT');
+    if (!campaign) return null;
+
+    const image = details.image ?? campaign.image;
+    if (!image) return null;
+
+    const onPress = async () => {
+        if (campaignId) await AppStorys.trackEvent('clicked', campaignId);
+        if (link) await AppStorys.handleNavigation(link);
+    };
+
+    return (
+        &lt;View style={styles.container} pointerEvents="box-none"&gt;
+            &lt;TouchableOpacity onPress={onPress}&gt;
+                &lt;Image source={{ uri: image }} style={styles.image} /&gt;
+            &lt;/TouchableOpacity&gt;
+        &lt;/View&gt;
+    );
+}
+
+const styles = StyleSheet.create({
+    container: { position: 'absolute', right: 16, bottom: 16 },
+    image: { width: 64, height: 64, borderRadius: 32 },
+});</code></pre>
+  </div>
+
+  <div class="callout warning">
+    <span class="icon">⚠️</span>
+    <div class="callout-body">
+      <strong>Placement matters.</strong> <code>Floater</code> uses <code>position: 'absolute'</code> so it must be placed inside a <code>View</code> with <code>flex: 1</code> and <code>position: 'relative'</code>. The parent <code>View</code> also needs <code>pointerEvents="box-none"</code> to let touches pass through to underlying content.
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 13 ═══ -->
+<section id="s13">
+  <h2><span class="section-num">13</span> Stories Component</h2>
+  <div class="divider"></div>
+
+  <p>Renders a horizontal scrollable strip of STR-type campaign items. Each item is a circular avatar with a label below it, similar to Instagram Stories.</p>
+
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-tsx"></span>TypeScript — Stories.tsx</div>
+    <pre><code class="language-typescript">export function Stories({ campaigns }: StoriesProps) {
+    const items = campaigns.filter(c => c.campaign_type === 'STR');
+    if (!items.length) return null;
+
+    return (
+        &lt;ScrollView horizontal showsHorizontalScrollIndicator={false}&gt;
+            {items.map((item, index) => (
+                &lt;TouchableOpacity key={campaignId} onPress={onPress}&gt;
+                    &lt;View style={styles.avatar} /&gt;
+                    &lt;Text numberOfLines={1}&gt;{label}&lt;/Text&gt;
+                &lt;/TouchableOpacity&gt;
+            ))}
+        &lt;/ScrollView&gt;
+    );
+}</code></pre>
+  </div>
+</section>
+
+<!-- ═══ 14 ═══ -->
+<section id="s14">
+  <h2><span class="section-num">14</span> Modal &amp; BottomSheet</h2>
+  <div class="divider"></div>
+
+  <h3>Modal (MOD)</h3>
+  <p>Uses React Native's built-in <code>&lt;Modal&gt;</code> component with a semi-transparent overlay. Controlled externally via <code>visible</code> prop — the host screen owns the open/close state.</p>
+
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-tsx"></span>TypeScript — Modal usage</div>
+    <pre><code class="language-typescript">function HomeScreen() {
+    const { campaigns } = useCampaigns('HomeScreen');
+    const [modalOpen, setModalOpen] = useState(true);
+
+    return (
+        &lt;View&gt;
+            &lt;Modal
+                campaigns={campaigns}
+                visible={modalOpen}
+                onClose={() => setModalOpen(false)}
+            /&gt;
+        &lt;/View&gt;
+    );
+}</code></pre>
+  </div>
+
+  <h3>BottomSheet (BTS)</h3>
+  <p>Renders an absolutely-positioned sheet anchored to the bottom of the screen. Does NOT use <code>react-native-bottom-sheet</code> — it's a pure RN implementation.</p>
+
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-tsx"></span>TypeScript — BottomSheet usage</div>
+    <pre><code class="language-typescript">function HomeScreen() {
+    const { campaigns } = useCampaigns('HomeScreen');
+    const [sheetOpen, setSheetOpen] = useState(true);
+
+    return (
+        &lt;View style={{ flex: 1 }}&gt;
+            {/* screen content */}
+            &lt;BottomSheet
+                campaigns={campaigns}
+                visible={sheetOpen}
+                onClose={() => setSheetOpen(false)}
+            /&gt;
+        &lt;/View&gt;
+    );
+}</code></pre>
+  </div>
+</section>
+
+<!-- ═══ 15 ═══ -->
+<section id="s15">
+  <h2><span class="section-num">15</span> CSAT &amp; Survey</h2>
+  <div class="divider"></div>
+
+  <h3>CSAT (CSA)</h3>
+  <p>Renders a 1–5 numeric rating strip. Tapping a rating calls <code>captureCsatResponse()</code> to submit to the API and <code>trackEvent('rated', ...)</code> for analytics.</p>
+
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-tsx"></span>TypeScript — CSAT component</div>
+    <pre><code class="language-typescript">export function Csat({ campaigns, userId = '' }: CsatProps) {
+    const campaign = campaigns.find(c => c.campaign_type === 'CSA');
+    if (!campaign) return null;
+
+    const submitRating = async (rating: number) => {
+        await AppStorys.captureCsatResponse(campaignId, rating);
+        await AppStorys.trackEvent('rated', campaignId, { userId, rating });
+    };
+
+    return (
+        &lt;View&gt;
+            &lt;Text&gt;How was your experience?&lt;/Text&gt;
+            {[1,2,3,4,5].map(r => (
+                &lt;Pressable key={r} onPress={() =&gt; submitRating(r)}&gt;
+                    &lt;Text&gt;{r}&lt;/Text&gt;
+                &lt;/Pressable&gt;
+            ))}
+        &lt;/View&gt;
+    );
+}</code></pre>
+  </div>
+
+  <h3>Survey (SUR)</h3>
+  <p>Renders a Yes/No choice with an optional free-text comment input. Submits via <code>captureSurveyResponse()</code>. The <code>responseOptions</code> array supports multi-select surveys.</p>
+
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-tsx"></span>TypeScript — Survey submit</div>
+    <pre><code class="language-typescript">const submit = async (choice: string) => {
+    await AppStorys.captureSurveyResponse(campaignId, [choice], comment || undefined);
+    await AppStorys.trackEvent('submitted', campaignId, { userId, choice });
+};</code></pre>
+  </div>
+</section>
+
+<!-- ═══ 16 ═══ -->
+<section id="s16">
+  <h2><span class="section-num">16</span> Reels, PiP, ScratchCard, SpinWheel</h2>
+  <div class="divider"></div>
+
+  <h3>Reels (REL)</h3>
+  <p>Like/dislike interaction. Calls <code>sendReelLikeStatus()</code> which hits the Reels API endpoint.</p>
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-tsx"></span>TypeScript</div>
+    <pre><code class="language-typescript">const like = async (isLiked: boolean) => {
+    await AppStorys.sendReelLikeStatus(campaignId, isLiked);
+    await AppStorys.trackEvent(isLiked ? 'liked' : 'disliked', campaignId, { userId });
+};</code></pre>
+  </div>
+
+  <h3>PiP (PIP)</h3>
+  <p>Picture-in-Picture pill button that opens a URL or deep link. Calls <code>handleNavigation(link)</code> for routing.</p>
+
+  <h3>ScratchCard (SCR)</h3>
+  <p>A tap-to-reveal card. Tracks <code>'revealed'</code> event when the user taps. The reveal animation would be implemented by the host app using the campaign's details.</p>
+
+  <h3>SpinWheel (SPW)</h3>
+  <p>Selects a random reward from the campaign's prize list and tracks the <code>'spun'</code> event with the prize value in metadata.</p>
+
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-tsx"></span>TypeScript — SpinWheel event with metadata</div>
+    <pre><code class="language-typescript">const spin = async () => {
+    const prize = REWARDS[Math.floor(Math.random() * REWARDS.length)];
+    setResult(prize);
+    await AppStorys.trackEvent('spun', campaignId, { prize });
+};</code></pre>
+  </div>
+</section>
+
+<!-- ═══ 17 ═══ -->
+<section id="s17">
+  <h2><span class="section-num">17</span> Widgets Component</h2>
+  <div class="divider"></div>
+
+  <p>Renders all WID-type campaigns as a vertical stack of cards. Unlike all other components that show only the first matching campaign, Widgets renders every matching WID campaign (there can be multiple widget positions per screen).</p>
+
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-tsx"></span>TypeScript — Widgets.tsx</div>
+    <pre><code class="language-typescript">export function Widgets({ campaigns }: WidgetsProps) {
+    // WID is the only type that renders ALL matching campaigns
+    const widgets = campaigns.filter(c => c.campaign_type === 'WID');
+    if (!widgets.length) return null;
+
+    return (
+        &lt;View&gt;
+            {widgets.map((campaign) => (
+                &lt;View key={campaign.campaign_id ?? campaign.id}&gt;
+                    &lt;Text&gt;{campaign.campaign_id ?? campaign.id}&lt;/Text&gt;
+                &lt;/View&gt;
+            ))}
+        &lt;/View&gt;
+    );
+}</code></pre>
+  </div>
+</section>
+
+<!-- ═══ 18 ═══ -->
+<section id="s18">
+  <h2><span class="section-num">18</span> Event Tracking</h2>
+  <div class="divider"></div>
+
+  <p>Events flow from JS → Kotlin bridge → <code>core.trackEvent()</code> → API. Non-system events are also added to the core's <code>_trackedEvents</code> StateFlow, which the <code>TriggerEventMatcher</code> uses to evaluate whether trigger-based campaigns should show.</p>
+
+  <h3>trackEvent</h3>
+  <div class="method-sig">AppStorys.trackEvent(event, campaignId?, metadata?): Promise&lt;boolean&gt;</div>
+
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-ts"></span>TypeScript — trackEvent examples</div>
+    <pre><code class="language-typescript">// System events — sent to API only, NOT added to TriggerEventMatcher
+await AppStorys.trackEvent('viewed', campaignId);
+await AppStorys.trackEvent('clicked', campaignId);
+
+// Custom events — sent to API AND added to _trackedEvents for trigger matching
+await AppStorys.trackEvent('checkout_complete');
+await AppStorys.trackEvent('item_added', null, { itemId: 'SKU123', price: 49.99 });
+
+// With campaign ID (attaches variant ID to API payload automatically)
+await AppStorys.trackEvent('form_submitted', campaignId, { step: 3 });</code></pre>
+  </div>
+
+  <h3>System Events</h3>
+  <p>These event names are treated specially by the core — they go to the API but do NOT affect trigger matching. All other event names are considered custom and update <code>_trackedEvents</code>:</p>
+  <div style="margin: 10px 0 16px; display:flex; flex-wrap:wrap; gap:6px;">
+    <span class="chip chip-type">viewed</span>
+    <span class="chip chip-type">clicked</span>
+    <span class="chip chip-type">csat captured</span>
+    <span class="chip chip-type">survey captured</span>
+    <span class="chip chip-type">shared</span>
+    <span class="chip chip-type">SurveySubmitted</span>
+    <span class="chip chip-type">SurveyDismissed</span>
+    <span class="chip chip-type">ThankYouCTAClicked</span>
+  </div>
+
+  <h3>dismissCampaign</h3>
+  <div class="method-sig">AppStorys.dismissCampaign(campaignId): Promise&lt;boolean&gt;</div>
+  <p>Adds <code>campaignId</code> to <code>_disabledCampaigns</code> in the core. The campaign will no longer be returned by <code>getFilteredCampaigns()</code> for the rest of the session. Called automatically by <code>Modal</code> and <code>BottomSheet</code> components when closed.</p>
+</section>
+
+<!-- ═══ 19 ═══ -->
+<section id="s19">
+  <h2><span class="section-num">19</span> User Management</h2>
+  <div class="divider"></div>
+
+  <h3>Anonymous Users</h3>
+  <p>When <code>initialize()</code> is called without a <code>userId</code>, the core generates an anonymous ID (<code>&lt;random13digits&gt;_anonymous</code>) and stores it in <code>PlatformStorage</code>. Subsequent app launches reuse the same anonymous ID.</p>
+
+  <h3>setUserId — Anonymous Reconciliation</h3>
+  <div class="method-sig">AppStorys.setUserId(userId): Promise&lt;boolean&gt;</div>
+  <p>When called after an anonymous session, the core calls the <code>reconcileAnonymousUser</code> API endpoint which merges the anonymous user's campaign history into the new identified user. This is a one-way migration — once reconciled, the session is no longer anonymous.</p>
+
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-ts"></span>TypeScript — setUserId after login</div>
+    <pre><code class="language-typescript">async function onLoginSuccess(userId: string) {
+    // Reconciles anonymous history → identified user in one API call
+    await AppStorys.setUserId(userId);
+    // Now re-fetch campaigns — the user may be eligible for different ones
+    await AppStorys.getScreenCampaigns(currentScreen);
+}</code></pre>
+  </div>
+
+  <h3>setUserProperties</h3>
+  <div class="method-sig">AppStorys.setUserProperties(attributes): Promise&lt;boolean&gt;</div>
+  <p>Sends an attribute map to the API to enable audience targeting. The map is enriched with device info before being sent.</p>
+
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-ts"></span>TypeScript</div>
+    <pre><code class="language-typescript">await AppStorys.setUserProperties({
+    plan: 'premium',
+    country: 'IN',
+    signup_date: '2024-01-15',
+    total_orders: 12,
+});</code></pre>
+  </div>
+</section>
+
+<!-- ═══ 20 ═══ -->
+<section id="s20">
+  <h2><span class="section-num">20</span> Personalization</h2>
+  <div class="divider"></div>
+
+  <p>Personalization replaces <code>{{token}}</code> placeholders in campaign text with values from the backend. The RN SDK has both a server-side approach (calling through the Kotlin bridge) and a client-side approach (pure TypeScript).</p>
+
+  <h3>Server-Side: personalizeText</h3>
+  <div class="method-sig">AppStorys.personalizeText(text): Promise&lt;string&gt;</div>
+  <p>Calls through to <code>core.personalizeText()</code> which uses the personalization map fetched alongside campaigns. Guarantees server-synchronized data.</p>
+
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-ts"></span>TypeScript</div>
+    <pre><code class="language-typescript">const greeting = await AppStorys.personalizeText('Hello {{user.name}}, you have {{rewards.points}} points');
+// → "Hello Yash, you have 240 points"</code></pre>
+  </div>
+
+  <h3>Client-Side: personalization utilities</h3>
+  <p>The <code>src/utils/personalization.ts</code> module provides pure JS utilities for offline/local personalization:</p>
+
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-ts"></span>TypeScript — personalization utils</div>
+    <pre><code class="language-typescript">import { personalizeText, personalizeObject, parsePersonalizationJson } from 'appstorys-react-native';
+
+// 1. Replace tokens in a string
+const result = personalizeText('Hello {{name}}!', { name: 'Yash' });
+// → "Hello Yash!"
+
+// 2. Replace tokens recursively in any object/array
+const personalized = personalizeObject(campaignDetails, personalizationMap);
+
+// 3. Parse the JSON from getPersonalizationData()
+const data = parsePersonalizationJson(await AppStorys.getPersonalizationData());
+const text = personalizeText('Your plan is {{plan}}', data);</code></pre>
+  </div>
+</section>
+
+<!-- ═══ 21 ═══ -->
+<section id="s21">
+  <h2><span class="section-num">21</span> Example App — End-to-End</h2>
+  <div class="divider"></div>
+
+  <p>The example app in <code>example/src/App.tsx</code> shows the complete integration. The new approach (after the EventEmitter fix) looks like this:</p>
+
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-tsx"></span>TypeScript — recommended App.tsx integration pattern</div>
+    <pre><code class="language-typescript">import React from 'react';
+import { SafeAreaView, ScrollView } from 'react-native';
+import AppStorys, { useCampaigns, useAppStorys, Banner, Floater } from 'appstorys-react-native';
+
+export default function App() {
+    // Step 1: Initialize once at root
+    const { ready, initializing, error } = useAppStorys({
+        appId: 'your-app-id',
+        accountId: 'your-account-id',
+        userId: 'user-123',
+    });
+
+    if (initializing) return &lt;SplashScreen /&gt;;
+    if (error) return &lt;ErrorView message={error.message} /&gt;;
+
+    return &lt;MainNavigator /&gt;;
+}
+
+// Step 2: In each screen — use the hook
+function HomeScreen() {
+    const { campaigns, loading } = useCampaigns('HomeScreen');
+    // No setTimeout, no separate getCampaigns() call.
+    // campaigns updates automatically via EventEmitter when the CDN fetch completes.
+
+    return (
+        &lt;SafeAreaView style={{ flex: 1 }}&gt;
+            &lt;ScrollView&gt;
+                &lt;Banner campaigns={campaigns} /&gt;
+                {/* other content */}
+            &lt;/ScrollView&gt;
+            {/* Floater overlays above scroll content */}
+            &lt;Floater campaigns={campaigns} /&gt;
+        &lt;/SafeAreaView&gt;
+    );
+}</code></pre>
+  </div>
+
+  <h3>Example App's Current Test Pattern</h3>
+  <p>The actual example app (<code>example/src/App.tsx</code>) is a single-screen debugging app that shows SDK status, raw campaign data, event log, and a banner. It currently uses the old polling pattern — updating it to <code>useCampaigns</code> is straightforward:</p>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>Old Example Pattern</th><th>New Pattern with useCampaigns</th></tr>
+      <tr><td><code>await AppStorys.getScreenCampaigns(screen)</code></td><td><code>const { campaigns } = useCampaigns(screen)</code></td></tr>
+      <tr><td><code>await setTimeout(2500)</code></td><td>Removed — data arrives via EventEmitter</td></tr>
+      <tr><td><code>const data = await AppStorys.getCampaigns()</code></td><td>Removed — campaigns is already populated</td></tr>
+      <tr><td>Manual useState + useEffect</td><td>All inside the hook</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ═══ 22 ═══ -->
+<section id="s22">
+  <h2><span class="section-num">22</span> Full Data Flow</h2>
+  <div class="divider"></div>
+
+  <p>Complete end-to-end trace from calling <code>useCampaigns('HomeScreen')</code> to React rendering campaign UI.</p>
+
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-txt"></span>End-to-end data flow</div>
+    <pre><code>React Component mounts
+    ↓
+useCampaigns('HomeScreen') [src/hooks/useCampaigns.ts]
+    ↓  setLoading(true), setCampaigns([])
+    ↓  emitter.addListener('onCampaignsUpdate', handler)   ← subscribe FIRST
+    ↓  AppStorys.getScreenCampaigns('HomeScreen')
+           ↓
+           NativeModules.AppStorysReactNative.getScreenCampaigns()
+               ↓
+               AppStorysModule.getScreenCampaigns() [@ReactMethod, Kotlin]
+                   ↓  core.getScreenCampaigns('HomeScreen')
+                   ↓  promise.resolve(true)                ← JS gets true immediately
+                       ↓
+                       AppStorysCore.getScreenCampaigns() [shared-core KMP]
+                           ↓  campaignsJob?.cancel()
+                           ↓  campaignsJob = scope.launch {
+                                  waitForInit()             ← polls until Initialized
+                                  getEligibleCampaigns()    ← HTTP: /api/eligible
+                                  fetchCampaignsJson()      ← HTTP: CDN JSON (ETag cached)
+                                  loadMissingCampaigns()    ← HTTP: /api/missing (if needed)
+                                  extractVariantFromCampaign()  ← A/B variant resolution
+                                  _campaigns.emit(campaignsList)  ← StateFlow update
+                              }
+
+                       ← StateFlow.collect{} fires in AppStorysModule:
+                   ↓  emitCampaigns()
+                   ↓  RCTDeviceEventEmitter.emit("onCampaignsUpdate", json)
+                       ↓
+                       [JS Thread]
+                       emitter listener fires in useCampaigns
+                           ↓  parseCampaignsJson(json)
+                           ↓  normalizeCampaign() for each item
+                           ↓  setCampaigns(data)
+                           ↓  setLoading(false)
+                               ↓
+                               React re-renders
+                               Banner / Floater / etc. receive campaigns prop
+                               Components render campaign content</code></pre>
+  </div>
+
+  <h3>Initialize Flow (runs once on app start)</h3>
+  <div class="code-block">
+    <div class="code-label"><span class="lang-dot lang-dot-txt"></span>Initialize flow</div>
+    <pre><code>AppStorys.initialize(appId, accountId, userId)
+    ↓
+AppStorysModule.initialize() [Kotlin]
+    ↓  Store device metadata (version, screen size, orientation)
+    ↓  core.initialize(appId, accountId, userId)
+           ↓  Restore or generate userId (anonymous if none given)
+           ↓  sdkState = Initializing
+           ↓  scope.launch {
+                  validateAccount() → POST /api/validate  ← gets access_token
+                  sdkState = Initialized
+                  if (no active campaignsJob) → getScreenCampaigns("")
+              }
+    ↓  startCampaignsEmitter()   ← starts collecting campaigns StateFlow
+    ↓  promise.resolve(true)</code></pre>
+  </div>
+</section>
+
+<!-- ═══ 23 ═══ -->
+<section id="s23">
+  <h2><span class="section-num">23</span> Campaign Types Reference</h2>
+  <div class="divider"></div>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>Code</th><th>Name</th><th>RN Component</th><th>Key Interaction</th><th>Submit Method</th></tr>
+      <tr><td><span class="chip chip-type">BAN</span></td><td>Banner</td><td><code>&lt;Banner&gt;</code></td><td>tap → link, close button</td><td>trackEvent(clicked)</td></tr>
+      <tr><td><span class="chip chip-type">FLT</span></td><td>Floater</td><td><code>&lt;Floater&gt;</code></td><td>tap → link</td><td>trackEvent(clicked)</td></tr>
+      <tr><td><span class="chip chip-type">MOD</span></td><td>Modal</td><td><code>&lt;Modal&gt;</code></td><td>close → dismiss</td><td>dismissCampaign()</td></tr>
+      <tr><td><span class="chip chip-type">BTS</span></td><td>Bottom Sheet</td><td><code>&lt;BottomSheet&gt;</code></td><td>close → dismiss</td><td>dismissCampaign()</td></tr>
+      <tr><td><span class="chip chip-type">STR</span></td><td>Stories</td><td><code>&lt;Stories&gt;</code></td><td>tap → link per item</td><td>trackEvent(clicked)</td></tr>
+      <tr><td><span class="chip chip-type">WID</span></td><td>Widget</td><td><code>&lt;Widgets&gt;</code></td><td>display only (multi)</td><td>—</td></tr>
+      <tr><td><span class="chip chip-type">CSA</span></td><td>CSAT</td><td><code>&lt;Csat&gt;</code></td><td>1–5 rating tap</td><td>captureCsatResponse()</td></tr>
+      <tr><td><span class="chip chip-type">SUR</span></td><td>Survey</td><td><code>&lt;Survey&gt;</code></td><td>option + comment submit</td><td>captureSurveyResponse()</td></tr>
+      <tr><td><span class="chip chip-type">REL</span></td><td>Reels</td><td><code>&lt;Reels&gt;</code></td><td>like / dislike</td><td>sendReelLikeStatus()</td></tr>
+      <tr><td><span class="chip chip-type">PIP</span></td><td>PiP</td><td><code>&lt;Pip&gt;</code></td><td>tap → link/deeplink</td><td>trackEvent(opened)</td></tr>
+      <tr><td><span class="chip chip-type">SCR</span></td><td>Scratch Card</td><td><code>&lt;ScratchCard&gt;</code></td><td>tap to reveal</td><td>trackEvent(revealed)</td></tr>
+      <tr><td><span class="chip chip-type">SPW</span></td><td>Spin Wheel</td><td><code>&lt;SpinWheel&gt;</code></td><td>spin → random prize</td><td>trackEvent(spun, {prize})</td></tr>
+      <tr><td><span class="chip chip-type">MIL</span></td><td>Milestone</td><td>—</td><td>progress tracking</td><td>trackEvent()</td></tr>
+      <tr><td><span class="chip chip-type">TTP</span></td><td>Tooltip</td><td>—</td><td>anchor element highlight</td><td>trackEvent()</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ═══ 24 ═══ -->
+<section id="s24">
+  <h2><span class="section-num">24</span> Cross-Platform Comparison</h2>
+  <div class="divider"></div>
+
+  <div class="table-wrap">
+    <table>
+      <tr><th>Concern</th><th>Flutter</th><th>React Native</th><th>Android (Compose)</th></tr>
+      <tr>
+        <td><strong>Method calls</strong></td>
+        <td>MethodChannel.invokeMethod()</td>
+        <td>NativeModules.AppStorysReactNative.*</td>
+        <td>Direct Kotlin call</td>
+      </tr>
+      <tr>
+        <td><strong>Streaming updates</strong></td>
+        <td>EventChannel → campaignsStream</td>
+        <td>DeviceEventEmitter → NativeEventEmitter</td>
+        <td>StateFlow.collectAsState()</td>
+      </tr>
+      <tr>
+        <td><strong>Subscription lifecycle</strong></td>
+        <td>CampaignsStreamMixin (dispose)</td>
+        <td>subscription.remove() in useEffect cleanup</td>
+        <td>Compose lifecycle (automatic)</td>
+      </tr>
+      <tr>
+        <td><strong>Multiple subscribers</strong></td>
+        <td>asBroadcastStream() cache</td>
+        <td>Module-level NativeEventEmitter singleton</td>
+        <td>Multiple collectAsState() allowed</td>
+      </tr>
+      <tr>
+        <td><strong>Campaign filtering</strong></td>
+        <td>In widget (campaign_type == 'BAN')</td>
+        <td>In component (campaign_type == 'BAN')</td>
+        <td>getFilteredCampaigns() in core</td>
+      </tr>
+      <tr>
+        <td><strong>Overlay placement</strong></td>
+        <td>Widget in tree</td>
+        <td>Component in JSX</td>
+        <td>overlayElements() outside NavHost</td>
+      </tr>
+      <tr>
+        <td><strong>Navigation</strong></td>
+        <td>link passed to host via onTap callback</td>
+        <td>handleNavigation() → Linking.openURL()</td>
+        <td>navigateToScreen callback in App.kt</td>
+      </tr>
+      <tr>
+        <td><strong>Initial value replay</strong></td>
+        <td>StateFlow replays to new collectors</td>
+        <td>getScreenCampaigns() triggers new emit</td>
+        <td>StateFlow.value always available</td>
+      </tr>
+      <tr>
+        <td><strong>JSON bridge</strong></td>
+        <td>core.getCampaignsJson()</td>
+        <td>core.getCampaignsJson()</td>
+        <td>Not needed — direct object access</td>
+      </tr>
+      <tr>
+        <td><strong>Timing issue mitigation</strong></td>
+        <td>EventChannel + StateFlow replay</td>
+        <td>EventEmitter (subscribe-before-fetch)</td>
+        <td>None needed</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- ═══ 25 ═══ -->
+<section id="s25">
+  <h2><span class="section-num">25</span> API Quick Reference</h2>
+  <div class="divider"></div>
+
+  <h3>AppStorys (src/index.ts)</h3>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Method</th><th>Returns</th><th>Description</th></tr>
+      <tr><td><code>initialize(appId, accountId, userId?)</code></td><td><code>Promise&lt;boolean&gt;</code></td><td>SDK init. userId optional — anonymous if omitted.</td></tr>
+      <tr><td><code>getScreenCampaigns(screenName)</code></td><td><code>Promise&lt;boolean&gt;</code></td><td>Triggers fetch. Data arrives via onCampaignsUpdate event.</td></tr>
+      <tr><td><code>getCampaigns()</code></td><td><code>Promise&lt;CampaignData[]&gt;</code></td><td>Reads current campaigns synchronously (pull).</td></tr>
+      <tr><td><code>getCampaignsByType(type)</code></td><td><code>Promise&lt;CampaignData[]&gt;</code></td><td>Filtered by campaign_type code.</td></tr>
+      <tr><td><code>getPersonalizationData()</code></td><td><code>Promise&lt;Record&lt;string,string&gt;&gt;</code></td><td>Key-value personalization map.</td></tr>
+      <tr><td><code>getUserId()</code></td><td><code>Promise&lt;string&gt;</code></td><td>Current userId (anonymous or identified).</td></tr>
+      <tr><td><code>isReady()</code></td><td><code>Promise&lt;boolean&gt;</code></td><td>True when sdkState == Initialized.</td></tr>
+      <tr><td><code>setUserId(userId)</code></td><td><code>Promise&lt;boolean&gt;</code></td><td>Reconciles anonymous → identified user.</td></tr>
+      <tr><td><code>setUserProperties(attrs)</code></td><td><code>Promise&lt;boolean&gt;</code></td><td>Sends attribute map to audience API.</td></tr>
+      <tr><td><code>trackEvent(event, campaignId?, metadata?)</code></td><td><code>Promise&lt;boolean&gt;</code></td><td>Track any event. Custom events affect trigger matching.</td></tr>
+      <tr><td><code>dismissCampaign(campaignId)</code></td><td><code>Promise&lt;boolean&gt;</code></td><td>Adds to disabled list for session.</td></tr>
+      <tr><td><code>captureCsatResponse(csatId, rating, option?, comments?)</code></td><td><code>Promise&lt;boolean&gt;</code></td><td>Submit CSAT rating to API.</td></tr>
+      <tr><td><code>captureSurveyResponse(surveyId, options[], comment?)</code></td><td><code>Promise&lt;boolean&gt;</code></td><td>Submit survey answers.</td></tr>
+      <tr><td><code>sendReelLikeStatus(campaignId, isLiked)</code></td><td><code>Promise&lt;boolean&gt;</code></td><td>Like/unlike a Reels campaign.</td></tr>
+      <tr><td><code>personalizeText(text)</code></td><td><code>Promise&lt;string&gt;</code></td><td>Server-side {{token}} replacement.</td></tr>
+      <tr><td><code>handleNavigation(link)</code></td><td><code>Promise&lt;void&gt;</code></td><td>Opens http/https URL via Linking.</td></tr>
+    </table>
+  </div>
+
+  <h3>useCampaigns Hook</h3>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Property</th><th>Type</th><th>Description</th></tr>
+      <tr><td><code>campaigns</code></td><td><code>CampaignData[]</code></td><td>Current campaigns for the screen. Updates via EventEmitter.</td></tr>
+      <tr><td><code>loading</code></td><td><code>boolean</code></td><td>True until first onCampaignsUpdate event is received.</td></tr>
+      <tr><td><code>refresh()</code></td><td><code>() => void</code></td><td>Triggers a new getScreenCampaigns fetch.</td></tr>
+      <tr><td><code>getCampaignsByType(type)</code></td><td><code>(type: string) => CampaignData[]</code></td><td>Filters campaigns in memory. No network call.</td></tr>
+    </table>
+  </div>
+
+  <h3>useAppStorys Hook</h3>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Property</th><th>Type</th><th>Description</th></tr>
+      <tr><td><code>initialize()</code></td><td><code>() => Promise&lt;boolean&gt;</code></td><td>Manually trigger init (when autoInitialize=false).</td></tr>
+      <tr><td><code>initializing</code></td><td><code>boolean</code></td><td>True while initialize() is in-flight.</td></tr>
+      <tr><td><code>ready</code></td><td><code>boolean</code></td><td>True when isReady() returns true after init.</td></tr>
+      <tr><td><code>error</code></td><td><code>Error | null</code></td><td>Set if initialization throws.</td></tr>
+    </table>
+  </div>
+
+  <h3>Native Event</h3>
+  <div class="table-wrap">
+    <table>
+      <tr><th>Event Name</th><th>Payload</th><th>When Fired</th></tr>
+      <tr><td><code>"onCampaignsUpdate"</code></td><td><code>string</code> (JSON array)</td><td>Every time AppStorysCore._campaigns StateFlow emits</td></tr>
+    </table>
+  </div>
+
+  <div class="callout success">
+    <span class="icon">✅</span>
+    <div class="callout-body">
+      <strong>The EventEmitter is set up automatically by startCampaignsEmitter() inside initialize().</strong> Client code only needs to call <code>initialize()</code> once at app start and then use <code>useCampaigns(screenName)</code> in each screen. Everything else is handled by the SDK.
+    </div>
+  </div>
+
+</section>
+
+</main>
+
+<!-- ═══════════════════ SCROLL SPY ═══════════════════ -->
+<script>
+hljs.highlightAll();
+
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('nav a');
+
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            navLinks.forEach(l => l.classList.remove('active'));
+            const active = document.querySelector(`nav a[href="#${entry.target.id}"]`);
+            if (active) active.classList.add('active');
+        }
+    });
+}, { rootMargin: '-20% 0px -70% 0px' });
+
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
