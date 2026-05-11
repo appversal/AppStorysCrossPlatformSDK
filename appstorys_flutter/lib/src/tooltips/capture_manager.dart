@@ -27,18 +27,22 @@ class CaptureManager {
     required BuildContext screenContext,
     required IdentifyElementsCallback identifyElements,
   }) {
-    return Positioned(
-      bottom: 20,
-      right: 16,
-      child: SizedBox(
-        width: 120,
-        child: FloatingActionButton.extended(
-          heroTag: 'appstorys_capture',
-          backgroundColor: Colors.white,
-          tooltip: 'Capture screen layout',
-          onPressed: _capturing
-              ? null
-              : () async {
+    return ValueListenableBuilder<bool>(
+      valueListenable: _enabledNotifier,
+      builder: (context, enabled, _) {
+        if (!enabled) return const SizedBox.shrink();
+        return Positioned(
+          bottom: 20,
+          right: 16,
+          child: SizedBox(
+            width: 120,
+            child: FloatingActionButton.extended(
+              heroTag: 'appstorys_capture',
+              backgroundColor: Colors.white,
+              tooltip: 'Capture screen layout',
+              onPressed: _capturing
+                  ? null
+                  : () async {
             try {
               await _capture(
                 screenName: screenName,
@@ -79,6 +83,8 @@ class CaptureManager {
           ),
         ),
       ),
+        );
+      },
     );
   }
 

@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import '../../appstorys_flutter.dart';
+import '../tooltips/capture_manager.dart';
 
 /// Persistent floating overlay that renders Banner, Floater, PiP, BottomSheet,
 /// and Modal campaigns above your screen content.
@@ -20,10 +21,10 @@ import '../../appstorys_flutter.dart';
 ///     MyScrollableBody(),
 ///     AppStorysOverlay(
 ///       appStorys: _appstorys,
+///       screenName: 'Home Screen',
 ///       bottomPadding: kBottomNavigationBarHeight,
 ///       onLinkTap: (link) => launchUrl(Uri.parse(link)),
 ///     ),
-///     _appstorys.captureScreenWidget(screenName: ..., screenContext: context),
 ///   ],
 /// )
 /// ```
@@ -37,12 +38,18 @@ class AppStorysOverlay extends StatefulWidget {
   /// Pass your AppBar height if you want PiP to stay below it.
   final double topPadding;
 
+  /// Screen name passed to the capture button (test-user tool).
+  /// When omitted the button still works but the captured layout is
+  /// uploaded without a screen name.
+  final String? screenName;
+
   const AppStorysOverlay({
     super.key,
     required this.appStorys,
     this.onLinkTap,
     this.bottomPadding = 0,
     this.topPadding = 0,
+    this.screenName,
   });
 
   @override
@@ -173,6 +180,11 @@ class _AppStorysOverlayState extends State<AppStorysOverlay> {
           AppStorysSpinWheel(
             appStorys: widget.appStorys,
             onLinkTap: widget.onLinkTap,
+          ),
+
+          widget.appStorys.captureScreenWidget(
+            screenName: widget.screenName ?? '',
+            screenContext: context,
           ),
 
         ],
