@@ -304,7 +304,7 @@ class ApiClient(
         additionalComments: String?
     ): ApiResult<Unit> {
         return try {
-            val response = httpClient.post("${usersBaseUrl}api/v1/campaigns/capture-csat-response/") {
+            val response = httpClient.post("${backendBaseUrl}api/v1/campaigns/capture-csat-response/") {
                 contentType(ContentType.Application.Json)
                 header(HttpHeaders.Authorization, bearerToken(accessToken))
                 setBody(
@@ -338,7 +338,7 @@ class ApiClient(
         comment: String?
     ): ApiResult<Unit> {
         return try {
-            val response = httpClient.post("${usersBaseUrl}api/v1/campaigns/capture-survey-response/") {
+            val response = httpClient.post("${backendBaseUrl}api/v1/campaigns/capture-survey-response/") {
                 contentType(ContentType.Application.Json)
                 header(HttpHeaders.Authorization, bearerToken(accessToken))
                 setBody(

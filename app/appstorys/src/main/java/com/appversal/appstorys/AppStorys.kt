@@ -33,7 +33,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -119,6 +118,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import java.util.concurrent.ConcurrentHashMap
 import org.json.JSONObject
 import kotlin.collections.plus
 import kotlin.toString
@@ -152,7 +152,10 @@ object AppStorys {
     private val scratchedCampaigns = MutableStateFlow<List<String>>(emptyList())
 
     // In-memory spin count per campaign — keyed by campaign ID, value = remaining spins
-    private val spinCountByCampaign = mutableStateMapOf<String, Int>()
+    // Use a thread-safe map for background/IO access. Compose observation is provided
+    // via `spinCountState` which is updated when the map changes.
+    private val spinCountByCampaign = ConcurrentHashMap<String, Int>()
+    private val spinCountState = MutableStateFlow<Map<String, Int>>(emptyMap())
 
     private var isScreenCaptureEnabled by mutableStateOf(false)
 
@@ -255,9 +258,11 @@ object AppStorys {
 
                 val spinPrefs =
                     context.getSharedPreferences("appstorys_spin_counts", Context.MODE_PRIVATE)
-                spinPrefs.all.forEach { (key, value) ->
-                    if (value is Int) spinCountByCampaign[key] = value
-                }
+                    spinPrefs.all.forEach { (key, value) ->
+                        if (value is Int) spinCountByCampaign[key] = value
+                    }
+                    // Publish loaded values to the observable StateFlow so UI reads are consistent
+                    spinCountState.update { spinCountByCampaign.toMap() }
             }
 
             showCaseInformation()
@@ -266,7 +271,8 @@ object AppStorys {
         // Keep isScreenCaptureEnabled in sync with the async API result instead of
         // snapshotting it immediately after getScreenCampaigns() (which returns before
         // the coroutine finishes and isTestUser is set).
-        coroutineScope.launch {
+        // isTestUserFlow affects UI-visible state; collect on Main to safely update Compose state
+        coroutineScope.launch(Dispatchers.Main) {
             core.isTestUserFlow.collect { value ->
                 isScreenCaptureEnabled = value
             }
@@ -1766,6 +1772,8 @@ object AppStorys {
 
         // Spin count: hoist here so it survives recomposition and screen navigation
         val campaignId = campaign?.id
+        // Observe the thread-safe spin counts as a StateFlow so Compose recomposes on changes
+        val spinCounts by spinCountState.collectAsStateWithLifecycle()
         if (spinTheWheelDetails != null && campaignId != null && campaign != null) {
             val initialSpins = spinTheWheelDetails.availableSpins
                 ?: spinTheWheelDetails.content?.userInteraction?.numberSpin
@@ -1780,10 +1788,12 @@ object AppStorys {
                         Context.MODE_PRIVATE
                     )
                 )
-                spinCountByCampaign[campaignId] = persisted ?: initialSpins
+                val value = persisted ?: initialSpins
+                spinCountByCampaign[campaignId] = value
+                spinCountState.update { spinCountByCampaign.toMap() }
             }
 
-            val spinsLeft = spinCountByCampaign[campaignId] ?: initialSpins
+            val spinsLeft = spinCounts[campaignId] ?: initialSpins
 
             if (isPresented) {
 
@@ -1806,14 +1816,19 @@ object AppStorys {
                         val updated = (spinCountByCampaign[campaignId] ?: initialSpins) - 1
                         val clamped = updated.coerceAtLeast(0)
                         spinCountByCampaign[campaignId] = clamped
-                        saveSpinCount(
-                            campaignId = campaignId,
-                            count = clamped,
-                            sharedPreferences = context.getSharedPreferences(
-                                "appstorys_spin_counts",
-                                Context.MODE_PRIVATE
+                        // Notify UI about the updated counts
+                        spinCountState.update { spinCountByCampaign.toMap() }
+                        // Persist on IO
+                        coroutineScope.launch(Dispatchers.IO) {
+                            saveSpinCount(
+                                campaignId = campaignId,
+                                count = clamped,
+                                sharedPreferences = context.getSharedPreferences(
+                                    "appstorys_spin_counts",
+                                    Context.MODE_PRIVATE
+                                )
                             )
-                        )
+                        }
                     },
                     onCtaClick = { link ->
                         val targetLink = link?.takeIf { it.isNotEmpty() } ?: redirectUrl

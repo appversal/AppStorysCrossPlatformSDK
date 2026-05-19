@@ -17,13 +17,17 @@ class CaptureManager {
 
   static final ValueNotifier<bool> _enabledNotifier = ValueNotifier(false);
   static bool _capturing = false;
+  static String _currentScreen = '';
 
   static void setEnabled(bool enabled) {
     _enabledNotifier.value = enabled;
   }
 
+  static void setCurrentScreen(String screen) {
+    _currentScreen = screen;
+  }
+
   static Widget captureButton({
-    required String screenName,
     required BuildContext screenContext,
     required IdentifyElementsCallback identifyElements,
   }) {
@@ -45,7 +49,7 @@ class CaptureManager {
                   : () async {
             try {
               await _capture(
-                screenName: screenName,
+                screenName: _currentScreen,
                 context: screenContext,
                 identifyElements: identifyElements,
               );
@@ -54,7 +58,7 @@ class CaptureManager {
                 ScaffoldMessenger.of(screenContext).showSnackBar(
                   SnackBar(
                     content: Text(
-                      'Screen layout captured on screen : $screenName',
+                      'Screen layout captured on screen : $_currentScreen',
                     ),
                     duration: const Duration(seconds: 2),
                   ),
@@ -99,6 +103,8 @@ class CaptureManager {
       await WidgetsBinding.instance.endOfFrame;
       await Future.delayed(const Duration(milliseconds: 250));
 
+      debugPrint('[CaptureManager] ── capture start ── screen="$screenName"');
+
       final rootElement = WidgetsBinding.instance.rootElement;
 
       if (rootElement == null) {
@@ -128,9 +134,7 @@ class CaptureManager {
       final pixelRatio =
           ui.PlatformDispatcher.instance.views.first.devicePixelRatio;
 
-      // Collect layout; guard against unmounted context after async gaps.
-      if (!context.mounted) return;
-      final layoutJson = _collectLayout(context, pixelRatio);
+      final layoutJson = _collectLayout(pixelRatio);
 
       final image = await boundary.toImage(pixelRatio: pixelRatio);
 
@@ -141,11 +145,15 @@ class CaptureManager {
 
       final pngBytes = byteData.buffer.asUint8List();
 
+      debugPrint('[CaptureManager] screenshot size=${pngBytes.length} bytes — sending to identifyElements');
+
       await identifyElements(
         screenName,
         pngBytes,
         layoutJson,
       );
+
+      debugPrint('[CaptureManager] ── capture done ── screen="$screenName"');
     } catch (e) {
       debugPrint('[CaptureManager] capture failed: $e');
     } finally {
@@ -169,30 +177,27 @@ class CaptureManager {
     return found;
   }
 
-  static String _collectLayout(
-      BuildContext context,
-      double pixelRatio,
-      ) {
+  static String _collectLayout(double pixelRatio) {
     final data = <Map<String, dynamic>>[];
 
     void visit(Element el) {
       final key = el.widget.key;
       final ro = el.renderObject;
 
-      if (key is ValueKey<String> &&
-          ro is RenderBox &&
-          ro.hasSize) {
+      if (key is ValueKey<String> && ro is RenderBox && ro.hasSize) {
         final pos = ro.localToGlobal(Offset.zero);
         final sz = ro.size;
 
+        final x = (pos.dx * pixelRatio).round();
+        final y = (pos.dy * pixelRatio).round();
+        final w = (sz.width * pixelRatio).round();
+        final h = (sz.height * pixelRatio).round();
+
+        debugPrint('[CaptureManager] element: id="${key.value}" x=$x y=$y w=$w h=$h');
+
         data.add({
           'id': key.value,
-          'frame': {
-            'x': (pos.dx * pixelRatio).round(),
-            'y': (pos.dy * pixelRatio).round(),
-            'width': (sz.width * pixelRatio).round(),
-            'height': (sz.height * pixelRatio).round(),
-          },
+          'frame': {'x': x, 'y': y, 'width': w, 'height': h},
         });
       }
 
@@ -200,8 +205,14 @@ class CaptureManager {
     }
 
     try {
-      visit(context as Element);
+      final root = WidgetsBinding.instance.rootElement;
+      if (root != null) visit(root);
     } catch (_) {}
+
+    debugPrint('[CaptureManager] layout done: ${data.length} element(s) on "$_currentScreen"');
+    if (data.isEmpty) {
+      debugPrint('[CaptureManager] WARNING: no ValueKey<String> widgets found on "$_currentScreen" — add ValueKey to elements you want captured');
+    }
 
     return jsonEncode(data);
   }

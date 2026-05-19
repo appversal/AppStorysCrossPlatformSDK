@@ -4,10 +4,15 @@
 // completes via the AppStorysCore StateFlow → EventChannel pipeline.
 
 import 'dart:convert';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 
 import '../../appstorys_flutter.dart';
 import '../common/cross_button.dart';
+import '../utils/campaigns_stream_mixin.dart';
+import '../utils/common_widgets.dart';
+import '../utils/link_handler.dart';
 
 /// A widget that displays an AppStorys banner campaign.
 ///
@@ -19,7 +24,6 @@ import '../common/cross_button.dart';
 /// - Supports responsive sizing based on device width
 /// - Provides a close button to dismiss the banner
 
-
 /// PUBLIC widget (used by app)
 class AppStorysBanner extends StatefulWidget {
   final AppstorysFlutter appStorys;
@@ -29,9 +33,13 @@ class AppStorysBanner extends StatefulWidget {
   final EdgeInsets margin;
   final BorderRadius? borderRadius;
   final VoidCallback? onDismissed;
+  final ImageProvider<Object>? placeholder;
+  final Widget? placeholderContent;
+
   /// Extra space below the banner — pass the host BottomNavigationBar height
   /// so the banner sits above it. Added on top of any backend-configured margin.
   final double bottomPadding;
+
   /// Callback for handling banner link clicks — receives the link (URL or screen name).
   final void Function(String link)? onTap;
 
@@ -44,6 +52,8 @@ class AppStorysBanner extends StatefulWidget {
     this.margin = const EdgeInsets.all(12),
     this.borderRadius,
     this.onDismissed,
+    this.placeholder,
+    this.placeholderContent,
     this.bottomPadding = 0,
     this.onTap,
   });
@@ -95,10 +105,8 @@ class _AppStorysBannerState extends State<AppStorysBanner>
     try {
       final data = jsonDecode(json) as List<dynamic>;
 
-      final raw = data
-          .whereType<Map>()
-          .firstWhere(
-            (c) => c['campaign_type'] == 'BAN',
+      final raw = data.whereType<Map>().firstWhere(
+        (c) => c['campaign_type'] == 'BAN',
         orElse: () => {},
       );
 
@@ -112,33 +120,18 @@ class _AppStorysBannerState extends State<AppStorysBanner>
 
   Map<String, dynamic> _normalizeCampaign(Map raw) {
     final details = Map<String, dynamic>.from(raw['details'] ?? {});
-    final variant = _extractVariant(details);
 
+    // Variants are already extracted on the Kotlin side (AppStorysCore.extractVariantFromCampaign)
+    // before campaigns are emitted. The campaign details here are fully resolved, not VariantCampaignDetails.
     return {
       ...details,
-      ...variant,
-      'image': details['image'] ?? variant['image'],
-      'link': details['link'] ?? variant['link'],
-      'width': details['width'] ?? variant['width'],
-      'height': details['height'] ?? variant['height'],
-      'styling': details['styling'] ?? variant['styling'],
-      'id': (raw['id'] ?? details['id'] ?? variant['id'])?.toString() ?? '',
+      'image': details['image'],
+      'link': details['link'],
+      'width': details['width'],
+      'height': details['height'],
+      'styling': details['styling'],
+      'id': (raw['id'] ?? details['id'])?.toString() ?? '',
     };
-  }
-
-  Map<String, dynamic> _extractVariant(Map<String, dynamic> details) {
-    final variants = details['variants'];
-
-    if (variants is Map) {
-      final list = variants.values
-          .whereType<Map>()
-          .map((v) => Map<String, dynamic>.from(v))
-          .toList();
-
-      if (list.isNotEmpty) return list.first;
-    }
-
-    return {};
   }
 
   void _trackView(BannerCampaign? banner) {
@@ -147,11 +140,6 @@ class _AppStorysBannerState extends State<AppStorysBanner>
     widget.appStorys
         .trackEvent(event: 'viewed', campaignId: banner!.id)
         .catchError((_) {});
-
-    // Dismiss the banner from core after tracking the view.
-    // This prevents it from re-appearing when navigating back to the same screen,
-    // matching Kotlin's approach of using disableCampaign() for overlay campaigns.
-    widget.appStorys.dismissCampaign(banner.id).catchError((_) {});
   }
 
   Future<void> _onTap() async {
@@ -164,7 +152,7 @@ class _AppStorysBannerState extends State<AppStorysBanner>
 
     final link = banner.link;
     if (link?.isNotEmpty == true) {
-      widget.onTap?.call(link!);
+      await LinkHandler.handle(link, widget.onTap);
     }
   }
 
@@ -222,10 +210,18 @@ class _AppStorysBannerState extends State<AppStorysBanner>
       aspectRatio: _aspectRatio,
       isImage: isImage,
       isLottie: isLottie,
+      placeholder: widget.placeholder,
+      placeholderContent: widget.placeholderContent,
       onTap: _onTap,
       onClose: () {
         setState(() => _visible = false);
         widget.onDismissed?.call();
+        // Permanently disable in core so the banner does not re-appear this session.
+        // Matches Kotlin's core.disableCampaign() called from the Banner close button.
+        final id = _banner?.id;
+        if (id != null && id.isNotEmpty) {
+          widget.appStorys.dismissCampaign(id).catchError((_) {});
+        }
       },
     );
   }
@@ -242,6 +238,8 @@ class _BannerView extends StatelessWidget {
   final double? aspectRatio;
   final bool isImage;
   final bool isLottie;
+  final ImageProvider<Object>? placeholder;
+  final Widget? placeholderContent;
   final VoidCallback onTap;
   final VoidCallback onClose;
 
@@ -255,6 +253,8 @@ class _BannerView extends StatelessWidget {
     required this.aspectRatio,
     required this.isImage,
     required this.isLottie,
+    this.placeholder,
+    this.placeholderContent,
     required this.onTap,
     required this.onClose,
   });
@@ -262,22 +262,32 @@ class _BannerView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fit = forcedHeight != null ? BoxFit.fill : BoxFit.fitWidth;
+    final showCloseButton =
+        banner.styling?.crossButton?.enabled ??
+        banner.styling?.enableCloseButton ??
+        true;
+    final fallback =
+        placeholderContent ??
+        (placeholder != null
+            ? Image(image: placeholder!, fit: fit)
+            : _placeholderFallback());
 
     Widget content = GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: borderRadius,
-          image: isImage
-              ? DecorationImage(
-            image: NetworkImage(banner.image!),
-            fit: fit,
-          )
-              : null,
+      child: ClipRRect(
+        borderRadius: borderRadius,
+        child: SizedBox.expand(
+          child: isImage
+              ? CachedNetworkImage(
+                  imageUrl: banner.image!,
+                  fit: fit,
+                  placeholder: (_, _) => fallback,
+                  errorWidget: (_, _, _) => fallback,
+                )
+              : isLottie
+              ? _lottieRenderer()
+              : fallback,
         ),
-        child: isLottie ? _lottieFallback() : const SizedBox.shrink(),
       ),
     );
 
@@ -288,10 +298,7 @@ class _BannerView extends StatelessWidget {
         child: content,
       );
     } else if (aspectRatio != null) {
-      content = AspectRatio(
-        aspectRatio: 1 / aspectRatio!,
-        child: content,
-      );
+      content = AspectRatio(aspectRatio: 1 / aspectRatio!, child: content);
     }
 
     return SafeArea(
@@ -313,16 +320,14 @@ class _BannerView extends StatelessWidget {
               color: Colors.transparent,
               child: content,
             ),
-            if (banner.styling?.crossButton?.enabled == true)
+            if (showCloseButton)
               Positioned(
                 top: banner.styling?.crossButton?.margin?.top ?? 0,
                 right: banner.styling?.crossButton?.margin?.right ?? 0,
                 child: CrossButton(
                   onTap: onClose,
                   iconSize: banner.styling?.crossButton?.size ?? 18,
-                  styling: {
-                    'color': banner.styling?.crossButton?.colorObj,
-                  },
+                  styling: banner.styling?.crossButton?.toJson(),
                 ),
               ),
           ],
@@ -331,13 +336,28 @@ class _BannerView extends StatelessWidget {
     );
   }
 
-  Widget _lottieFallback() {
+  Widget _lottieRenderer() {
+    return Lottie.network(
+      banner.lottieData!,
+      fit: BoxFit.cover,
+      repeat: true,
+      reverse: false,
+      animate: true,
+      errorBuilder: (context, error, stackTrace) {
+        debugPrint('Error loading Lottie: $error');
+        return _placeholderFallback();
+      },
+    );
+  }
+
+  Widget _placeholderFallback() {
     return Container(
       color: Colors.grey[200],
       alignment: Alignment.center,
-      child: Text(
-        'Lottie: ${banner.lottieData}',
-        textAlign: TextAlign.center,
+      child: Icon(
+        Icons.image_not_supported_outlined,
+        color: Colors.grey[600],
+        size: 40,
       ),
     );
   }

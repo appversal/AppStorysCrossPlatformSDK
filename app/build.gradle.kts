@@ -55,7 +55,6 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.coil.compose)
-
     implementation ("com.google.android.material:material:1.11.0")
 
 

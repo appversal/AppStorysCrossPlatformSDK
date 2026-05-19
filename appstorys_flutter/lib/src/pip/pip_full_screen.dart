@@ -6,6 +6,7 @@ import '../common/cta_button.dart';
 import '../common/minimize_button.dart';
 import '../common/mute_button.dart';
 import '../common/unmute_button.dart';
+import '../utils/link_handler.dart';
 import 'pip_video_player.dart';
 
 class PipFullScreen extends StatefulWidget {
@@ -60,7 +61,7 @@ class _PipFullScreenState extends State<PipFullScreen> {
         .trackEvent(event: 'clicked', campaignId: widget.campaign.id)
         .catchError((_) {});
 
-    widget.onLinkTap?.call(link!);
+    LinkHandler.handle(link, widget.onLinkTap);
   }
 
   void _onClose() {

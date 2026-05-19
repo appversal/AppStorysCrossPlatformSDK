@@ -6,7 +6,9 @@ import 'package:lottie/lottie.dart';
 import '../../appstorys_flutter.dart';
 import '../common/cross_button.dart';
 import '../common/cta_button.dart';
+import '../utils/campaigns_stream_mixin.dart';
 import '../utils/font_cache.dart';
+import '../utils/link_handler.dart';
 
 export '../models/survey_models.dart';
 
@@ -29,14 +31,26 @@ class AppStorysSurvey extends StatefulWidget {
 }
 
 class _AppStorysSurveyState extends State<AppStorysSurvey>
-    with CampaignsStreamMixin {
+    with CampaignsStreamMixin, WidgetsBindingObserver {
   bool _showing = false;
   String? _currentCampaignId;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     subscribeToCampaigns(widget.appStorys.campaignsStream, _handleCampaigns);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _showing = false;
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   void _handleCampaigns(String json) {
@@ -63,6 +77,8 @@ class _AppStorysSurveyState extends State<AppStorysSurvey>
         context: context,
         useRootNavigator: true,
         isScrollControlled: true,
+        isDismissible: false,
+        enableDrag: false,
         backgroundColor: Colors.transparent,
         barrierColor: bdColor,
         builder: (ctx) => _SurveySheet(
@@ -73,9 +89,6 @@ class _AppStorysSurveyState extends State<AppStorysSurvey>
         ),
       ).then((_) {
         if (mounted) _showing = false;
-        if (campaign.id.isNotEmpty) {
-          widget.appStorys.dismissCampaign(campaign.id).catchError((_) {});
-        }
       });
     });
   }
@@ -714,7 +727,7 @@ class _SurveySheetState extends State<_SurveySheet> {
     if (vm.thankYouButtonAction.toLowerCase() == 'redirect' &&
         vm.thankYouButtonRedirectUrl != null &&
         vm.thankYouButtonRedirectUrl!.isNotEmpty) {
-      widget.onLinkTap?.call(vm.thankYouButtonRedirectUrl!);
+      LinkHandler.handle(vm.thankYouButtonRedirectUrl, widget.onLinkTap);
     }
     widget.onDismiss();
   }
@@ -852,30 +865,22 @@ class _SurveySheetState extends State<_SurveySheet> {
   void _submitSurvey(List<String> options, String comment) {
     _trackSurveySubmittedEvent();
 
-    final optionKeys = options.where((v) => v != 'Others').map((text) {
-      final entry = currentSlide?.options.entries
-          .firstWhere((e) => e.value == text, orElse: () => MapEntry('', text));
-      return entry?.key.isNotEmpty == true ? entry!.key : text;
-    }).toList();
-
-    final allOptions = optionKeys.isNotEmpty ? optionKeys : options;
-    final commentText = comment.isEmpty ? null : comment;
-    final campaignId = widget.campaign.id;
-
-    if (campaignId.isNotEmpty && allOptions.isNotEmpty) {
-      widget.appStorys.getUserId().then((uid) {
-        if (uid != null && uid.isNotEmpty) {
-          widget.appStorys
-              .captureSurveyResponse(
-                surveyId: campaignId,
-                userId: uid,
-                responseOptions: allOptions,
-                comment: commentText,
-              )
-              .catchError((_) {});
-        }
-      });
-    }
+    widget.appStorys.getUserId().then((uid) {
+      if (uid != null && uid.isNotEmpty) {
+        final responseOptions = options.where((o) => o != 'Others').toList();
+        final finalComment = comment.isNotEmpty ? comment : null;
+        widget.appStorys
+            .captureSurveyResponse(
+              surveyId: widget.campaign.details.id,
+              userId: uid,
+              responseOptions: responseOptions.isNotEmpty
+                  ? responseOptions
+                  : ['Others'],
+              comment: finalComment,
+            )
+            .catchError((_) {});
+      }
+    });
 
     if (_vm!.thankYouButtonEnabled) {
       setState(() => showThankYouPage = true);

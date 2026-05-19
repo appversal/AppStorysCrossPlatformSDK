@@ -7,7 +7,9 @@ import 'package:flutter/services.dart';
 
 import '../../appstorys_flutter.dart';
 import '../common/cross_button.dart';
+import '../utils/campaigns_stream_mixin.dart';
 import '../common/cta_button.dart';
+import '../utils/link_handler.dart';
 
 // ── KMP entry widget ──────────────────────────────────────────────────────────
 
@@ -28,6 +30,7 @@ class AppStorysSpinWheel extends StatefulWidget {
 class _AppStorysSpinWheelState extends State<AppStorysSpinWheel>
     with CampaignsStreamMixin {
   bool _showing = false;
+  String? _currentCampaignId;
 
   @override
   void initState() {
@@ -50,6 +53,10 @@ class _AppStorysSpinWheelState extends State<AppStorysSpinWheel>
     final campaignId =
         (stw['campaign_id'] ?? stw['id'] ?? '').toString();
 
+    // Same campaign was already shown and closed — don't re-show.
+    // Matches Kotlin's remember(campaign?.id) { mutableStateOf(true) } scoping.
+    if (campaignId == _currentCampaignId) return;
+
     final rawSlices = stw['slices'];
     if (rawSlices is List) {
       detailsMap['slices'] = rawSlices;
@@ -64,6 +71,7 @@ class _AppStorysSpinWheelState extends State<AppStorysSpinWheel>
 
     if (details.slices.isEmpty) return;
 
+    _currentCampaignId = campaignId;
     _showing = true;
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -82,8 +90,9 @@ class _AppStorysSpinWheelState extends State<AppStorysSpinWheel>
         ),
       );
       if (mounted) {
-        widget.appStorys.dismissCampaign(campaignId);
         _showing = false;
+        // Keep _currentCampaignId so the same campaign does not re-show
+        // until a new campaign ID arrives — matches Kotlin's remember(campaign?.id).
       }
     });
   }
@@ -817,7 +826,7 @@ class _SpinWheelDialogState extends State<_SpinWheelDialog>
               // CTA
               CtaButton(
                 onTap: reward.link.isNotEmpty
-                    ? () => widget.onLinkTap?.call(reward.link)
+                    ? () => LinkHandler.handle(reward.link, widget.onLinkTap)
                     : _handleDismiss,
                 text: reward.buttonCta,
                 backgroundColor: _hex(
@@ -848,7 +857,7 @@ class _SpinWheelDialogState extends State<_SpinWheelDialog>
               if (reward.termsNConditions.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 GestureDetector(
-                  onTap: () => widget.onLinkTap?.call(reward.termsNConditions),
+                  onTap: () => LinkHandler.handle(reward.termsNConditions, widget.onLinkTap),
                   child: Text(
                     reward.tNcCta,
                     style: const TextStyle(

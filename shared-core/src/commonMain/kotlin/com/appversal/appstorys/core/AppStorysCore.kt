@@ -26,6 +26,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.builtins.ListSerializer
@@ -113,7 +114,16 @@ class AppStorysCore(private val storage: PlatformStorage) {
         "viewed", "clicked", "csat captured", "survey captured",
         "shared", "SurveySubmitted", "SurveyDismissed", "ThankYouCTAClicked"
     )
-    private val deviceInfo: Map<String, Any> = getDeviceInfo()
+    private val _deviceInfo: Map<String, Any> by lazy {
+        runCatching { getDeviceInfo() }.getOrElse {
+            sdkLogError("DeviceInfo unavailable: ${it.message}")
+            emptyMap()
+        }.also { info ->
+            if (info.isEmpty()) {
+                sdkLogError("DeviceInfo: empty — device context unavailable")
+            }
+        }
+    }
     // ══════════════════════════════════════════════════════════════
     // INITIALIZE
     // ══════════════════════════════════════════════════════════════
@@ -158,6 +168,7 @@ class AppStorysCore(private val storage: PlatformStorage) {
                     accessToken = tokenResult.data.access_token
                     sdkState = SdkState.Initialized
                     sdkLogDebug("Initialized. User: ${this@AppStorysCore.userId}")
+                    _deviceInfo // force lazy evaluation so device info is captured at init time
 
                     if (currentScreen.isNotBlank() && campaignsJob?.isActive != true) {
                         getScreenCampaigns(currentScreen, emptyList())
@@ -240,8 +251,8 @@ class AppStorysCore(private val storage: PlatformStorage) {
 
             try {
                 if (currentScreen != screenName) {
-                    isTestUser = false  // reset before emitting so EventChannel sends s:false during transition
                     _campaigns.emit(emptyList())
+                    _disabledCampaigns.emit(emptyList())
                     _trackedEvents.emit(emptySet())
                     currentScreen = screenName
                     delay(100)
@@ -312,9 +323,10 @@ class AppStorysCore(private val storage: PlatformStorage) {
                         else campaign
                     }
 
-                isTestUser = eligibleData.test_user ?: false
+                isTestUser = (eligibleData.test_user ?: false) && (eligibleData.screen_capture_enabled ?: false)
                 personalizationData = eligibleData.personalization_data
 
+                sdkLogDebug("test_user from backend: ${eligibleData.test_user}, screen_capture_enabled: ${eligibleData.screen_capture_enabled} → isTestUser set to: $isTestUser")
                 ensureActive()
 
                 _campaigns.emit(campaignsList)
@@ -354,7 +366,7 @@ class AppStorysCore(private val storage: PlatformStorage) {
                 }
 
                 val mergedMetadata = if (event !in systemEvents) {
-                    (metadata ?: emptyMap()) + deviceInfo
+                    (metadata ?: emptyMap()) + _deviceInfo
                 } else {
                     metadata ?: emptyMap()
                 }
@@ -433,7 +445,7 @@ class AppStorysCore(private val storage: PlatformStorage) {
             }
 
             try {
-                val enrichedAttributes = attributes + deviceInfo
+                val enrichedAttributes = attributes + _deviceInfo
                 apiClient.updateUserProperties(
                     accessToken = accessToken,
                     request = UpdateUserPropertiesRequest(
@@ -643,7 +655,7 @@ class AppStorysCore(private val storage: PlatformStorage) {
         )
     }
 
-    fun getDeviceInfo(): Map<String, Any> = deviceInfo
+    fun getDeviceMetadata(): Map<String, Any> = _deviceInfo
 
     suspend fun tooltipIdentify(
         screenName: String,
@@ -661,6 +673,44 @@ class AppStorysCore(private val storage: PlatformStorage) {
         )
     }
 
+    // ══════════════════════════════════════════════════════════════
+    // CROSS-PLATFORM BRIDGE HELPERS
+    // Non-suspend wrappers and observation bridge for Swift/iOS.
+    // ══════════════════════════════════════════════════════════════
+
+    fun isInitialized(): Boolean = sdkState == SdkState.Initialized
+
+    /** Non-suspend wrapper so Swift can call tooltipIdentify without coroutine machinery. */
+    fun runTooltipIdentify(screenName: String, childrenJson: String, screenshotBytes: ByteArray) {
+        scope.launch {
+            runCatching {
+                tooltipIdentify(screenName = screenName, childrenJson = childrenJson, screenshotBytes = screenshotBytes)
+            }
+        }
+    }
+
+    /**
+     * Observes campaigns and isTestUser via a single callback, bridging StateFlow to Swift.
+     * Payload format matches the Android EventChannel: {"c":[...],"s":true/false}
+     * Returns a [CampaignObserver] whose [CampaignObserver.cancel] stops the flow collection.
+     */
+    fun observeCampaigns(onUpdate: (payload: String) -> Unit): CampaignObserver {
+        val job = scope.launch {
+            combine(campaigns, isTestUserFlow) { _, isTest ->
+                val json = getCampaignsJson()
+                "{\"c\":${json},\"s\":${isTest}}"
+            }.collect { payload ->
+                onUpdate(payload)
+            }
+        }
+        return CampaignObserver(job)
+    }
+
+}
+
+/** Cancellable handle returned by [AppStorysCore.observeCampaigns]. */
+class CampaignObserver(private val job: Job) {
+    fun cancel() = job.cancel()
 }
 
 // Thin adapter so ApiClient can reuse PlatformStorage through KeyValueStore.

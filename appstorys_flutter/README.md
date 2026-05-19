@@ -7,7 +7,7 @@ Modals, Bottom Sheets, CSAT ratings, Surveys, Scratch Cards, and Spin The Wheel.
 
 ```yaml
 dependencies:
-  appstorys_flutter: ^1.0.0-alpha01
+  appstorys_flutter: ^1.0.0-alpha07
 ```
 
 ## Quick start

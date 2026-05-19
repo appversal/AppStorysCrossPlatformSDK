@@ -57,6 +57,7 @@ actual fun getDeviceInfo(): Map<String, Any> {
         UIDeviceOrientation.UIDeviceOrientationLandscapeRight -> "landscape"
         else -> "portrait"
     }
+    val defaults = NSUserDefaults.standardUserDefaults
     return mapOf(
         "platform" to "ios",
         "os_version" to device.systemVersion,
@@ -69,7 +70,9 @@ actual fun getDeviceInfo(): Map<String, Any> {
         "screen_width_px" to widthPx,
         "screen_height_px" to heightPx,
         "screen_density" to densityDpi,
-        "orientation" to orientation
+        "orientation" to orientation,
+        "app_version" to (defaults.stringForKey("app_version") ?: ""),
+        "package_name" to (defaults.stringForKey("package_name") ?: "")
     )
 }
 

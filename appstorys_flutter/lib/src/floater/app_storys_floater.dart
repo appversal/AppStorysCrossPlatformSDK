@@ -1,7 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 
 import '../../appstorys_flutter.dart';
+import '../utils/campaigns_stream_mixin.dart';
+import '../utils/common_widgets.dart';
+import '../utils/link_handler.dart';
 
 /// PUBLIC widget
 class AppStorysFloater extends StatefulWidget {
@@ -91,11 +95,6 @@ class _AppStorysFloaterState extends State<AppStorysFloater>
     widget.appStorys
         .trackEvent(event: 'viewed', campaignId: f!.id)
         .catchError((_) {});
-    
-    // Dismiss the floater from core after tracking the view.
-    // This prevents it from re-appearing when navigating back to the same screen,
-    // matching Kotlin's approach of using disableCampaign() for overlay campaigns.
-    widget.appStorys.dismissCampaign(f.id).catchError((_) {});
   }
 
   void _onTap() {
@@ -108,7 +107,7 @@ class _AppStorysFloaterState extends State<AppStorysFloater>
 
     final link = f.link;
     if (link?.isNotEmpty == true) {
-      widget.onTap?.call(link!);
+      LinkHandler.handle(link, widget.onTap);
     }
   }
 
@@ -197,7 +196,12 @@ class _MediaView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isLottieUrl(floater.lottieData)) {
-      return Container(color: Colors.grey[200]);
+      return Lottie.network(
+        floater.lottieData!,
+        fit: BoxFit.cover,
+        repeat: true,
+        errorBuilder: (_, _, _) => Container(color: Colors.grey[200]),
+      );
     }
 
     if (floater.image?.isNotEmpty == true) {

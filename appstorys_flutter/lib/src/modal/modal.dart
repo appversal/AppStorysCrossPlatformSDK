@@ -5,6 +5,8 @@ import 'package:video_player/video_player.dart';
 
 import '../../appstorys_flutter.dart';
 import '../common/cross_button.dart';
+import '../utils/campaigns_stream_mixin.dart';
+import '../utils/link_handler.dart';
 import 'modal_fullpage.dart';
 import 'modal_with_cta.dart';
 
@@ -27,14 +29,26 @@ class AppStorysModal extends StatefulWidget {
 }
 
 class _AppStorysModalState extends State<AppStorysModal>
-    with CampaignsStreamMixin {
+    with CampaignsStreamMixin, WidgetsBindingObserver {
   bool _showing = false;
   String? _currentCampaignId;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     subscribeToCampaigns(widget.appStorys.campaignsStream, _handleCampaigns);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _showing = false;
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   void _handleCampaigns(String json) {
@@ -67,7 +81,7 @@ class _AppStorysModalState extends State<AppStorysModal>
     try {
       final data = jsonDecode(json) as List<dynamic>;
       final raw = data.whereType<Map>().firstWhere(
-        (c) => c['campaign_type'] == 'MDA',
+        (c) => c['campaign_type'] == 'MOD',
         orElse: () => {},
       );
       if (raw.isEmpty) return null;
@@ -118,11 +132,11 @@ class Modal {
 
     CampaignModals? currentModal;
     Map<String, dynamic>? modalData;
+    String modalType = '';
 
     if (modalDetails != null) {
       try {
-        final modalCampaign = modalDetails;
-        final campaignData = modalCampaign.first;
+        final campaignData = modalDetails.first;
         final details =
             (campaignData['details'] as Map<String, dynamic>?) ?? campaignData;
 
@@ -135,14 +149,15 @@ class Modal {
         );
 
         modalData = currentModal.details.modals?[0];
-        debugPrint('Modal Data: $modalData');
+        // modal_type can live at campaign level, details level, or inside modals[0]
+        modalType = (campaignData['modal_type'] ?? details['modal_type'] ?? modalData?['modal_type'])?.toString() ?? '';
+        debugPrint('[Modal] modalType: $modalType, slides: ${(modalData?['content']?['set'] as List?)?.length ?? 0}');
       } catch (e) {
         debugPrint('Error loading modal: $e');
       }
     }
 
     if (modalData != null) {
-      final modalType = modalData['modal_type']?.toString() ?? '';
 
       if (modalType == 'modal-with-cta') {
         showDialog(
@@ -234,7 +249,7 @@ class Modal {
                   appStorys?.trackEvent(
                       event: 'clicked',
                       campaignId: currentModal?.id ?? '').catchError((_) {});
-                  onLinkTap?.call(target);
+                  LinkHandler.handle(target, onLinkTap);
                 }
               },
               child: Center(

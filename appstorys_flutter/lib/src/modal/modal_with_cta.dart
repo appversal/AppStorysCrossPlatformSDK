@@ -5,6 +5,7 @@ import '../../appstorys_flutter.dart';
 import '../common/cross_button.dart';
 import '../common/cta_button.dart';
 import '../utils/font_cache.dart';
+import '../utils/link_handler.dart';
 
 class ModalWithCTA extends StatefulWidget {
   final Map<String, dynamic> modalData;
@@ -561,7 +562,7 @@ class _ModalWithCTAState extends State<ModalWithCTA> {
       final redirection = content['primaryCtaRedirection'] ?? {};
       final url = redirection['url']?.toString();
       if (url != null && url.isNotEmpty) {
-        widget.onLinkTap?.call(url);
+        LinkHandler.handle(url, widget.onLinkTap);
       }
     } catch (e) {
       debugPrint('Primary CTA error: $e');
@@ -576,7 +577,7 @@ class _ModalWithCTAState extends State<ModalWithCTA> {
       final redirection = content['secondaryCtaRedirection'] ?? {};
       final url = redirection['url']?.toString();
       if (url != null && url.isNotEmpty) {
-        widget.onLinkTap?.call(url);
+        LinkHandler.handle(url, widget.onLinkTap);
       }
     } catch (e) {
       debugPrint('Secondary CTA error: $e');

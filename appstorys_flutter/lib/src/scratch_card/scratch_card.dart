@@ -5,10 +5,13 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lottie/lottie.dart';
+// import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../appstorys_flutter.dart';
 import '../common/cross_button.dart';
+import '../utils/campaigns_stream_mixin.dart';
 import '../common/cta_button.dart';
+import '../utils/link_handler.dart';
 
 // ── Type helpers ──────────────────────────────────────────────────────────────
 
@@ -101,8 +104,8 @@ class _AppStorysScratchCardState extends State<AppStorysScratchCard>
 
       if (mounted) {
         _showing = false;
-        widget.appStorys.dismissCampaign(_currentCampaignId!).catchError((_) {});
-        _currentCampaignId = null;
+        // Keep _currentCampaignId so the same campaign does not re-show
+        // until a new campaign ID arrives — matches Kotlin's remember(campaign?.id).
       }
     });
   }
@@ -114,7 +117,7 @@ class _AppStorysScratchCardState extends State<AppStorysScratchCard>
       for (final item in decoded) {
         if (item is! Map) continue;
         final map = item.map((k, v) => MapEntry('$k', v));
-        if (map['campaign_type'] == 'SCR') {
+        if (map['campaign_type'] == 'SCRT') {
           return ScratchCardCampaign.fromJson(map);
         }
       }
@@ -162,6 +165,8 @@ class _ScratchCardDialogState extends State<_ScratchCardDialog>
   bool _isRevealed = false;
   bool _showCopiedMessage = false;
 
+  // static const String _prefKeyPrefix = 'appstorys_scratch_revealed_';
+
   ScratchCardDetails get _d => widget.campaign.details;
 
   @override
@@ -178,10 +183,19 @@ class _ScratchCardDialogState extends State<_ScratchCardDialog>
       CurvedAnimation(parent: _animController, curve: Curves.easeOut),
     );
     _animController.forward();
+    // _restoreRevealedState();
     widget.appStorys
         .trackEvent(event: 'viewed', campaignId: widget.campaign.id)
         .catchError((_) {});
   }
+
+  // Future<void> _restoreRevealedState() async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   final key = '$_prefKeyPrefix${widget.campaign.id}';
+  //   if (prefs.getBool(key) == true && mounted) {
+  //     setState(() => _isRevealed = true);
+  //   }
+  // }
 
   @override
   void dispose() {
@@ -200,6 +214,9 @@ class _ScratchCardDialogState extends State<_ScratchCardDialog>
     if (_isRevealed) return;
     setState(() => _isRevealed = true);
     if (_d.haptics) HapticFeedback.mediumImpact();
+    // SharedPreferences.getInstance().then((prefs) {
+    //   prefs.setBool('$_prefKeyPrefix${widget.campaign.id}', true);
+    // });
     widget.appStorys
         .trackEvent(event: 'scratched', campaignId: widget.campaign.id)
         .catchError((_) {});
@@ -604,7 +621,7 @@ class _ScratchCardDialogState extends State<_ScratchCardDialog>
                 metadata: {'url': cta.url},
               )
               .catchError((_) {});
-          widget.onLinkTap?.call(cta.url!);
+          LinkHandler.handle(cta.url, widget.onLinkTap);
         }
         _handleDismiss();
       },
@@ -637,13 +654,15 @@ class _ScratchWidget extends StatefulWidget {
 
 class _ScratchWidgetState extends State<_ScratchWidget> {
   static const double _brushRadius = 30.0;
-  static const double _threshold = 0.30;
+  static const double _threshold = 0.10;
+  // static const int _soundIntervalMs = 80;
 
   ui.Image? _coverImage;
   final List<Offset> _scratchPoints = [];
   final Set<int> _scratchedCells = {};
   bool _revealed = false;
   bool _imageLoaded = false;
+  // int _lastSoundMs = 0;
 
   @override
   void initState() {
@@ -690,6 +709,12 @@ class _ScratchWidgetState extends State<_ScratchWidget> {
     _scratchedCells.add(row * totalCols + col);
 
     setState(() => _scratchPoints.add(local));
+
+    // final now = DateTime.now().millisecondsSinceEpoch;
+    // if (now - _lastSoundMs >= _soundIntervalMs) {
+    //   _lastSoundMs = now;
+    //   SystemSound.play(SystemSoundType.click);
+    // }
 
     final totalCells = totalCols * totalRows;
     if (!_revealed && _scratchedCells.length / totalCells >= _threshold) {

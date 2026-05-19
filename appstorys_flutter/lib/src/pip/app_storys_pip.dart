@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 
 import '../../appstorys_flutter.dart';
 import '../common/cross_button.dart';
+import '../utils/campaigns_stream_mixin.dart';
+import '../utils/link_handler.dart';
 import '../common/mute_button.dart';
 import '../common/unmute_button.dart';
 import 'pip_full_screen.dart';
@@ -139,11 +141,10 @@ class _AppStorysPipState extends State<AppStorysPip>
     widget.appStorys
         .trackEvent(event: 'viewed', campaignId: pip!.id)
         .catchError((_) {});
+  }
 
-    // Dismiss the PiP from core after tracking the view.
-    // This prevents it from re-appearing when navigating back to the same screen,
-    // matching Kotlin's approach of using disableCampaign() for overlay campaigns.
-    widget.appStorys.dismissCampaign(pip.id).catchError((_) {});
+  void _dismissPip(PipCampaign pip) {
+    setState(() => _visible = false);
   }
 
   void _onSnapTick() {
@@ -190,7 +191,7 @@ class _AppStorysPipState extends State<AppStorysPip>
         widget.appStorys
             .trackEvent(event: 'clicked', campaignId: pip.id)
             .catchError((_) {});
-        widget.onLinkTap?.call(pip.link!);
+        LinkHandler.handle(pip.link, widget.onLinkTap);
       }
       return;
     }
@@ -236,7 +237,7 @@ class _AppStorysPipState extends State<AppStorysPip>
           _snapToEdge();
         },
         onMuteToggle: () => setState(() => _muted = !_muted),
-        onClose: () => setState(() => _visible = false),
+        onClose: () => _dismissPip(pip),
       ),
     );
   }

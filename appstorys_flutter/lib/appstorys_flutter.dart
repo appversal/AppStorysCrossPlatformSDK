@@ -1,12 +1,23 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
 import 'appstorys_flutter_platform_interface.dart';
+import 'src/banner/app_storys_banner.dart';
+import 'src/bottom_sheet/app_storys_bottom_sheet.dart';
+import 'src/csat/csat.dart';
+import 'src/floater/app_storys_floater.dart';
+import 'src/modal/modal.dart';
+import 'src/overlay/app_storys_overlay.dart';
+import 'src/pip/app_storys_pip.dart';
+import 'src/scratch_card/scratch_card.dart';
+import 'src/spin_wheel/spin_the_wheel.dart';
+import 'src/stories/stories.dart';
+import 'src/survey/survey.dart';
 import 'src/tooltips/capture_manager.dart';
-import 'src/tooltips/tooltip_manager.dart';
+import 'src/widgets/app_storys_widget.dart';
 
+// Model types — exported so developers can type-check campaign data if needed.
 export 'src/appstorys_api_models.dart';
 export 'src/models/banner_models.dart';
 export 'src/models/bottom_sheet_models.dart';
@@ -17,22 +28,6 @@ export 'src/models/survey_models.dart';
 export 'src/models/scratch_card_models.dart';
 export 'src/models/spin_wheel_models.dart';
 export 'src/models/widgets_models.dart';
-export 'src/banner/app_storys_banner.dart';
-export 'src/bottom_sheet/app_storys_bottom_sheet.dart';
-export 'src/floater/app_storys_floater.dart';
-export 'src/modal/modal.dart';
-export 'src/csat/csat.dart' show AppStorysCsat;
-export 'src/scratch_card/scratch_card.dart' show AppStorysScratchCard;
-export 'src/spin_wheel/spin_the_wheel.dart' show AppStorysSpinWheel;
-export 'src/survey/survey.dart' show AppStorysSurvey;
-export 'src/pip/app_storys_pip.dart';
-export 'src/overlay/app_storys_overlay.dart';
-export 'src/stories/stories.dart';
-export 'src/widgets/app_storys_widget.dart';
-export 'src/utils/common_widgets.dart';
-export 'src/utils/campaigns_stream_mixin.dart';
-export 'src/tooltips/tooltip_manager.dart' show TooltipManager;
-export 'src/tooltips/capture_manager.dart' show CaptureManager;
 
 /// This is the public API that Flutter developers actually use. It validates and sanitizes inputs before delegating to the platform interface.
 class AppstorysFlutter {
@@ -101,12 +96,9 @@ class AppstorysFlutter {
     final sanitizedPositionList =
         positionList.map((item) => item.trim()).where((item) => item.isNotEmpty).toList();
 
-    // Optimistically hide the capture button on every screen change.
-    // The campaigns stream will re-enable it only if the API confirms isTestUser=true.
-    // Without this, the static CaptureManager._enabled=true persists across hot reloads
-    // when switching from a test user to an anonymous user.
-    debugPrint('[AppstorysFlutter] getScreenCampaigns("${screenName.trim()}") — optimistic capture reset');
-    CaptureManager.setEnabled(false);
+    // Mirror Kotlin's core.currentScreen — track screen so capture button
+    // can resolve it automatically without requiring screenName on overlayElements.
+    CaptureManager.setCurrentScreen(screenName.trim());
 
     // Delegates to platform interface with sanitized input.
     return AppstorysFlutterPlatform.instance.getScreenCampaigns(
@@ -336,68 +328,133 @@ class AppstorysFlutter {
     return AppstorysFlutterPlatform.instance.getCampaignsByTypeJson(type.trim());
   }
 
-  // ── Tooltips ────────────────────────────────────────────────────────────────
-
-  /// Processes a list of raw campaign maps (as returned by [getCampaigns] or
-  /// the campaigns stream) and shows tooltip overlays for any TTP campaigns.
-  ///
-  /// Call this after [getScreenCampaigns] completes, passing the [BuildContext]
-  /// of the screen that contains the tooltip target widgets. Target widgets
-  /// must have a [ValueKey<String>] matching the `target` field configured in
-  /// the AppStorys dashboard.
-  ///
-  /// Example:
-  /// ```dart
-  /// appstorys.campaignsStream.listen((json) {
-  ///   final campaigns = (jsonDecode(json) as List)
-  ///       .whereType<Map<String, Object?>>().toList();
-  ///   appstorys.processTooltips(context, campaigns);
-  /// });
-  /// ```
-  Future<void> processTooltips(
-    BuildContext context,
-    List<Map<String, Object?>> campaigns,
-  ) {
-    return TooltipManager.processTooltips(
-      campaigns,
-      context,
-      (event, {campaignId, metadata}) => trackEvent(
-        event: event,
-        campaignId: campaignId,
-        metadata: metadata,
-      ),
-      (campaignId) => dismissCampaign(campaignId),
-    );
-  }
-
   // ── Screen capture (test/dev tool) ──────────────────────────────────────────
 
   /// Enables or disables the on-screen capture button.
   /// Call with `true` in debug/test builds only.
   void enableScreenCapture(bool enabled) => CaptureManager.setEnabled(enabled);
 
-  /// Returns a [Widget] that renders a small capture button when screen capture
-  /// is enabled via [enableScreenCapture]. Place it in a [Stack] above your
-  /// screen content.
-  ///
-  /// When tapped, it takes a screenshot of [screenContext], walks the widget
-  /// tree for [ValueKey<String>] elements, and posts the layout data to
-  /// AppStorys so the dashboard can map element positions to tooltip targets.
-  Widget captureScreenWidget({
-    required String screenName,
-    required BuildContext screenContext,
-  }) {
-    return CaptureManager.captureButton(
-      screenName: screenName,
-      screenContext: screenContext,
-      identifyElements: (sn, Uint8List screenshot, String childrenJson) =>
-          AppstorysFlutterPlatform.instance.identifyElements(
-        screenName: sn,
-        screenshot: screenshot,
-        childrenJson: childrenJson,
-      ),
-    );
-  }
+  // ── Widget factory methods ───────────────────────────────────────────────────
+  // Mirror Kotlin's AppStorys.overlayElements(), AppStorys.bannerCampaign(), etc.
+  // Call as appStorys.overlayElements(...) — no need to pass the instance manually.
+
+  Widget overlayElements({
+    void Function(String link)? onLinkTap,
+    double bottomPadding = 0,
+    double topPadding = 0,
+  }) => AppStorysOverlay(
+    appStorys: this,
+    onLinkTap: onLinkTap,
+    bottomPadding: bottomPadding,
+    topPadding: topPadding,
+  );
+
+  Widget bannerCampaign({
+    void Function(String link)? onTap,
+    double bottomPadding = 0,
+    double height = 92,
+    double width = double.infinity,
+    double elevation = 0,
+    EdgeInsets margin = const EdgeInsets.all(12),
+    BorderRadius? borderRadius,
+    VoidCallback? onDismissed,
+  }) => AppStorysBanner(
+    appStorys: this,
+    onTap: onTap,
+    bottomPadding: bottomPadding,
+    height: height,
+    width: width,
+    elevation: elevation,
+    margin: margin,
+    borderRadius: borderRadius,
+    onDismissed: onDismissed,
+  );
+
+  Widget floaterCampaign({
+    void Function(String link)? onTap,
+    double bottomPadding = 0,
+  }) => AppStorysFloater(
+    appStorys: this,
+    onTap: onTap,
+    bottomPadding: bottomPadding,
+  );
+
+  Widget pipCampaign({
+    void Function(String link)? onLinkTap,
+    double bottomPadding = 0,
+    double topPadding = 0,
+  }) => AppStorysPip(
+    appStorys: this,
+    onLinkTap: onLinkTap,
+    bottomPadding: bottomPadding,
+    topPadding: topPadding,
+  );
+
+  Widget bottomSheetCampaign({
+    void Function(String link)? onLinkTap,
+    double bottomPadding = 0,
+  }) => AppStorysBottomSheet(
+    appStorys: this,
+    onLinkTap: onLinkTap,
+    bottomPadding: bottomPadding,
+  );
+
+  Widget modalCampaign({
+    void Function(String link)? onLinkTap,
+  }) => AppStorysModal(
+    appStorys: this,
+    onLinkTap: onLinkTap,
+  );
+
+  Widget csatCampaign({
+    void Function(String link)? onLinkTap,
+  }) => AppStorysCsat(
+    appStorys: this,
+    onLinkTap: onLinkTap,
+  );
+
+  Widget scratchCardCampaign({
+    void Function(String link)? onLinkTap,
+  }) => AppStorysScratchCard(
+    appStorys: this,
+    onLinkTap: onLinkTap,
+  );
+
+  Widget spinWheelCampaign({
+    void Function(String link)? onLinkTap,
+  }) => AppStorysSpinWheel(
+    appStorys: this,
+    onLinkTap: onLinkTap,
+  );
+
+  Widget surveyWidget({
+    void Function(String link)? onLinkTap,
+  }) => AppStorysSurvey(
+    appStorys: this,
+    onLinkTap: onLinkTap,
+  );
+
+  Widget storiesCampaign({
+    void Function(String link)? onLinkTap,
+  }) => AppStorysStories(
+    appStorys: this,
+    onLinkTap: onLinkTap,
+  );
+
+  Widget widgetCampaign({
+    String? position,
+    void Function(String link)? onTap,
+    Color dotSelectedColor = Colors.black,
+    Color dotUnselectedColor = Colors.grey,
+    Duration autoScrollInterval = const Duration(seconds: 5),
+  }) => AppStorysWidget(
+    appStorys: this,
+    position: position,
+    onTap: onTap,
+    dotSelectedColor: dotSelectedColor,
+    dotUnselectedColor: dotUnselectedColor,
+    autoScrollInterval: autoScrollInterval,
+  );
 
 }
 

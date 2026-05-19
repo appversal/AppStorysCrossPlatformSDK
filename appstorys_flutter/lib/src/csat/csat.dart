@@ -5,8 +5,10 @@ import 'package:lottie/lottie.dart';
 
 import '../../appstorys_flutter.dart';
 import '../common/cross_button.dart';
+import '../utils/campaigns_stream_mixin.dart';
 import '../common/cta_button.dart';
 import '../utils/font_cache.dart';
+import '../utils/link_handler.dart';
 
 export '../models/csat_models.dart';
 
@@ -29,14 +31,26 @@ class AppStorysCsat extends StatefulWidget {
 }
 
 class _AppStorysCsatState extends State<AppStorysCsat>
-    with CampaignsStreamMixin {
+    with CampaignsStreamMixin, WidgetsBindingObserver {
   bool _showing = false;
   String? _currentCampaignId;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     subscribeToCampaigns(widget.appStorys.campaignsStream, _handleCampaigns);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _showing = false;
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   void _handleCampaigns(String json) {
@@ -63,6 +77,8 @@ class _AppStorysCsatState extends State<AppStorysCsat>
         context: context,
         useRootNavigator: true,
         isScrollControlled: true,
+        isDismissible: false,
+        enableDrag: false,
         backgroundColor: Colors.transparent,
         barrierColor: bdColor,
         builder: (ctx) => _CsatSheet(
@@ -73,9 +89,6 @@ class _AppStorysCsatState extends State<AppStorysCsat>
         ),
       ).then((_) {
         if (mounted) _showing = false;
-        if (campaign.id.isNotEmpty) {
-          widget.appStorys.dismissCampaign(campaign.id).catchError((_) {});
-        }
       });
     });
   }
@@ -775,7 +788,7 @@ class _CsatSheetState extends State<_CsatSheet> {
       if (uid != null && uid.isNotEmpty) {
         widget.appStorys
             .captureCsatResponse(
-              csatId: widget.campaign.id,
+              csatId: widget.campaign.details.id,
               userId: uid,
               rating: selectedStars.toDouble(),
               feedbackOption: feedbackOption,
@@ -1276,7 +1289,7 @@ class _CsatSheetState extends State<_CsatSheet> {
         _textcontroller.text.isEmpty ? null : _textcontroller.text;
     _trackEvent('csat captured', {
       'starCount': selectedStars,
-      'selectedOption': selectedOptionId ?? '',
+      'selectedOption': selectedOption ?? '',
       'additionalComments': comment,
     });
     _captureCsatResponse(
@@ -1431,7 +1444,8 @@ class _CsatSheetState extends State<_CsatSheet> {
             text: doneButtonText,
             onTap: () {
               if (selectedStars >= 4 && details.link.isNotEmpty) {
-                widget.onLinkTap?.call(details.link);
+                _trackEvent('clicked');
+                LinkHandler.handle(details.link, widget.onLinkTap);
               }
               widget.onDismiss();
             },

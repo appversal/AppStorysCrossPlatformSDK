@@ -25,7 +25,15 @@ class AppstorysFlutterPlugin :
     private lateinit var channel: MethodChannel
     private lateinit var campaignsEventChannel: EventChannel
     private lateinit var flutterPluginBinding: FlutterPlugin.FlutterPluginBinding
-    private val core: AppStorysCore by lazy { AppStorysCore(PlatformStorage()) }
+    // Single shared PlatformStorage instance for the plugin
+    // Avoids relying on implicit SharedPreferences singleton behavior by
+    // reusing the same storage instance when writing device info before
+    // initializing the core and when constructing the core itself.
+    // PlatformStorage is initialized when the plugin attaches so we can call
+    // PlatformStorage.initialize(application) first and then create the instance.
+    private lateinit var platformStorage: PlatformStorage
+
+    private val core: AppStorysCore by lazy { AppStorysCore(platformStorage) }
 
     // Coroutine scope owned by the plugin — cancelled when the engine detaches.
     // CoroutineExceptionHandler logs errors instead of letting them propagate to
@@ -43,6 +51,15 @@ class AppstorysFlutterPlugin :
         this.flutterPluginBinding = flutterPluginBinding
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "appstorys_flutter")
         channel.setMethodCallHandler(this)
+
+        // Prefer explicit initialization of PlatformStorage with the Application
+        // context to avoid reflection fallback inside PlatformStorage.
+        PlatformStorage.initialize(flutterPluginBinding.applicationContext)
+
+        // Now create the plugin's PlatformStorage instance. Creating it after
+        // initialize() avoids any race where the storage tries to resolve an
+        // application context before the host app had a chance to initialize it.
+        platformStorage = PlatformStorage()
 
         // EventChannel pushes campaigns JSON to Dart whenever AppStorysCore._campaigns
         // StateFlow emits — this replaces all client-side polling in Dart widgets.
@@ -111,7 +128,9 @@ class AppstorysFlutterPlugin :
         val rawUserId = call.argument<String>("userId")
         val userId = rawUserId ?: ""
 
-        val storage = PlatformStorage()
+        // Use the plugin's shared PlatformStorage instance so pre-init writes
+        // and the core use the same storage object.
+        val storage = platformStorage
         if (rawUserId == null) {
             // No userId passed → clear any previously stored identified user so the core
             // starts a fresh anonymous session instead of restoring the old test user.

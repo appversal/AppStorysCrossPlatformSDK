@@ -191,7 +191,8 @@ class SpinWheelDetails {
       rewardTitleStyle: rwTitleTs,
       rewardSubtitleStyle: rwSubtitleTs,
       rewardCrossButton: rwCross,
-      confetti: confettiMap, slices: [],
+      confetti: confettiMap,
+      slices: slices,
     );
   }
 }

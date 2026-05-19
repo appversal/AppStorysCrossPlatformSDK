@@ -62,10 +62,10 @@ class CrossButton extends StatelessWidget {
     if (styling != null) {
       final marginMap = styling!['margin'];
       if (marginMap is Map) {
-        final top = _getDoubleValue(marginMap['top'], 0);
-        final bottom = _getDoubleValue(marginMap['bottom'], 0);
-        final left = _getDoubleValue(marginMap['left'], 0);
-        final right = _getDoubleValue(marginMap['right'], 0);
+        final top = _getDoubleValue(marginMap['top'], 0).clamp(0.0, double.maxFinite);
+        final bottom = _getDoubleValue(marginMap['bottom'], 0).clamp(0.0, double.maxFinite);
+        final left = _getDoubleValue(marginMap['left'], 0).clamp(0.0, double.maxFinite);
+        final right = _getDoubleValue(marginMap['right'], 0).clamp(0.0, double.maxFinite);
 
         return EdgeInsets.fromLTRB(left, top, right, bottom);
       }

@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 
 import '../../appstorys_flutter.dart';
 import '../common/cross_button.dart';
+import '../utils/campaigns_stream_mixin.dart';
+import '../utils/common_widgets.dart';
+import '../utils/link_handler.dart';
 import '../common/async_font_text.dart';
 
 Color _parseHexColor(String? hex, Color fallback) {
@@ -40,14 +43,26 @@ class AppStorysBottomSheet extends StatefulWidget {
 }
 
 class _AppStorysBottomSheetState extends State<AppStorysBottomSheet>
-    with CampaignsStreamMixin {
+    with CampaignsStreamMixin, WidgetsBindingObserver {
   BottomSheetCampaign? _current;
   bool _showing = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     subscribeToCampaigns(widget.appStorys.campaignsStream, _handleCampaigns);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _showing = false;
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   void _handleCampaigns(String json) {
@@ -125,18 +140,12 @@ class _AppStorysBottomSheetState extends State<AppStorysBottomSheet>
               widget.appStorys
                   .trackEvent(event: 'clicked', campaignId: campaign.id)
                   .catchError((_) {});
-              if (link?.isNotEmpty == true) widget.onLinkTap?.call(link!);
+              if (link?.isNotEmpty == true) LinkHandler.handle(link, widget.onLinkTap);
             },
           ),
         ),
        ).then((_) {
          if (mounted) _showing = false;
-         // Dismiss the bottom sheet from core after it's closed, regardless of reason
-         // (user close button, swipe, or background tap). This prevents re-appearing
-         // when navigating back to the same screen, matching Kotlin's overlay approach.
-         if (_current != null && _current!.id.isNotEmpty) {
-           widget.appStorys.dismissCampaign(_current!.id).catchError((_) {});
-         }
        });
     } catch (_) {
       _showing = false;

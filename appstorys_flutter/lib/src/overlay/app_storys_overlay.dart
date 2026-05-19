@@ -4,7 +4,18 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import '../../appstorys_flutter.dart';
+import '../../appstorys_flutter_platform_interface.dart';
+import '../banner/app_storys_banner.dart';
 import '../tooltips/capture_manager.dart';
+import '../tooltips/tooltip_manager.dart';
+import '../bottom_sheet/app_storys_bottom_sheet.dart';
+import '../csat/csat.dart';
+import '../floater/app_storys_floater.dart';
+import '../modal/modal.dart';
+import '../pip/app_storys_pip.dart';
+import '../scratch_card/scratch_card.dart';
+import '../spin_wheel/spin_the_wheel.dart';
+import '../survey/survey.dart';
 
 /// Persistent floating overlay that renders Banner, Floater, PiP, BottomSheet,
 /// and Modal campaigns above your screen content.
@@ -38,18 +49,12 @@ class AppStorysOverlay extends StatefulWidget {
   /// Pass your AppBar height if you want PiP to stay below it.
   final double topPadding;
 
-  /// Screen name passed to the capture button (test-user tool).
-  /// When omitted the button still works but the captured layout is
-  /// uploaded without a screen name.
-  final String? screenName;
-
   const AppStorysOverlay({
     super.key,
     required this.appStorys,
     this.onLinkTap,
     this.bottomPadding = 0,
     this.topPadding = 0,
-    this.screenName,
   });
 
   @override
@@ -109,7 +114,18 @@ class _AppStorysOverlayState extends State<AppStorysOverlay> {
       final campaigns = _parseCampaigns(payload);
       if (campaigns.isEmpty) return;
 
-      await widget.appStorys.processTooltips(context, campaigns);
+      try {
+        await TooltipManager.processTooltips(
+          campaigns,
+          context,
+          (event, {campaignId, metadata}) => widget.appStorys.trackEvent(
+            event: event,
+            campaignId: campaignId,
+            metadata: metadata,
+          ),
+          (campaignId) => widget.appStorys.dismissCampaign(campaignId),
+        );
+      } catch (_) {}
     });
   }
 
@@ -152,6 +168,16 @@ class _AppStorysOverlayState extends State<AppStorysOverlay> {
             onLinkTap: widget.onLinkTap,
           ),
 
+          AppStorysCsat(
+            appStorys: widget.appStorys,
+            onLinkTap: widget.onLinkTap,
+          ),
+
+          AppStorysScratchCard(
+            appStorys: widget.appStorys,
+            onLinkTap: widget.onLinkTap,
+          ),
+
           AppStorysBottomSheet(
             appStorys: widget.appStorys,
             onLinkTap: widget.onLinkTap,
@@ -162,17 +188,7 @@ class _AppStorysOverlayState extends State<AppStorysOverlay> {
             onLinkTap: widget.onLinkTap,
           ),
 
-          AppStorysCsat(
-            appStorys: widget.appStorys,
-            onLinkTap: widget.onLinkTap,
-          ),
-
           AppStorysSurvey(
-            appStorys: widget.appStorys,
-            onLinkTap: widget.onLinkTap,
-          ),
-
-          AppStorysScratchCard(
             appStorys: widget.appStorys,
             onLinkTap: widget.onLinkTap,
           ),
@@ -182,11 +198,15 @@ class _AppStorysOverlayState extends State<AppStorysOverlay> {
             onLinkTap: widget.onLinkTap,
           ),
 
-          widget.appStorys.captureScreenWidget(
-            screenName: widget.screenName ?? '',
+          CaptureManager.captureButton(
             screenContext: context,
+            identifyElements: (sn, screenshot, childrenJson) =>
+                AppstorysFlutterPlatform.instance.identifyElements(
+              screenName: sn,
+              screenshot: screenshot,
+              childrenJson: childrenJson,
+            ),
           ),
-
         ],
       ),
     );

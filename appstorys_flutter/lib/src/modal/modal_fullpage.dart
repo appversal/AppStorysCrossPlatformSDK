@@ -5,6 +5,7 @@ import '../../appstorys_flutter.dart';
 import '../common/cross_button.dart';
 import '../common/cta_button.dart';
 import '../utils/font_cache.dart';
+import '../utils/link_handler.dart';
 
 class ModalFullPageCarousel extends StatefulWidget {
   final Map<String, dynamic> modalData;
@@ -51,9 +52,9 @@ class _ModalFullPageCarouselState extends State<ModalFullPageCarousel> {
   void _loadSlides() {
     try {
       final content = widget.modalData['content'] ?? {};
-      final set = content['set'] as List?;
+      final set = (content as Map)['set'] as List?;
       if (set != null && set.isNotEmpty) {
-        _slides = set.map((slide) => slide as Map<String, dynamic>).toList();
+        _slides = set.map((s) => s as Map<String, dynamic>).toList();
       }
     } catch (e) {
       debugPrint('Error loading slides: $e');
@@ -540,7 +541,7 @@ class _ModalFullPageCarouselState extends State<ModalFullPageCarousel> {
             ?.trackEvent(
                 event: 'clicked', campaignId: widget.campaignId ?? '')
             .catchError((_) {});
-        widget.onLinkTap?.call(url);
+        LinkHandler.handle(url, widget.onLinkTap);
       }
     } catch (e) {
       debugPrint('Primary CTA error: $e');
@@ -556,7 +557,7 @@ class _ModalFullPageCarouselState extends State<ModalFullPageCarousel> {
             ?.trackEvent(
                 event: 'clicked', campaignId: widget.campaignId ?? '')
             .catchError((_) {});
-        widget.onLinkTap?.call(url);
+        LinkHandler.handle(url, widget.onLinkTap);
       }
     } catch (e) {
       debugPrint('Secondary CTA error: $e');

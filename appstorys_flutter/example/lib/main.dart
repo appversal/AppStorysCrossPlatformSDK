@@ -30,10 +30,6 @@ class _MyAppState extends State<MyApp> {
         accountId: '12a9eac5-94ee-4735-9aa6-b8a94cb8fbbb',
         userId: 'yash1',
       );
-      await _appstorys.getScreenCampaigns(
-        screenName: 'Home Screen Flutter',
-        positionList: ['widget_one', 'widget_two'],
-      );
     } catch (e) {
       debugPrint('[AppStorys] init failed: $e');
     }
@@ -69,56 +65,21 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
-  static const _screenNames = [
-    'Home Screen Flutter',
-    'Products',
-    'Profile',
-    'Settings',
-  ];
-
-  static const _screenPositions = <String, List<String>>{
-    'Home Screen Flutter': ['widget_one', 'widget_two'],
-    'Products': [],
-    'Profile': [],
-    'Settings': [],
-  };
-
-  Future<void> _onTabTapped(int index) async {
-    setState(() => _selectedIndex = index);
-    final screen = _screenNames[index];
-    await widget.appstorys.getScreenCampaigns(
-      screenName: screen,
-      positionList: _screenPositions[screen] ?? [],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    // Mirror of native: Stack = [body content, overlayElements(), captureScreen()]
     return Scaffold(
       body: Stack(
         children: [
           _buildScreen(_selectedIndex),
-
-          // Equivalent of ...AppStorys.overlayElements() in the native code.
-          // Renders Banner, Floater, PiP, BottomSheet, Modal — all floating.
-          // Stories and Widget campaigns are inline inside each screen instead.
-          AppStorysOverlay(
-            appStorys: widget.appstorys,
-            bottomPadding: kBottomNavigationBarHeight,
+          widget.appstorys.overlayElements(
+            bottomPadding: 0,
             onLinkTap: widget.onLinkTap,
-          ),
-
-          // Equivalent of AppStorys.captureScreen(screenName, context).
-          widget.appstorys.captureScreenWidget(
-            screenName: _screenNames[_selectedIndex],
-            screenContext: context,
           ),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
-        onTap: _onTabTapped,
+        onTap: (index) => setState(() => _selectedIndex = index),
         selectedItemColor: Colors.indigo,
         unselectedItemColor: Colors.grey,
         items: const [
@@ -134,8 +95,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildScreen(int index) {
     switch (index) {
       case 0: return _HomeTab(appstorys: widget.appstorys, onLinkTap: widget.onLinkTap);
-      case 1: return const _ShopTab();
-      case 2: return const _ProfileTab();
+      case 1: return _ShopTab(appstorys: widget.appstorys);
+      case 2: return _ProfileTab(appstorys: widget.appstorys);
       case 3: return _SettingsTab(appstorys: widget.appstorys);
       default: return _HomeTab(appstorys: widget.appstorys, onLinkTap: widget.onLinkTap);
     }
@@ -144,11 +105,25 @@ class _HomeScreenState extends State<HomeScreen> {
 
 // ─── Home Tab ────────────────────────────────────────────────────────────────
 
-class _HomeTab extends StatelessWidget {
+class _HomeTab extends StatefulWidget {
   final AppstorysFlutter appstorys;
   final void Function(String link)? onLinkTap;
 
   const _HomeTab({required this.appstorys, this.onLinkTap});
+
+  @override
+  State<_HomeTab> createState() => _HomeTabState();
+}
+
+class _HomeTabState extends State<_HomeTab> {
+  @override
+  void initState() {
+    super.initState();
+    widget.appstorys.getScreenCampaigns(
+      screenName: 'Home Screen Flutter',
+      positionList: ['widget_one', 'widget_two'],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -171,11 +146,9 @@ class _HomeTab extends StatelessWidget {
           ),
         ),
 
-        // Inline — takes up real space and scrolls with the page.
         SliverToBoxAdapter(
-          child: AppStorysStories(
-            appStorys: appstorys,
-            onLinkTap: onLinkTap,
+          child: widget.appstorys.storiesCampaign(
+            onLinkTap: widget.onLinkTap,
           ),
         ),
 
@@ -183,13 +156,9 @@ class _HomeTab extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           sliver: SliverList(
             delegate: SliverChildListDelegate([
-
-              // Equivalent of AppStorys.widgets(position: "widget_one").
-              // Inline in scroll content — not floating.
-              AppStorysWidget(
-                appStorys: appstorys,
+              widget.appstorys.widgetCampaign(
                 position: 'widget_one',
-                onTap: onLinkTap,
+                onTap: widget.onLinkTap,
               ),
               const SizedBox(height: 16),
 
@@ -208,11 +177,9 @@ class _HomeTab extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              // Equivalent of AppStorys.widgets(position: "widget_two").
-              AppStorysWidget(
-                appStorys: appstorys,
+              widget.appstorys.widgetCampaign(
                 position: 'widget_two',
-                onTap: onLinkTap,
+                onTap: widget.onLinkTap,
               ),
               const SizedBox(height: 16),
 
@@ -244,19 +211,35 @@ class _HomeTab extends StatelessWidget {
 
 // ─── Shop Tab ─────────────────────────────────────────────────────────────────
 
-class _ShopTab extends StatelessWidget {
-  const _ShopTab();
+class _ShopTab extends StatefulWidget {
+  final AppstorysFlutter appstorys;
+
+  const _ShopTab({required this.appstorys});
+
+  @override
+  State<_ShopTab> createState() => _ShopTabState();
+}
+
+class _ShopTabState extends State<_ShopTab> {
+  @override
+  void initState() {
+    super.initState();
+    widget.appstorys.getScreenCampaigns(screenName: 'Products');
+  }
 
   @override
   Widget build(BuildContext context) {
     return CustomScrollView(
       slivers: [
-        const SliverAppBar(title: Text('Shop'), pinned: true),
+        const SliverAppBar(key: ValueKey('shop_header'), title: Text('Shop'), pinned: true),
         SliverPadding(
           padding: const EdgeInsets.all(12),
           sliver: SliverGrid(
             delegate: SliverChildBuilderDelegate(
-              (context, i) => _ProductGridCard(product: _allProducts[i]),
+              (context, i) => _ProductGridCard(
+                key: ValueKey('product_${_allProducts[i].name.toLowerCase().replaceAll(' ', '_')}'),
+                product: _allProducts[i],
+              ),
               childCount: _allProducts.length,
             ),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -274,8 +257,21 @@ class _ShopTab extends StatelessWidget {
 
 // ─── Profile Tab ──────────────────────────────────────────────────────────────
 
-class _ProfileTab extends StatelessWidget {
-  const _ProfileTab();
+class _ProfileTab extends StatefulWidget {
+  final AppstorysFlutter appstorys;
+
+  const _ProfileTab({required this.appstorys});
+
+  @override
+  State<_ProfileTab> createState() => _ProfileTabState();
+}
+
+class _ProfileTabState extends State<_ProfileTab> {
+  @override
+  void initState() {
+    super.initState();
+    widget.appstorys.getScreenCampaigns(screenName: 'Profile');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -287,19 +283,20 @@ class _ProfileTab extends StatelessWidget {
             const SizedBox(height: 24),
             Center(
               child: CircleAvatar(
+                key: const ValueKey('profile_avatar'),
                 radius: 44,
                 backgroundColor: Colors.indigo.shade100,
                 child: const Text('YD', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.indigo)),
               ),
             ),
             const SizedBox(height: 12),
-            const Center(child: Text('Yash Demo', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),
-            const Center(child: Text('yash1@appstorys.co', style: TextStyle(color: Colors.grey))),
+            const Center(child: Text('Yash Demo', key: ValueKey('profile_name'), style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),
+            const Center(child: Text('yash1@appstorys.co', key: ValueKey('profile_email'), style: TextStyle(color: Colors.grey))),
             const SizedBox(height: 24),
-            _InfoTile(icon: Icons.local_shipping_outlined, title: 'My Orders', subtitle: '3 active orders'),
-            _InfoTile(icon: Icons.favorite_outline, title: 'Wishlist', subtitle: '12 saved items'),
-            _InfoTile(icon: Icons.card_giftcard_outlined, title: 'Rewards', subtitle: '480 points'),
-            _InfoTile(icon: Icons.location_on_outlined, title: 'Saved Addresses', subtitle: '2 addresses'),
+            const _InfoTile(key: ValueKey('profile_orders'), icon: Icons.local_shipping_outlined, title: 'My Orders', subtitle: '3 active orders'),
+            const _InfoTile(key: ValueKey('profile_wishlist'), icon: Icons.favorite_outline, title: 'Wishlist', subtitle: '12 saved items'),
+            const _InfoTile(key: ValueKey('profile_rewards'), icon: Icons.card_giftcard_outlined, title: 'Rewards', subtitle: '480 points'),
+            const _InfoTile(key: ValueKey('profile_addresses'), icon: Icons.location_on_outlined, title: 'Saved Addresses', subtitle: '2 addresses'),
           ]),
         ),
       ],
@@ -309,10 +306,21 @@ class _ProfileTab extends StatelessWidget {
 
 // ─── Settings Tab ─────────────────────────────────────────────────────────────
 
-class _SettingsTab extends StatelessWidget {
+class _SettingsTab extends StatefulWidget {
   final AppstorysFlutter appstorys;
 
   const _SettingsTab({required this.appstorys});
+
+  @override
+  State<_SettingsTab> createState() => _SettingsTabState();
+}
+
+class _SettingsTabState extends State<_SettingsTab> {
+  @override
+  void initState() {
+    super.initState();
+    widget.appstorys.getScreenCampaigns(screenName: 'Settings');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -322,15 +330,16 @@ class _SettingsTab extends StatelessWidget {
         SliverList(
           delegate: SliverChildListDelegate([
             const _SectionHeader(title: 'Account', padding: EdgeInsets.fromLTRB(16, 20, 16, 8)),
-            _SettingsTile(icon: Icons.notifications_outlined, title: 'Notifications'),
-            _SettingsTile(icon: Icons.lock_outline, title: 'Privacy & Security'),
-            _SettingsTile(icon: Icons.language_outlined, title: 'Language'),
+            _SettingsTile(key: const ValueKey('settings_notifications'), icon: Icons.notifications_outlined, title: 'Notifications'),
+            _SettingsTile(key: const ValueKey('settings_privacy'), icon: Icons.lock_outline, title: 'Privacy & Security'),
+            _SettingsTile(key: const ValueKey('settings_language'), icon: Icons.language_outlined, title: 'Language'),
             const _SectionHeader(title: 'SDK Debug', padding: EdgeInsets.fromLTRB(16, 20, 16, 8)),
             _SettingsTile(
+              key: const ValueKey('settings_track_event'),
               icon: Icons.track_changes,
               title: 'Track Test Event',
               onTap: () async {
-                await appstorys.trackEvent(event: 'settings_opened');
+                await widget.appstorys.trackEvent(event: 'settings_opened');
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Event tracked: settings_opened')),
@@ -339,8 +348,8 @@ class _SettingsTab extends StatelessWidget {
               },
             ),
             const _SectionHeader(title: 'Support', padding: EdgeInsets.fromLTRB(16, 20, 16, 8)),
-            _SettingsTile(icon: Icons.help_outline, title: 'Help Center'),
-            _SettingsTile(icon: Icons.info_outline, title: 'About'),
+            _SettingsTile(key: const ValueKey('settings_help'), icon: Icons.help_outline, title: 'Help Center'),
+            _SettingsTile(key: const ValueKey('settings_about'), icon: Icons.info_outline, title: 'About'),
           ]),
         ),
       ],
@@ -435,7 +444,7 @@ class _ProductListTile extends StatelessWidget {
 class _ProductGridCard extends StatelessWidget {
   final _Product product;
 
-  const _ProductGridCard({required this.product});
+  const _ProductGridCard({super.key, required this.product});
 
   @override
   Widget build(BuildContext context) {
@@ -474,7 +483,7 @@ class _InfoTile extends StatelessWidget {
   final String title;
   final String subtitle;
 
-  const _InfoTile({required this.icon, required this.title, required this.subtitle});
+  const _InfoTile({super.key, required this.icon, required this.title, required this.subtitle});
 
   @override
   Widget build(BuildContext context) {
@@ -492,7 +501,7 @@ class _SettingsTile extends StatelessWidget {
   final String title;
   final VoidCallback? onTap;
 
-  const _SettingsTile({required this.icon, required this.title, this.onTap});
+  const _SettingsTile({super.key, required this.icon, required this.title, this.onTap});
 
   @override
   Widget build(BuildContext context) {

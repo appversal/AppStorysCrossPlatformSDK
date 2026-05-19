@@ -3,6 +3,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 
 import '../../appstorys_flutter.dart';
+import '../utils/campaigns_stream_mixin.dart';
+import '../utils/common_widgets.dart';
+import '../utils/link_handler.dart';
 
 // =============================================================================
 // PUBLIC WIDGET
@@ -152,7 +155,7 @@ class _AppStorysWidgetState extends State<AppStorysWidget>
           metadata: {'widget_image': imageId},
         )
         .catchError((_) {});
-    widget.onTap?.call(link);
+    LinkHandler.handle(link, widget.onTap);
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────

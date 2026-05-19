@@ -23,7 +23,8 @@ data class EligibleCampaignsResponse(
     val userId: String,
     val variants: List<CampaignVariant>? = null,
     val personalization_data: Map<String, String>? = null,
-    val test_user: Boolean? = null
+    val test_user: Boolean? = null,
+    val screen_capture_enabled: Boolean? = null
 )
 
 @Serializable

@@ -13,6 +13,7 @@ import '../common/share_button.dart';
 import '../common/cta_button.dart';
 import '../models/stories_models.dart';
 import '../stories/stories_bar.dart';
+import '../utils/link_handler.dart';
 import '../common/mute_button.dart';
 import '../common/unmute_button.dart';
 
@@ -828,7 +829,7 @@ class _StoryScreenState extends State<StoryScreen> {
                                   'story_slide': slide.id,
                                 },
                               );
-                              widget.onLinkTap?.call(slide.link!);
+                              LinkHandler.handle(slide.link, widget.onLinkTap);
                             },
                             styling: slide.styling?['cta'],
                           ),

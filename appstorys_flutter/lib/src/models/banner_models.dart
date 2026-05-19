@@ -10,6 +10,7 @@ class BannerCampaign {
   final String? link;
   final BannerStyling? styling;
   final String? lottieData;
+  final String? crossButtonImage;
 
   BannerCampaign({
     required this.id,
@@ -19,6 +20,7 @@ class BannerCampaign {
     this.link,
     this.styling,
     this.lottieData,
+    this.crossButtonImage,
   });
 
   factory BannerCampaign.fromJson(Map<String, dynamic> json) {
@@ -32,6 +34,7 @@ class BannerCampaign {
           ? BannerStyling.fromJson(json['styling'] as Map<String, dynamic>)
           : null,
       lottieData: json['lottie_data'] as String?,
+      crossButtonImage: json['crossButtonImage'] as String?,
     );
   }
 
@@ -43,10 +46,12 @@ class BannerCampaign {
         'link': link,
         'styling': styling?.toJson(),
         'lottie_data': lottieData,
+        'crossButtonImage': crossButtonImage,
   };
 }
 
 class BannerStyling {
+  final bool? enableCloseButton;
   final double? topLeftRadius;
   final double? topRightRadius;
   final double? bottomLeftRadius;
@@ -57,6 +62,7 @@ class BannerStyling {
   final CrossButtonStyling? crossButton;
 
   BannerStyling({
+    this.enableCloseButton,
     this.topLeftRadius,
     this.topRightRadius,
     this.bottomLeftRadius,
@@ -76,6 +82,7 @@ class BannerStyling {
 
   factory BannerStyling.fromJson(Map<String, dynamic> json) {
     return BannerStyling(
+      enableCloseButton: json['enableCloseButton'] as bool?,
       topLeftRadius: _toDouble(json['topLeftRadius']),
       topRightRadius: _toDouble(json['topRightRadius']),
       bottomLeftRadius: _toDouble(json['bottomLeftRadius']),
@@ -90,6 +97,7 @@ class BannerStyling {
   }
 
   Map<String, dynamic> toJson() => {
+        'enableCloseButton': enableCloseButton,
         'topLeftRadius': topLeftRadius,
         'topRightRadius': topRightRadius,
         'bottomLeftRadius': bottomLeftRadius,
@@ -106,12 +114,16 @@ class CrossButtonStyling {
   final double? size;
   final Map<String, String>? colorObj;  // {cross, fill, stroke}
   final CrossButtonMargin? margin;
+  final String? image;
+  final String? selectedStyle;
 
   CrossButtonStyling({
     this.enabled,
     this.size,
     this.colorObj,
     this.margin,
+    this.image,
+    this.selectedStyle,
   });
 
   factory CrossButtonStyling.fromJson(Map<String, dynamic> json) {
@@ -126,6 +138,8 @@ class CrossButtonStyling {
       margin: marginRaw is Map
           ? CrossButtonMargin.fromJson(Map<String, dynamic>.from(marginRaw))
           : null,
+      image: json['image'] as String?,
+      selectedStyle: json['selectedStyle'] as String?,
     );
   }
 
@@ -134,6 +148,8 @@ class CrossButtonStyling {
         'size': size,
         'color': colorObj,
         'margin': margin?.toJson(),
+        'image': image,
+        'selectedStyle': selectedStyle,
       };
 }
 
