@@ -1,3 +1,7 @@
+## 1.0.0-alpha08
+
+- Bump shared-core to v4.0.0-alpha26
+
 ## 1.0.0-alpha07
 
 - iOS bridge implementation with full campaign support via Swift plugin
