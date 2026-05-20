@@ -1,3 +1,8 @@
+## 1.0.0-alpha10
+
+- Fix: campaign now re-displays on every getScreenCampaigns call (same screen revisit)
+- Bump Android shared-core to v4.0.0-alpha27
+
 ## 1.0.0-alpha09
 
 - Fix: bump Android shared-core to v4.0.0-alpha26 to resolve PlatformStorage.initialize() compile error
