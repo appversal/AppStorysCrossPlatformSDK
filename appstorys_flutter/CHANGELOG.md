@@ -1,3 +1,10 @@
+## 1.0.0-alpha07
+
+- iOS bridge implementation with full campaign support via Swift plugin
+- Standardized link/URL handling across Android and iOS
+- Refined platform initialization flow
+- Capture button is now shown reactively for test users via AppStorysOverlay
+
 ## 1.0.0-alpha04
 
 - Bump Android shared-core to v4.0.0-alpha25 (fixes spurious HTTP 400 on cold start caused by getScreenCampaigns being called with an empty screen name during initialize)
