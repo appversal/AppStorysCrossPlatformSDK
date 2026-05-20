@@ -1,3 +1,7 @@
+## 1.0.0-alpha09
+
+- Fix: bump Android shared-core to v4.0.0-alpha26 to resolve PlatformStorage.initialize() compile error
+
 ## 1.0.0-alpha08
 
 - Bump shared-core to v4.0.0-alpha26

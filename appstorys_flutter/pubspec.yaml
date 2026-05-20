@@ -1,6 +1,6 @@
 name: appstorys_flutter
 description: "AppStorys Flutter SDK — display campaigns (Banner, Stories, PiP, Modal, Spin Wheel, Scratch Card, CSAT, Survey and more) in any Flutter app."
-version: 1.0.0-alpha08
+version: 1.0.0-alpha09
 homepage: https://appstorys.com
 repository: https://github.com/appversal/appstorys-flutter-sdk
 
