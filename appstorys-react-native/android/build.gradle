@@ -68,6 +68,6 @@ android {
 
 dependencies {
   compileOnly "com.facebook.react:react-android:${getExtOrDefault('reactNativeVersion')}"
-  implementation("com.github.appversal.AppStorysCrossPlatformSDK:appstorys-core-android:v4.0.0-alpha02")
+  implementation("com.github.appversal.AppStorysCrossPlatformSDK:appstorys-core-android:v4.0.0-alpha30")
   implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 }

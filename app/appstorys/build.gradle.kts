@@ -46,7 +46,7 @@ android {
 
 // ── Read the switch property from gradle.properties ──
 val useJitpackSharedCore = (project.findProperty("useJitpackSharedCore") as? String ?: "false").toBoolean()
-val sharedCoreVersion = project.findProperty("sharedCoreVersion") as? String ?: "v4.0.0-alpha02"
+val sharedCoreVersion = project.findProperty("sharedCoreVersion") as? String ?: "v4.0.0-alpha30"
 
 dependencies {
     // ── Conditional shared-core dependency ──

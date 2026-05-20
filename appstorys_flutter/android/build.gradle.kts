@@ -76,7 +76,7 @@ android {
 // a locally-published shared-core (after running :shared-core:publishToMavenLocal).
 val useJitpack = (project.findProperty("useJitpackSharedCore") as? String ?: "true").toBoolean()
 val sharedCoreDep = if (useJitpack) {
-    val version = project.findProperty("jitpackSharedCoreVersion") as? String ?: "v4.0.0-alpha29"
+    val version = project.findProperty("jitpackSharedCoreVersion") as? String ?: "v4.0.0-alpha30"
     println("📦 appstorys_flutter: using JitPack shared-core $version")
     "com.github.appversal.AppStorysCrossPlatformSDK:appstorys-core-android:$version"
 } else {
