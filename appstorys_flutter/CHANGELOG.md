@@ -1,7 +1,11 @@
+## 1.0.0-alpha11
+
+- Bump Flutter package release metadata and update shared-core integration to v4.0.0-alpha30
+
 ## 1.0.0-alpha10
 
 - Fix: campaign now re-displays on every getScreenCampaigns call (same screen revisit)
-- Bump Android shared-core to v4.0.0-alpha27
+- Bump Android shared-core to v4.0.0-alpha30
 
 ## 1.0.0-alpha09
 
