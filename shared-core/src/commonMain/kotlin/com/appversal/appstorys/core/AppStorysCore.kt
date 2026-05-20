@@ -250,8 +250,13 @@ class AppStorysCore(private val storage: PlatformStorage) {
             ensureActive()
 
             try {
+                // Always clear campaigns before re-fetching so StateFlow always
+                // emits a change — even when returning to the same screen.
+                // Without this, StateFlow suppresses the re-emit if the campaign
+                // list is structurally equal to the previous value, so Flutter's
+                // EventChannel never fires and the campaign widget doesn't re-show.
+                _campaigns.emit(emptyList())
                 if (currentScreen != screenName) {
-                    _campaigns.emit(emptyList())
                     _disabledCampaigns.emit(emptyList())
                     _trackedEvents.emit(emptySet())
                     currentScreen = screenName
