@@ -97,17 +97,18 @@ class _AppStorysFloaterState extends State<AppStorysFloater>
         .catchError((_) {});
   }
 
-  void _onTap() {
+  Future<void> _onTap() async {
     final f = _floater;
     if (f == null) return;
 
-    widget.appStorys
+    await widget.appStorys
         .trackEvent(event: 'clicked', campaignId: f.id)
         .catchError((_) {});
 
     final link = f.link;
     if (link?.isNotEmpty == true) {
-      LinkHandler.handle(link, widget.onTap);
+      await widget.appStorys.viaAppStorys(link!).catchError((_) {});
+      await LinkHandler.handle(link, widget.onTap);
     }
   }
 

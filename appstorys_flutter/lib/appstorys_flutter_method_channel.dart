@@ -35,7 +35,8 @@ class MethodChannelAppstorysFlutter extends AppstorysFlutterPlatform {
           final wrapper = jsonDecode(event as String) as Map<String, dynamic>;
           final isTestUser = wrapper['s'] as bool? ?? false;
           final campaigns = wrapper['c'] as List?;
-          debugPrint('[CampaignsStream] received — isTestUser: $isTestUser, campaignCount: ${campaigns?.length ?? 0}');
+          final types = campaigns?.whereType<Map>().map((c) => '${c['campaign_type']}(${c['id']})').toList() ?? [];
+          debugPrint('[CampaignsStream] received — isTestUser: $isTestUser, count: ${campaigns?.length ?? 0}, types: $types');
           CaptureManager.setEnabled(isTestUser);
           // wrapper['c'] is the decoded List after jsonDecode — re-encode it
           // back to a JSON string so callers receive the same format as before.
@@ -293,6 +294,18 @@ class MethodChannelAppstorysFlutter extends AppstorysFlutterPlatform {
           'screenshot': screenshot,
           'children': childrenJson,
         },
+      );
+    } on PlatformException catch (error) {
+      throw AppstorysException.fromPlatformException(error);
+    }
+  }
+
+  @override
+  Future<void> viaAppStorys(String link) async {
+    try {
+      await methodChannel.invokeMethod<void>(
+        'viaAppStorys',
+        <String, Object?>{'link': link},
       );
     } on PlatformException catch (error) {
       throw AppstorysException.fromPlatformException(error);

@@ -61,6 +61,7 @@ public class AppstorysFlutterPlugin: NSObject, FlutterPlugin, FlutterStreamHandl
         case "sendReelLikeStatus":        handleSendReelLikeStatus(call, result: result)
         case "personalizeText":           handlePersonalizeText(call, result: result)
         case "identifyElements":          handleIdentifyElements(call, result: result)
+        case "viaAppStorys":              handleViaAppStorys(call, result: result)
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -311,6 +312,17 @@ public class AppstorysFlutterPlugin: NSObject, FlutterPlugin, FlutterStreamHandl
         let text = (call.arguments as? [String: Any])?["text"] as? String ?? ""
         result(text)
         #endif
+    }
+
+    // MARK: - viaAppStorys
+
+    private func handleViaAppStorys(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        #if canImport(AppStorysCore)
+        guard let args = call.arguments as? [String: Any],
+              let link = args["link"] as? String else { result(nil); return }
+        core.viaAppStorys(event: "viaAppStorys\(link)")
+        #endif
+        result(nil)
     }
 
     // MARK: - identifyElements (tooltip screenshot)

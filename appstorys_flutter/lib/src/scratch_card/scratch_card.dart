@@ -621,6 +621,7 @@ class _ScratchCardDialogState extends State<_ScratchCardDialog>
                 metadata: {'url': cta.url},
               )
               .catchError((_) {});
+          widget.appStorys.viaAppStorys(cta.url!).catchError((_) {});
           LinkHandler.handle(cta.url, widget.onLinkTap);
         }
         _handleDismiss();

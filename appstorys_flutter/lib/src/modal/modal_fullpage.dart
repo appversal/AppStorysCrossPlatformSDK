@@ -541,6 +541,7 @@ class _ModalFullPageCarouselState extends State<ModalFullPageCarousel> {
             ?.trackEvent(
                 event: 'clicked', campaignId: widget.campaignId ?? '')
             .catchError((_) {});
+        widget.appStorys?.viaAppStorys(url).catchError((_) {});
         LinkHandler.handle(url, widget.onLinkTap);
       }
     } catch (e) {
@@ -557,6 +558,7 @@ class _ModalFullPageCarouselState extends State<ModalFullPageCarousel> {
             ?.trackEvent(
                 event: 'clicked', campaignId: widget.campaignId ?? '')
             .catchError((_) {});
+        widget.appStorys?.viaAppStorys(url).catchError((_) {});
         LinkHandler.handle(url, widget.onLinkTap);
       }
     } catch (e) {

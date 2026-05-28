@@ -137,4 +137,8 @@ abstract class AppstorysFlutterPlatform extends PlatformInterface {
   }) {
     throw UnimplementedError('identifyElements() has not been implemented.');
   }
+
+  Future<void> viaAppStorys(String link) {
+    throw UnimplementedError('viaAppStorys() has not been implemented.');
+  }
 }

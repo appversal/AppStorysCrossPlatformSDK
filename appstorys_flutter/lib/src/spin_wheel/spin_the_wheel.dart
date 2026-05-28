@@ -826,7 +826,10 @@ class _SpinWheelDialogState extends State<_SpinWheelDialog>
               // CTA
               CtaButton(
                 onTap: reward.link.isNotEmpty
-                    ? () => LinkHandler.handle(reward.link, widget.onLinkTap)
+                    ? () {
+                        widget.appStorys.viaAppStorys(reward.link).catchError((_) {});
+                        LinkHandler.handle(reward.link, widget.onLinkTap);
+                      }
                     : _handleDismiss,
                 text: reward.buttonCta,
                 backgroundColor: _hex(
@@ -857,7 +860,10 @@ class _SpinWheelDialogState extends State<_SpinWheelDialog>
               if (reward.termsNConditions.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 GestureDetector(
-                  onTap: () => LinkHandler.handle(reward.termsNConditions, widget.onLinkTap),
+                  onTap: () {
+                    widget.appStorys.viaAppStorys(reward.termsNConditions).catchError((_) {});
+                    LinkHandler.handle(reward.termsNConditions, widget.onLinkTap);
+                  },
                   child: Text(
                     reward.tNcCta,
                     style: const TextStyle(

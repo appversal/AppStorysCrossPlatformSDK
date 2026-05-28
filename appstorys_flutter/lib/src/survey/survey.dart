@@ -727,6 +727,7 @@ class _SurveySheetState extends State<_SurveySheet> {
     if (vm.thankYouButtonAction.toLowerCase() == 'redirect' &&
         vm.thankYouButtonRedirectUrl != null &&
         vm.thankYouButtonRedirectUrl!.isNotEmpty) {
+      widget.appStorys.viaAppStorys(vm.thankYouButtonRedirectUrl!).catchError((_) {});
       LinkHandler.handle(vm.thankYouButtonRedirectUrl, widget.onLinkTap);
     }
     widget.onDismiss();

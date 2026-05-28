@@ -562,6 +562,7 @@ class _ModalWithCTAState extends State<ModalWithCTA> {
       final redirection = content['primaryCtaRedirection'] ?? {};
       final url = redirection['url']?.toString();
       if (url != null && url.isNotEmpty) {
+        widget.appStorys?.viaAppStorys(url).catchError((_) {});
         LinkHandler.handle(url, widget.onLinkTap);
       }
     } catch (e) {
@@ -577,6 +578,7 @@ class _ModalWithCTAState extends State<ModalWithCTA> {
       final redirection = content['secondaryCtaRedirection'] ?? {};
       final url = redirection['url']?.toString();
       if (url != null && url.isNotEmpty) {
+        widget.appStorys?.viaAppStorys(url).catchError((_) {});
         LinkHandler.handle(url, widget.onLinkTap);
       }
     } catch (e) {

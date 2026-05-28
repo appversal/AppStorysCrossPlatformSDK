@@ -152,6 +152,7 @@ class _AppStorysBannerState extends State<AppStorysBanner>
 
     final link = banner.link;
     if (link?.isNotEmpty == true) {
+      await widget.appStorys.viaAppStorys(link!).catchError((_) {});
       await LinkHandler.handle(link, widget.onTap);
     }
   }

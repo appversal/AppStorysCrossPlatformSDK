@@ -328,6 +328,12 @@ class AppstorysFlutter {
     return AppstorysFlutterPlatform.instance.getCampaignsByTypeJson(type.trim());
   }
 
+  Future<void> viaAppStorys(String link) {
+    if (link.trim().isEmpty) return Future.value();
+    debugPrint('[AppStorys] viaAppStorys called — link: "$link"');
+    return AppstorysFlutterPlatform.instance.viaAppStorys(link.trim());
+  }
+
   // ── Screen capture (test/dev tool) ──────────────────────────────────────────
 
   /// Enables or disables the on-screen capture button.

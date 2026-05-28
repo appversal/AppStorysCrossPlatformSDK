@@ -60,6 +60,7 @@ class _PipFullScreenState extends State<PipFullScreen> {
     widget.appStorys
         .trackEvent(event: 'clicked', campaignId: widget.campaign.id)
         .catchError((_) {});
+    widget.appStorys.viaAppStorys(link!).catchError((_) {});
 
     LinkHandler.handle(link, widget.onLinkTap);
   }

@@ -399,6 +399,7 @@ class AppStorysCore(private val storage: PlatformStorage) {
     fun viaAppStorys(event: String) {
         scope.launch {
             _trackedEvents.update { it + TrackedEventData(eventName = event, metadata = null) }
+            sdkLogDebug("viaAppStorys: added sentinel \"$event\", trackedEvents now: ${_trackedEvents.value.map { it.eventName }}")
         }
     }
 
@@ -624,10 +625,18 @@ class AppStorysCore(private val storage: PlatformStorage) {
     // ══════════════════════════════════════════════════════════════
     fun getCampaignsJson(): String {
         val disabled = _disabledCampaigns.value
-        return SdkJson.encodeToString(
-            ListSerializer(CampaignDeserializer),
-            _campaigns.value.filter { it.id == null || !disabled.contains(it.id) }
-        )
+        val tracked = _trackedEvents.value
+        val filtered = _campaigns.value.filter { campaign ->
+            val passes = (campaign.id == null || !disabled.contains(campaign.id)) &&
+                TriggerEventMatcher.shouldShowCampaign(
+                    triggerEvent = campaign.triggerEvent,
+                    campaignId = campaign.id,
+                    trackedEvents = tracked
+                )
+            sdkLogDebug("getCampaignsJson: campaign ${campaign.id} (${campaign.campaignType}) trigger=${campaign.triggerEvent} → ${if (passes) "PASS" else "FILTERED"}")
+            passes
+        }
+        return SdkJson.encodeToString(ListSerializer(CampaignDeserializer), filtered)
     }
 
     fun getCampaignsByTypeJson(type: String): String {
@@ -703,7 +712,7 @@ class AppStorysCore(private val storage: PlatformStorage) {
      */
     fun observeCampaigns(onUpdate: (payload: String) -> Unit): CampaignObserver {
         val job = scope.launch {
-            combine(campaigns, isTestUserFlow) { _, isTest ->
+            combine(campaigns, trackedEvents, isTestUserFlow) { _, _, isTest ->
                 val json = getCampaignsJson()
                 "{\"c\":${json},\"s\":${isTest}}"
             }.collect { payload ->

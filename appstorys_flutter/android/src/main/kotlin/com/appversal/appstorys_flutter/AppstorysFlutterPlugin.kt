@@ -76,8 +76,9 @@ class AppstorysFlutterPlugin :
                     // stays at emptyList() so StateFlow deduplication prevents a re-emit
                     // after the API sets isTestUser. The isTestUserFlow provides the
                     // second trigger so the capture button updates correctly on all screens.
-                    combine(core.campaigns, core.isTestUserFlow) { _, isTest ->
+                    combine(core.campaigns, core.trackedEvents, core.isTestUserFlow) { campaigns, tracked, isTest ->
                         val json = core.getCampaignsJson()
+                        android.util.Log.d("AppStorys", "[EventChannel] emitting — rawCampaigns: ${campaigns.size}, trackedEvents: ${tracked.map { it.eventName }}, filteredJson length: ${json.length}")
                         "{\"c\":${json},\"s\":${isTest}}"
                     }.collect { payload ->
                         withContext(Dispatchers.Main) {
@@ -115,6 +116,7 @@ class AppstorysFlutterPlugin :
             "sendReelLikeStatus" -> handleSendReelLikeStatus(call, result)
             "personalizeText" -> handlePersonalizeText(call, result)
             "identifyElements" -> handleIdentifyElements(call, result)
+            "viaAppStorys" -> handleViaAppStorys(call, result)
             else -> result.notImplemented()
         }
     }
@@ -320,6 +322,15 @@ class AppstorysFlutterPlugin :
         channel.setMethodCallHandler(null)
         campaignsCollectionJob?.cancel()
         pluginScope.cancel()
+    }
+
+    private fun handleViaAppStorys(call: MethodCall, result: Result) {
+        val link = call.argument<String>("link").orEmpty()
+        android.util.Log.d("AppStorys", "[viaAppStorys] bridge called — link: \"$link\", sentinel: \"viaAppStorys$link\"")
+        runBridgeCall(result) {
+            core.viaAppStorys("viaAppStorys$link")
+            null
+        }
     }
 
     private fun handlePersonalizeText(call: MethodCall, result: Result) {

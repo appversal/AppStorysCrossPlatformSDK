@@ -191,6 +191,7 @@ class _AppStorysPipState extends State<AppStorysPip>
         widget.appStorys
             .trackEvent(event: 'clicked', campaignId: pip.id)
             .catchError((_) {});
+        widget.appStorys.viaAppStorys(pip.link!).catchError((_) {});
         LinkHandler.handle(pip.link, widget.onLinkTap);
       }
       return;

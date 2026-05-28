@@ -249,6 +249,7 @@ class Modal {
                   appStorys?.trackEvent(
                       event: 'clicked',
                       campaignId: currentModal?.id ?? '').catchError((_) {});
+                  appStorys?.viaAppStorys(target).catchError((_) {});
                   LinkHandler.handle(target, onLinkTap);
                 }
               },

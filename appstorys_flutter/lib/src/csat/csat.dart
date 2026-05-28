@@ -1445,6 +1445,7 @@ class _CsatSheetState extends State<_CsatSheet> {
             onTap: () {
               if (selectedStars >= 4 && details.link.isNotEmpty) {
                 _trackEvent('clicked');
+                widget.appStorys.viaAppStorys(details.link).catchError((_) {});
                 LinkHandler.handle(details.link, widget.onLinkTap);
               }
               widget.onDismiss();

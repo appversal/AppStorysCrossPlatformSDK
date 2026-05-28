@@ -140,7 +140,10 @@ class _AppStorysBottomSheetState extends State<AppStorysBottomSheet>
               widget.appStorys
                   .trackEvent(event: 'clicked', campaignId: campaign.id)
                   .catchError((_) {});
-              if (link?.isNotEmpty == true) LinkHandler.handle(link, widget.onLinkTap);
+              if (link?.isNotEmpty == true) {
+                widget.appStorys.viaAppStorys(link!).catchError((_) {});
+                LinkHandler.handle(link, widget.onLinkTap);
+              }
             },
           ),
         ),
