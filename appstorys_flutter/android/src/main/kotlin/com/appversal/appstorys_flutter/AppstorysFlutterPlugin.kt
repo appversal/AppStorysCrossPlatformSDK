@@ -260,12 +260,13 @@ class AppstorysFlutterPlugin :
     private fun handleCaptureCsatResponse(call: MethodCall, result: Result) {
         val csatId = call.argument<String>("csatId").orEmpty()
         val userId = call.argument<String>("userId").orEmpty()
+        val resolvedUserId = userId.ifBlank { core.userId }
         val rating = call.argument<Double>("rating") ?: 0.0
         val feedbackOption = call.argument<String>("feedbackOption")
         val additionalComments = call.argument<String>("additionalComments")
 
         runBridgeCall(result) {
-            core.captureCsatResponse(csatId, userId, rating, feedbackOption, additionalComments)
+            core.captureCsatResponse(csatId, resolvedUserId, rating, feedbackOption, additionalComments)
             null
         }
     }
@@ -273,11 +274,12 @@ class AppstorysFlutterPlugin :
     private fun handleCaptureSurveyResponse(call: MethodCall, result: Result) {
         val surveyId = call.argument<String>("surveyId").orEmpty()
         val userId = call.argument<String>("userId").orEmpty()
+        val resolvedUserId = userId.ifBlank { core.userId }
         val responseOptions = call.argument<List<String>>("responseOptions") ?: emptyList()
         val comment = call.argument<String>("comment")
 
         runBridgeCall(result) {
-            core.captureSurveyResponse(surveyId, userId, responseOptions, comment)
+            core.captureSurveyResponse(surveyId, resolvedUserId, responseOptions, comment)
             null
         }
     }
@@ -285,10 +287,11 @@ class AppstorysFlutterPlugin :
     private fun handleSendReelLikeStatus(call: MethodCall, result: Result) {
         val campaignId = call.argument<String>("campaignId").orEmpty()
         val userId = call.argument<String>("userId").orEmpty()
+        val resolvedUserId = userId.ifBlank { core.userId }
         val isLiked = call.argument<Boolean>("isLiked") ?: false
 
         runBridgeCall(result) {
-            core.sendReelLikeStatus(campaignId, userId, isLiked)
+            core.sendReelLikeStatus(campaignId, resolvedUserId, isLiked)
             null
         }
     }

@@ -57,6 +57,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.serializer
 import com.appversal.appstorys.core.utils.personalizeText
 import com.appversal.appstorys.core.platform.getDeviceInfo
+import kotlin.collections.emptyMap
 
 class AppStorysCore(private val storage: PlatformStorage) {
     // ══════════════════════════════════════════════════════════════

@@ -1,120 +1,156 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import AppStorys, { CampaignData } from '../index';
+import { useCallback, useEffect, useState } from 'react';
+import { Dimensions, Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import LottieView from 'lottie-react-native';
+import trackEvent from '../domain/actions/trackEvent';
+import usePadding from '../domain/hooks/usePadding';
+import viaAppStorys, { removeTrackedEvent } from '../domain/actions/utils/viaAppStorys';
+import CrossButton from './common/CrossButton';
+import healthCheck from '../domain/actions/utils/healthCheck';
+import checkForCache from '../domain/actions/utils/checkForCache';
+import AppStorys from '../index';
+import { isNullOrEmpty } from '../domain/actions/utils/helperFunctions';
+import useScreen from '../domain/screen/useScreen';
 
-interface BannerProps {
-  campaigns: CampaignData[];
-  onDismiss?: (campaignId: string) => void;
-}
+export default function Banner() {
+  const { width } = Dimensions.get('window');
 
-function toFloat(value: unknown): number {
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  if (typeof value === 'string') {
-    const parsed = parseFloat(value);
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-  return 0;
-}
+  const [isBannerVisible, setIsBannerVisible] = useState(true);
+  const [imagePath, setImagePath] = useState<string | null>(null);
+  const [lottieData, setLottieData] = useState<any>(null);
+  const [lottieAspectRatio, setLottieAspectRatio] = useState<number | null>(null);
+  const [isLottie, setIsLottie] = useState(false);
+  const [bannerHeight, setBannerHeight] = useState<number>(100);
+  const [componentLoadStart] = useState<number>(Date.now());
 
-export function Banner({ campaigns, onDismiss }: BannerProps) {
-  const [visible, setVisible] = useState(true);
+  const [bottomLeftRadius, setBottomLeftRadius] = useState<number>(0);
+  const [bottomRightRadius, setBottomRightRadius] = useState<number>(0);
+  const [topLeftRadius, setTopLeftRadius] = useState<number>(0);
+  const [topRightRadius, setTopRightRadius] = useState<number>(0);
+  const [marginBottom, setMarginBottom] = useState<number>(0);
+  const [marginLeft, setMarginLeft] = useState<number>(0);
+  const [marginRight, setMarginRight] = useState<number>(0);
+  const [crossButtonConfig, setCrossButtonConfig] = useState<any>(null);
 
-  const banner = useMemo(
-    () => campaigns.find((campaign) => campaign.campaign_type === 'BAN'),
-    [campaigns]
-  );
-  const details = (banner?.details as Record<string, any> | undefined) ?? banner ?? {};
-  const styling = (details.styling ?? banner?.styling ?? {}) as Record<string, any>;
-  const campaignId = banner?.campaign_id ?? banner?.id ?? '';
-  const imageUrl = details.image ?? banner?.image;
+  // KMP: read campaign from ScreenContext instead of Zustand useCampaigns hook
+  const { campaigns } = useScreen();
+  const data = campaigns.find((c) => c.campaign_type === 'BAN') as any;
+  const padding = usePadding('BAN')?.bottom || 0;
+
+  // Reset visibility whenever the campaign ID changes (including undefined → id cycle
+  // when navigating away and back). Mirrors Flutter's `if (banner == null) _visible = true`.
+  useEffect(() => {
+    setIsBannerVisible(true);
+  }, [data?.id]);
+
+  const closeBanner = useCallback(() => {
+    setIsBannerVisible(false);
+    void healthCheck({ component: 'banner', action: 'banner_closed', success: true, campaignId: data?.id, closeMethod: 'user_action' });
+  }, [data?.id]);
 
   useEffect(() => {
-    if (campaignId) {
-      AppStorys.trackEvent('viewed', campaignId);
+    if (data && data.id) {
+      const bannerInitStart = Date.now();
+      void trackEvent('viewed', data.id);
+      void healthCheck({ component: 'banner', action: 'banner_init', duration: Date.now() - componentLoadStart, success: true, campaignId: data.id });
+
+      if (data.details.lottie_data && data.details.lottie_data !== '') {
+        setIsLottie(true);
+        const cacheStart = Date.now();
+        checkForCache(data.details.lottie_data, 'video').then(async (result) => {
+          if (!result) return;
+          try {
+            const response = await fetch(result.path);
+            const json = await response.json();
+            setLottieData(json);
+            let aspectRatio: number | null = null;
+            if (json.w && json.h && json.w > 0 && json.h > 0) {
+              aspectRatio = json.h / json.w;
+              setLottieAspectRatio(aspectRatio);
+            }
+            if (data.details.styling) {
+              setBottomLeftRadius(parseInt(data.details.styling.bottomLeftRadius || '0'));
+              setBottomRightRadius(parseInt(data.details.styling.bottomRightRadius || '0'));
+              setTopLeftRadius(parseInt(data.details.styling.topLeftRadius || '0'));
+              setTopRightRadius(parseInt(data.details.styling.topRightRadius || '0'));
+              setMarginBottom(parseInt(data.details.styling.marginBottom || '0'));
+              setMarginLeft(parseInt(data.details.styling.marginLeft || '0'));
+              setMarginRight(parseInt(data.details.styling.marginRight || '0'));
+              if (data.details.styling.crossButton) setCrossButtonConfig(data.details.styling.crossButton);
+            }
+            const bannerWidth = width - (marginLeft + marginRight);
+            if (data.details.height && !isNullOrEmpty(data.details.image)) {
+              setBannerHeight(data.details.height);
+            } else if (aspectRatio) {
+              setBannerHeight(bannerWidth * aspectRatio);
+            } else {
+              setBannerHeight(bannerWidth * 0.5);
+            }
+            void healthCheck({ component: 'banner', action: 'lottie_setup_complete', duration: Date.now() - bannerInitStart, success: true, campaignId: data.id });
+          } catch (error) {
+            void healthCheck({ component: 'banner', action: 'lottie_parse_error', duration: Date.now() - cacheStart, success: false, campaignId: data.id });
+          }
+        }).catch(() => void healthCheck({ component: 'banner', action: 'lottie_cache_error', success: false, campaignId: data.id }));
+      } else if (data.details.image && data.details.image !== '') {
+        setIsLottie(false);
+        const cacheStart = Date.now();
+        checkForCache(data.details.image).then((result) => {
+          if (!result) return;
+          setImagePath(result.path);
+          if (data.details.styling) {
+            setBottomLeftRadius(parseInt(data.details.styling.bottomLeftRadius || '0'));
+            setBottomRightRadius(parseInt(data.details.styling.bottomRightRadius || '0'));
+            setTopLeftRadius(parseInt(data.details.styling.topLeftRadius || '0'));
+            setTopRightRadius(parseInt(data.details.styling.topRightRadius || '0'));
+            setMarginBottom(parseInt(data.details.styling.marginBottom || '0'));
+            setMarginLeft(parseInt(data.details.styling.marginLeft || '0'));
+            setMarginRight(parseInt(data.details.styling.marginRight || '0'));
+            if (data.details.styling.crossButton) setCrossButtonConfig(data.details.styling.crossButton);
+          }
+          const bannerWidth = width - (marginLeft + marginRight);
+          if (result.ratio) setBannerHeight(bannerWidth * result.ratio);
+          void healthCheck({ component: 'banner', action: 'banner_setup_complete', duration: Date.now() - bannerInitStart, success: true, campaignId: data.id });
+        }).catch(() => void healthCheck({ component: 'banner', action: 'image_cache_error', duration: Date.now() - cacheStart, success: false, campaignId: data.id }));
+      }
     }
-  }, [campaignId]);
+  }, [data, width, componentLoadStart]);
 
-  if (!banner || !visible || !imageUrl) return null;
-
-  const tl = toFloat(styling.topLeftRadius);
-  const tr = toFloat(styling.topRightRadius);
-  const bl = toFloat(styling.bottomLeftRadius);
-  const br = toFloat(styling.bottomRightRadius);
-
-  const mb = toFloat(styling.marginBottom);
-  const ml = toFloat(styling.marginLeft);
-  const mr = toFloat(styling.marginRight);
-
-  const w = toFloat(details.width ?? banner.width);
-  const h = toFloat(details.height ?? banner.height);
-  const screenWidth = Dimensions.get('window').width;
-  const availableWidth = screenWidth - ml - mr;
-  const imageHeight = w > 0 && h > 0 ? availableWidth * (h / w) : h > 0 ? h : undefined;
-
-  const crossButton = (styling.crossButton ?? {}) as Record<string, any>;
-  const showClose = crossButton.enabled === true;
-
-  const handlePress = async () => {
-    const link = details.link ?? banner.link;
-    if (campaignId) {
-      await AppStorys.trackEvent('clicked', campaignId);
-    }
-    if (link) {
-      await AppStorys.handleNavigation(link);
-    }
-  };
-
-  const handleDismiss = async () => {
-    if (campaignId) {
-      await AppStorys.dismissCampaign(campaignId);
-    }
-    setVisible(false);
-    onDismiss?.(campaignId);
-  };
+  const bannerWidth = width - marginLeft - marginRight;
 
   return (
-    <View style={{ marginBottom: mb, marginLeft: ml, marginRight: mr }}>
-      <TouchableOpacity activeOpacity={0.9} onPress={handlePress}>
-        <Image
-          source={{ uri: imageUrl }}
-          style={{
-            width: '100%',
-            height: imageHeight ?? 150,
-            borderTopLeftRadius: tl,
-            borderTopRightRadius: tr,
-            borderBottomLeftRadius: bl,
-            borderBottomRightRadius: br,
-          }}
-          resizeMode="cover"
-        />
-      </TouchableOpacity>
-
-      {showClose && (
-        <TouchableOpacity style={styles.closeBtn} onPress={handleDismiss}>
-          <View style={styles.closeBtnInner}>
-            <Text style={styles.closeX}>✕</Text>
-          </View>
-        </TouchableOpacity>
+    <>
+      {data && data.details && (data.details.image !== '' || data.details.lottie_data !== '') && isBannerVisible && (
+        <View style={{ position: 'absolute', left: marginLeft, right: marginRight, bottom: marginBottom + padding, alignItems: 'center', justifyContent: 'flex-end' }}>
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={async () => {
+              if (data.details.link) {
+                void trackEvent('clicked', data.id);
+                viaAppStorys(`viaAppStorys${data.details.link}`);
+                try {
+                  AppStorys.handleNavigation(data.details.link);
+                } catch { }
+              }
+            }}
+            style={[styles.banner, { width: bannerWidth, height: bannerHeight, borderTopRightRadius: topRightRadius, borderTopLeftRadius: topLeftRadius, borderBottomRightRadius: bottomRightRadius, borderBottomLeftRadius: bottomLeftRadius, backgroundColor: 'transparent' }]}
+          >
+            {isLottie && lottieData && (
+              <LottieView source={lottieData} autoPlay loop style={{ width: bannerWidth, height: bannerHeight, borderTopRightRadius: topRightRadius, borderTopLeftRadius: topLeftRadius, borderBottomRightRadius: bottomRightRadius, borderBottomLeftRadius: bottomLeftRadius, overflow: 'hidden' }} resizeMode="contain" />
+            )}
+            {!isLottie && imagePath && (
+              <Image source={{ uri: imagePath }} style={{ width: bannerWidth, height: bannerHeight, resizeMode: 'cover', borderTopRightRadius: topRightRadius, borderTopLeftRadius: topLeftRadius, borderBottomRightRadius: bottomRightRadius, borderBottomLeftRadius: bottomLeftRadius }} />
+            )}
+            {crossButtonConfig && (
+              <CrossButton config={crossButtonConfig} onPress={() => { closeBanner(); removeTrackedEvent(`viaAppStorys${data.id}`); }} style={{ position: 'absolute', top: 0, right: 0 }} />
+            )}
+          </TouchableOpacity>
+        </View>
       )}
-    </View>
+    </>
   );
 }
 
-const styles = StyleSheet.create({
-  closeBtn: { position: 'absolute', top: 4, right: 4 },
-  closeBtnInner: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  closeX: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '700',
-    lineHeight: 14,
-  },
-});
+export { Banner };
 
+const styles = StyleSheet.create({
+  banner: { alignItems: 'center', justifyContent: 'center', position: 'relative' },
+});

@@ -1,6 +1,9 @@
 #import <React/RCTBridgeModule.h>
+#import <React/RCTEventEmitter.h>
 
-@interface RCT_EXTERN_MODULE(AppStorysReactNative, NSObject)
+// Base class is RCTEventEmitter so the module can emit "onCampaignsUpdate" events.
+// addListener / removeListeners are inherited — no extern declaration needed.
+RCT_EXTERN_MODULE(AppStorysReactNative, RCTEventEmitter)
 
 RCT_EXTERN_METHOD(initialize:(NSString *)appId accountId:(NSString *)accountId userId:(NSString *)userId
                   resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
@@ -28,6 +31,9 @@ RCT_EXTERN_METHOD(captureSurveyResponse:(NSString *)surveyId userId:(NSString *)
                   resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 RCT_EXTERN_METHOD(sendReelLikeStatus:(NSString *)campaignId userId:(NSString *)userId isLiked:(BOOL)isLiked
                   resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
+RCT_EXTERN_METHOD(personalizeText:(NSString *)text
+                  resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
+RCT_EXTERN_METHOD(identifyElements:(NSString *)screenName childrenJson:(NSString *)childrenJson screenshotPath:(NSString *)screenshotPath
+                  resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 
 @end
-

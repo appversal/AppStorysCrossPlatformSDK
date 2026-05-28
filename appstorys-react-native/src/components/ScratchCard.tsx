@@ -7,7 +7,7 @@ interface ScratchCardProps {
 }
 
 export function ScratchCard({ campaigns }: ScratchCardProps) {
-  const campaign = campaigns.find((item) => item.campaign_type === 'SCR');
+  const campaign = campaigns.find((item) => item.campaign_type === 'SCRT');
   const [revealed, setRevealed] = useState(false);
 
   if (!campaign) return null;

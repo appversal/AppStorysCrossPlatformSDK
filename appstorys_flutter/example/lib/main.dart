@@ -120,7 +120,7 @@ class _HomeTabState extends State<_HomeTab> {
   void initState() {
     super.initState();
     widget.appstorys.getScreenCampaigns(
-      screenName: 'Home Screen Flutter',
+      screenName: 'Home Screen Kotlin',
       positionList: ['widget_one', 'widget_two'],
     );
   }

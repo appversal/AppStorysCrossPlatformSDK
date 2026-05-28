@@ -8,41 +8,49 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.ReadableMap
+import com.facebook.react.bridge.LifecycleEventListener
 import com.facebook.react.modules.core.DeviceEventManagerModule
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 class AppStorysModule(reactContext: ReactApplicationContext) :
-    ReactContextBaseJavaModule(reactContext) {
+    ReactContextBaseJavaModule(reactContext), LifecycleEventListener {
 
+    private val storage: PlatformStorage
     private val core: AppStorysCore
     private val moduleScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var campaignsCollectorJob: Job? = null
 
     init {
-        val storage = PlatformStorage()
+        PlatformStorage.initialize(reactContext.applicationContext)
+        storage = PlatformStorage()
         core = AppStorysCore(storage)
+        reactContext.addLifecycleEventListener(this)
     }
 
     override fun getName() = "AppStorysReactNative"
 
-    // Pushes the current campaigns JSON to JS whenever the StateFlow emits.
-    // Mirrors Flutter's EventChannel → campaignsStream pipeline.
-    private fun emitCampaigns() {
-        try {
-            reactApplicationContext
-                .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
-                .emit("onCampaignsUpdate", core.getCampaignsJson())
-        } catch (_: Exception) { }
-    }
-
+    // Mirrors Flutter's EventChannel format: {"c":[...],"s":boolean}
+    // combine() fires when EITHER campaigns OR isTestUser changes — necessary
+    // because on screens with 0 campaigns the campaigns StateFlow never emits,
+    // so isTestUser changes (e.g. switching test accounts) would be silently dropped.
     private fun startCampaignsEmitter() {
         campaignsCollectorJob?.cancel()
         campaignsCollectorJob = moduleScope.launch {
-            core.campaigns.collect { emitCampaigns() }
+            combine(core.campaigns, core.isTestUserFlow) { _, isTest ->
+                val json = core.getCampaignsJson()
+                "{\"c\":${json},\"s\":${isTest}}"
+            }.collect { payload ->
+                try {
+                    reactApplicationContext
+                        .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter::class.java)
+                        .emit("onCampaignsUpdate", payload)
+                } catch (_: Exception) { }
+            }
         }
     }
 
@@ -50,18 +58,10 @@ class AppStorysModule(reactContext: ReactApplicationContext) :
     @ReactMethod fun addListener(eventName: String) {}
     @ReactMethod fun removeListeners(count: Int) {}
 
-    private fun invokeCoreMethodOrThrow(methodName: String, vararg args: Any?) {
-        val method = core.javaClass.methods.firstOrNull {
-            it.name == methodName && it.parameterTypes.size == args.size
-        } ?: throw NoSuchMethodException("$methodName is not available in this AppStorysCore version")
-
-        method.invoke(core, *args)
-    }
 
     @ReactMethod
     fun initialize(appId: String, accountId: String, userId: String, promise: Promise) {
         try {
-            val storage = PlatformStorage()
             val packageInfo = runCatching {
                 reactApplicationContext.packageManager
                     .getPackageInfo(reactApplicationContext.packageName, 0)
@@ -160,14 +160,8 @@ class AppStorysModule(reactContext: ReactApplicationContext) :
         feedbackOption: String?, additionalComments: String?, promise: Promise
     ) {
         try {
-            invokeCoreMethodOrThrow(
-                "captureCsatResponse",
-                csatId,
-                userId,
-                rating,
-                feedbackOption,
-                additionalComments
-            )
+            val resolvedUserId = userId.ifBlank { core.userId }
+            core.captureCsatResponse(csatId, resolvedUserId, rating, feedbackOption, additionalComments)
             promise.resolve(true)
         } catch (e: Exception) { promise.reject("ERROR", e.message) }
     }
@@ -178,8 +172,9 @@ class AppStorysModule(reactContext: ReactApplicationContext) :
         comment: String?, promise: Promise
     ) {
         try {
+            val resolvedUserId = userId.ifBlank { core.userId }
             val options = (0 until responseOptions.size()).mapNotNull { responseOptions.getString(it) }
-            invokeCoreMethodOrThrow("captureSurveyResponse", surveyId, userId, options, comment)
+            core.captureSurveyResponse(surveyId, resolvedUserId, options, comment)
             promise.resolve(true)
         } catch (e: Exception) { promise.reject("ERROR", e.message) }
     }
@@ -188,8 +183,11 @@ class AppStorysModule(reactContext: ReactApplicationContext) :
     fun sendReelLikeStatus(
         campaignId: String, userId: String, isLiked: Boolean, promise: Promise
     ) {
-        try { invokeCoreMethodOrThrow("sendReelLikeStatus", campaignId, userId, isLiked); promise.resolve(true) }
-        catch (e: Exception) { promise.reject("ERROR", e.message) }
+        try {
+            val resolvedUserId = userId.ifBlank { core.userId }
+            core.sendReelLikeStatus(campaignId, resolvedUserId, isLiked)
+            promise.resolve(true)
+        } catch (e: Exception) { promise.reject("ERROR", e.message) }
     }
 
     @ReactMethod
@@ -199,5 +197,35 @@ class AppStorysModule(reactContext: ReactApplicationContext) :
         } catch (e: Exception) {
             promise.reject("ERROR", e.message)
         }
+    }
+
+    @ReactMethod
+    fun identifyElements(screenName: String, childrenJson: String, screenshotPath: String, promise: Promise) {
+        moduleScope.launch {
+            runCatching {
+                val file = java.io.File(screenshotPath.removePrefix("file://"))
+                val bytes = file.readBytes()
+                core.tooltipIdentify(
+                    screenName = screenName,
+                    childrenJson = childrenJson,
+                    screenshotBytes = bytes,
+                )
+            }
+            promise.resolve(true)
+        }
+    }
+
+    override fun onHostResume() {
+        core.onAppResumed()
+    }
+
+    override fun onHostPause() {
+        core.onAppStopped()
+    }
+
+    override fun onHostDestroy() {
+        reactApplicationContext.removeLifecycleEventListener(this)
+        campaignsCollectorJob?.cancel()
+        core.destroy()
     }
 }

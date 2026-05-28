@@ -89,7 +89,6 @@ export const AppStorys = {
     // Navigation is handled by the host app for deep links and internal routes.
     if (!link) return;
     if (link.startsWith('http://') || link.startsWith('https://')) {
-      const { Linking } = require('react-native');
       try {
         await Linking.openURL(link);
       } catch (_) { }

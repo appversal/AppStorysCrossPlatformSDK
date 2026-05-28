@@ -1,11 +1,10 @@
 #import "AppstorysReactNative.h"
 
+// TurboModule (New Architecture) entry point.
+// getTurboModule references NativeAppstorysReactNativeSpecJSI which is generated
+// by codegen once NativeAppstorysReactNativeSpec.ts exists. Until then this file
+// compiles only under the Old Architecture path — New Architecture is deferred.
 @implementation AppstorysReactNative
-- (NSNumber *)multiply:(double)a b:(double)b {
-    NSNumber *result = @(a * b);
-
-    return result;
-}
 
 - (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:
     (const facebook::react::ObjCTurboModule::InitParams &)params
@@ -15,7 +14,7 @@
 
 + (NSString *)moduleName
 {
-  return @"AppstorysReactNative";
+    return @"AppstorysReactNative";
 }
 
 @end

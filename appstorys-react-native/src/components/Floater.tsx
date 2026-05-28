@@ -1,46 +1,109 @@
-import React from 'react';
+import { useEffect, useState } from 'react';
 import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
-import AppStorys, { CampaignData } from '../index';
+import trackEvent from '../domain/actions/trackEvent';
+import usePadding from '../domain/hooks/usePadding';
+import viaAppStorys from '../domain/actions/utils/viaAppStorys';
+import checkForCache from '../domain/actions/utils/checkForCache';
+import AppStorys from '../index';
+import LottieView from 'lottie-react-native';
+import useScreen from '../domain/screen/useScreen';
 
-interface FloaterProps {
-  campaigns: CampaignData[];
-}
+export default function Floater() {
+  const [imagePath, setImagePath] = useState<string | null>(null);
+  const [lottieData, setLottieData] = useState<any>(null);
+  const [isLottie, setIsLottie] = useState(false);
+  const [bottomLeftRadius, setBottomLeftRadius] = useState(0);
+  const [bottomRightRadius, setBottomRightRadius] = useState(0);
+  const [topLeftRadius, setTopLeftRadius] = useState(0);
+  const [topRightRadius, setTopRightRadius] = useState(0);
 
-export function Floater({ campaigns }: FloaterProps) {
-  const campaign = campaigns.find((item) => item.campaign_type === 'FLT');
-  if (!campaign) return null;
+  const { campaigns } = useScreen();
+  const data = campaigns.find((c) => c.campaign_type === 'FLT') as any;
+  const padding = usePadding('FLT')?.bottom || 0;
 
-  const details = (campaign.details as Record<string, any> | undefined) ?? campaign;
-  const image = details.image ?? campaign.image;
-  const link = details.link ?? campaign.link;
-  const campaignId = campaign.campaign_id ?? campaign.id ?? '';
+  useEffect(() => {
+    if (!data) return;
+    void trackEvent('viewed', data.id);
 
-  if (!image) return null;
-
-  const onPress = async () => {
-    if (campaignId) await AppStorys.trackEvent('clicked', campaignId);
-    if (link) await AppStorys.handleNavigation(link);
-  };
+    if (data.details.lottie_data && data.details.lottie_data !== '') {
+      setIsLottie(true);
+      checkForCache(data.details.lottie_data, 'video').then(async (result) => {
+        if (!result) return;
+        try {
+          const response = await fetch(result.path);
+          const json = await response.json();
+          setLottieData(json);
+          if (data.details.styling) {
+            setBottomLeftRadius(parseInt(data.details.styling['bottomLeftRadius'] || '0'));
+            setBottomRightRadius(parseInt(data.details.styling['bottomRightRadius'] || '0'));
+            setTopLeftRadius(parseInt(data.details.styling['topLeftRadius'] || '0'));
+            setTopRightRadius(parseInt(data.details.styling['topRightRadius'] || '0'));
+          }
+        } catch { }
+      });
+    } else if (data.details.image && data.details.image !== '') {
+      setIsLottie(false);
+      checkForCache(data.details.image).then((result) => {
+        if (!result) return;
+        setImagePath(result.path);
+        if (data.details.styling) {
+          setBottomLeftRadius(parseInt(data.details.styling['bottomLeftRadius'] || '0'));
+          setBottomRightRadius(parseInt(data.details.styling['bottomRightRadius'] || '0'));
+          setTopLeftRadius(parseInt(data.details.styling['topLeftRadius'] || '0'));
+          setTopRightRadius(parseInt(data.details.styling['topRightRadius'] || '0'));
+        }
+      });
+    }
+  }, [data]);
 
   return (
-    <View style={styles.container} pointerEvents="box-none">
-      <TouchableOpacity onPress={onPress} activeOpacity={0.9}>
-        <Image source={{ uri: image }} style={styles.image} resizeMode="cover" />
-      </TouchableOpacity>
-    </View>
+    <>
+      {data && data.details && data.details.image !== '' && (
+        <View style={{
+          position: 'absolute',
+          left: data.details.position === 'left' ? parseInt(data.details.styling['marginLeft'] || '0') : undefined,
+          right: (data.details.position === 'right' || data.details.position === '' || data.details.position == null)
+            ? parseInt(data.details.styling['marginRight'] || '0') : undefined,
+          bottom: parseInt(data.details.styling['marginBottom'] || '0') + padding,
+          justifyContent: 'flex-end',
+        }}>
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={() => {
+              if (data.details.link) {
+                void trackEvent('clicked', data.id);
+                viaAppStorys(`viaAppStorys${data.details.link}`);
+                AppStorys.handleNavigation(data.details.link);
+              }
+            }}
+            style={{
+              width: data.details.width ?? 60,
+              height: data.details.height ?? 60,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'rgba(0,0,0,0)',
+              overflow: 'hidden',
+              borderBottomLeftRadius: bottomLeftRadius,
+              borderBottomRightRadius: bottomRightRadius,
+              borderTopLeftRadius: topLeftRadius,
+              borderTopRightRadius: topRightRadius,
+            }}
+          >
+            {isLottie && lottieData && (
+              <LottieView source={lottieData} autoPlay loop style={{ width: '100%', height: '100%' }} resizeMode="contain" />
+            )}
+            {!isLottie && imagePath && (
+              <Image source={{ uri: imagePath }} style={styles.image} />
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
+    </>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    right: 16,
-    bottom: 16,
-  },
-  image: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-  },
-});
+export { Floater };
 
+const styles = StyleSheet.create({
+  image: { width: '100%', height: '100%', resizeMode: 'cover' },
+});

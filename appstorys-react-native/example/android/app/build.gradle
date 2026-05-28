@@ -53,4 +53,10 @@ dependencies {
     implementation 'com.facebook.soloader:soloader:0.10.5'
     // Our SDK module
     implementation project(':appstorys-react-native')
+    // Peer dependencies required by the SDK
+    implementation project(':react-native-safe-area-context')
+    implementation project(':lottie-react-native')
+    implementation project(':react-native-fs')
+    implementation project(':react-native-view-shot')
+    implementation project(':react-native-video')
 }

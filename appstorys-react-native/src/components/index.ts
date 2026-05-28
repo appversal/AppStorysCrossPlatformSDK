@@ -11,3 +11,5 @@ export * from './Pip';
 export * from './ScratchCard';
 export * from './SpinWheel';
 
+export { default as Screen } from '../domain/screen/Screen';
+export { default as Measurable } from '../domain/capture/Measurable';

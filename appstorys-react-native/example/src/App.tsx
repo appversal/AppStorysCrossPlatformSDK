@@ -1,276 +1,430 @@
+/**
+ * AppStorys React Native — Example App
+ *
+ * KMP architecture:
+ *   - AppStorys.initialize() once at root
+ *   - <Screen name="..."> wraps each screen — provides ScreenProvider + Overlay
+ *   - Overlay automatically renders Banner, Floater, Csat, Survey, BottomSheet, Modal, CaptureScreenButton
+ *   - No manual campaign prop passing — all components read from ScreenContext
+ */
 import React, { useEffect, useState } from 'react';
 import {
-	SafeAreaView,
-	ScrollView,
-	View,
-	Text,
-	Image,
-	TouchableOpacity,
-	StyleSheet,
-	Dimensions,
-	Linking,
-	ActivityIndicator,
+  ActivityIndicator,
+  Linking,
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import AppStorys, { CampaignData } from 'appstorys-react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import AppStorys, { Screen, Stories, Widgets, Measurable } from 'appstorys-react-native';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
+// ─── SDK credentials ────────────────────────────────────────────────────────
+const APP_ID     = 'f69bdccf-b20f-4938-b39e-7075d76db791';
+const ACCOUNT_ID = '12a9eac5-94ee-4735-9aa6-b8a94cb8fbbb';
+const USER_ID    = 'yash1';
 
-function toFloat(value: unknown): number {
-	if (typeof value === 'number' && Number.isFinite(value)) return value;
-	if (typeof value === 'string') {
-		const parsed = parseFloat(value);
-		return Number.isFinite(parsed) ? parsed : 0;
-	}
-	return 0;
-}
+// ─── Screen names must match what is configured in the AppStorys dashboard ──
+const SCREENS = [
+  'Home Screen Kotlin',
+  'Products',
+  'Profile',
+  'Settings',
+] as const;
+
+type TabIdx = 0 | 1 | 2 | 3;
+const TAB_LABELS = ['Home', 'Shop', 'Profile', 'Settings'] as const;
+
+// ─── Root ────────────────────────────────────────────────────────────────────
 
 export default function App() {
-	const [status, setStatus] = useState('Initializing...');
-	const [userId, setUserId] = useState('');
-	const [campaigns, setCampaigns] = useState<CampaignData[]>([]);
-	const [bannerVisible, setBannerVisible] = useState(true);
-	const [events, setEvents] = useState<string[]>([]);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
+  const [initialized, setInitialized] = useState(false);
+  const [initError, setInitError]     = useState<string | null>(null);
+  const [tab, setTab]                 = useState<TabIdx>(0);
 
-	useEffect(() => {
-		async function init() {
-			try {
-				// Step 1: initialize SDK
-				setStatus('Calling initialize...');
-				await AppStorys.initialize(
-					'f69bdccf-b20f-4938-b39e-7075d76db791',
-					'12a9eac5-94ee-4735-9aa6-b8a94cb8fbbb',
-					'yash1'
-				);
-				setStatus('Initialized. Getting user ID...');
+  useEffect(() => {
+    AppStorys.initialize(APP_ID, ACCOUNT_ID, USER_ID)
+      .then(() => setInitialized(true))
+      .catch((e: any) => setInitError(e?.message ?? String(e)));
+  }, []);
 
-				const uid = await AppStorys.getUserId();
-				setUserId(uid);
-				setStatus(`User: ${uid}. Fetching campaigns...`);
+  if (initError) {
+    return (
+      <SafeAreaView style={styles.center}>
+        <Text style={styles.errorText}>SDK init failed:{'\n'}{initError}</Text>
+      </SafeAreaView>
+    );
+  }
 
-				// Step 2: fetch campaigns for the test screen
-				await AppStorys.getScreenCampaigns('Home Screen React');
+  if (!initialized) {
+    return (
+      <SafeAreaView style={styles.center}>
+        <ActivityIndicator size="large" color="#4f46e5" />
+        <Text style={styles.initLabel}>Initializing AppStorys...</Text>
+      </SafeAreaView>
+    );
+  }
 
-				setStatus('Waiting for campaign data...');
-				await new Promise((r) => setTimeout(r, 2500));
+  const renderScreen = () => {
+    switch (tab) {
+      case 0: return <HomeTab />;
+      case 1: return <ShopTab />;
+      case 2: return <ProfileTab />;
+      case 3: return <SettingsTab />;
+    }
+  };
 
-				// Step 3: read cached campaigns
-				const data = await AppStorys.getCampaigns();
-				setCampaigns(data);
-				setStatus(`Loaded ${data.length} campaigns`);
+  return (
+    // SafeAreaProvider required by react-native-safe-area-context (used in Screen/Overlay)
+    <SafeAreaProvider>
+      <SafeAreaView style={styles.root}>
+        {/* Screen wraps each screen — provides ScreenProvider + Overlay.
+            Overlay auto-renders Banner, Floater, Csat, Survey, BottomSheet, Modal. */}
+        <View style={styles.body}>
+          <Screen name={SCREENS[tab]} options={{ positionList: ['widget_one', 'widget_two'] }}>
+            {renderScreen()}
+          </Screen>
+        </View>
 
-				// Step 4: track default banner impression if present
-				const banner = data.find((c) => c.campaign_type === 'BAN');
-				if (banner) {
-					const id = banner.campaign_id ?? banner.id ?? '';
-					await AppStorys.trackEvent('viewed', id);
-					setEvents((prev) => [...prev, `viewed -> ${id}`]);
-					setStatus(`Banner found: ${id}`);
-				} else {
-					setStatus(`No banner. Types: ${data.map((c) => c.campaign_type).join(', ') || 'none'}`);
-				}
-			} catch (e: any) {
-				const msg = e?.message ?? String(e);
-				setError(msg);
-				setStatus(`Error: ${msg}`);
-			} finally {
-				setLoading(false);
-			}
-		}
-		init();
-	}, []);
-
-	const banner = campaigns.find((c) => c.campaign_type === 'BAN');
-	const details = (banner?.details as Record<string, any> | undefined) ?? banner ?? {};
-	const imageUrl = details?.image ?? banner?.image;
-	const styling = (details?.styling ?? banner?.styling ?? {}) as Record<string, any>;
-	const campaignId = banner?.campaign_id ?? banner?.id ?? '';
-
-	const tl = toFloat(styling?.topLeftRadius);
-	const tr = toFloat(styling?.topRightRadius);
-	const bl = toFloat(styling?.bottomLeftRadius);
-	const br = toFloat(styling?.bottomRightRadius);
-	const mb = toFloat(styling?.marginBottom);
-	const ml = toFloat(styling?.marginLeft);
-	const mr = toFloat(styling?.marginRight);
-
-	const w = toFloat(details?.width ?? banner?.width);
-	const h = toFloat(details?.height ?? banner?.height);
-	const availableWidth = SCREEN_WIDTH - ml - mr;
-	const imageHeight = w > 0 && h > 0 ? availableWidth * (h / w) : undefined;
-
-	const crossButton = (styling?.crossButton ?? {}) as Record<string, any>;
-	const showClose = crossButton?.enabled === true || styling?.enableCloseButton === true;
-
-	const handleBannerTap = async () => {
-		if (campaignId) {
-			await AppStorys.trackEvent('clicked', campaignId);
-			setEvents((prev) => [...prev, `clicked -> ${campaignId}`]);
-		}
-		const link = details?.link ?? banner?.link;
-		if (typeof link === 'string' && link.startsWith('http')) {
-			try {
-				await Linking.openURL(link);
-			} catch (_) { }
-		}
-	};
-
-	const handleDismiss = async () => {
-		if (campaignId) {
-			await AppStorys.dismissCampaign(campaignId);
-			setEvents((prev) => [...prev, `dismissed -> ${campaignId}`]);
-		}
-		setBannerVisible(false);
-	};
-
-	return (
-		<SafeAreaView style={styles.container}>
-			<ScrollView contentContainerStyle={styles.scroll}>
-				<Text style={styles.title}>AppStorys - React Native Test</Text>
-
-				<View style={styles.card}>
-					<Text style={styles.cardTitle}>SDK Status</Text>
-					<Text style={styles.small}>Status: {status}</Text>
-					<Text style={styles.small}>User ID: {userId || 'not set'}</Text>
-					<Text style={styles.small}>Campaigns: {campaigns.length}</Text>
-					<Text style={styles.small}>
-						Types: {campaigns.map((c) => c.campaign_type).join(', ') || 'none'}
-					</Text>
-					{error && <Text style={styles.error}>Error: {error}</Text>}
-					{loading && <ActivityIndicator style={{ marginTop: 8 }} />}
-				</View>
-
-				<View style={styles.card}>
-					<Text style={styles.cardTitle}>Banner Campaign</Text>
-					{banner && imageUrl && bannerVisible ? (
-						<View style={{ marginTop: 8, marginBottom: mb, marginLeft: ml, marginRight: mr }}>
-							<TouchableOpacity activeOpacity={0.9} onPress={handleBannerTap}>
-								<Image
-									source={{ uri: imageUrl }}
-									style={{
-										width: '100%' as any,
-										height: imageHeight ?? 150,
-										borderTopLeftRadius: tl,
-										borderTopRightRadius: tr,
-										borderBottomLeftRadius: bl,
-										borderBottomRightRadius: br,
-									}}
-									resizeMode="cover"
-									onError={(e) => {
-										setEvents((prev) => [...prev, `image error: ${e.nativeEvent.error}`]);
-									}}
-								/>
-							</TouchableOpacity>
-							{showClose && (
-								<TouchableOpacity style={styles.closeBtn} onPress={handleDismiss}>
-									<View style={styles.closeBtnInner}>
-										<Text style={styles.closeBtnText}>X</Text>
-									</View>
-								</TouchableOpacity>
-							)}
-						</View>
-					) : banner && !imageUrl ? (
-						<View style={{ marginTop: 8 }}>
-							<Text style={styles.small}>Banner found but no image URL.</Text>
-							<Text style={styles.tiny}>Details keys: {Object.keys(details).join(', ')}</Text>
-							<Text style={styles.tiny}>Image field: {String(details?.image ?? 'undefined')}</Text>
-						</View>
-					) : !banner ? (
-						<Text style={[styles.small, { marginTop: 8 }]}>
-							No BAN campaign found in {campaigns.length} campaigns.
-						</Text>
-					) : (
-						<Text style={[styles.small, { marginTop: 8 }]}>Banner dismissed.</Text>
-					)}
-				</View>
-
-				<View style={styles.card}>
-					<Text style={styles.cardTitle}>Raw Campaign Data</Text>
-					{campaigns.length === 0 ? (
-						<Text style={styles.small}>No campaigns loaded.</Text>
-					) : (
-						campaigns.map((c, i) => (
-							<View key={i} style={styles.campaignRow}>
-								<Text style={styles.campaignType}>
-									[{c.campaign_type}] {c.campaign_id ?? c.id}
-								</Text>
-								<Text style={styles.tiny}>
-									screen: {c.screen ?? 'none'} | position: {c.position ?? 'none'}
-								</Text>
-								<Text style={styles.tiny}>
-									image: {String(c.details?.image ?? c.image ?? 'none').substring(0, 60)}
-								</Text>
-								<Text style={styles.tiny}>trigger: {String(c.trigger_event ?? 'none')}</Text>
-							</View>
-						))
-					)}
-				</View>
-
-				<View style={styles.card}>
-					<Text style={styles.cardTitle}>Event Log</Text>
-					{events.length === 0 ? (
-						<Text style={styles.small}>No events tracked yet.</Text>
-					) : (
-						events.map((e, i) => (
-							<Text key={i} style={styles.small}>- {e}</Text>
-						))
-					)}
-				</View>
-
-				<View style={styles.card}>
-					<Text style={styles.cardTitle}>Campaign Types Present</Text>
-					{[
-						'BAN', 'FLT', 'WID', 'MOD', 'BTS', 'STR', 'REL', 'PIP', 'CSAT', 'SUR', 'SCRT', 'SPW', 'MIL',
-						'STRK', 'TTP',
-					].map((type) => {
-						const count = campaigns.filter((c) => c.campaign_type === type).length;
-						return (
-							<Text key={type} style={[styles.small, { color: count > 0 ? '#22c55e' : '#999' }]}>
-								{type}: {count} campaign{count !== 1 ? 's' : ''}
-							</Text>
-						);
-					})}
-				</View>
-			</ScrollView>
-		</SafeAreaView>
-	);
+        {/* Bottom tab bar */}
+        <View style={styles.tabBar}>
+          {TAB_LABELS.map((label, i) => {
+            const active = tab === i;
+            return (
+              <TouchableOpacity
+                key={label}
+                style={styles.tabItem}
+                onPress={() => setTab(i as TabIdx)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>
+                  {label}
+                </Text>
+                {active && <View style={styles.tabIndicator} />}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </SafeAreaView>
+    </SafeAreaProvider>
+  );
 }
 
-const styles = StyleSheet.create({
-	container: { flex: 1, backgroundColor: '#f0f0f0' },
-	scroll: { padding: 16, paddingBottom: 40 },
-	title: { fontSize: 22, fontWeight: 'bold', marginBottom: 16, color: '#111' },
-	card: {
-		backgroundColor: '#fff',
-		borderRadius: 12,
-		padding: 16,
-		marginBottom: 12,
-		elevation: 2,
-		shadowColor: '#000',
-		shadowOpacity: 0.08,
-		shadowRadius: 4,
-		shadowOffset: { width: 0, height: 2 },
-	},
-	cardTitle: { fontSize: 15, fontWeight: '700', color: '#222', marginBottom: 4 },
-	small: { fontSize: 12, color: '#555', marginTop: 2 },
-	tiny: { fontSize: 10, color: '#999', marginTop: 1 },
-	error: { fontSize: 12, color: '#ef4444', marginTop: 4, fontWeight: '600' },
-	campaignRow: {
-		paddingVertical: 6,
-		borderBottomWidth: StyleSheet.hairlineWidth,
-		borderBottomColor: '#eee',
-	},
-	campaignType: { fontSize: 12, fontWeight: '600', color: '#333' },
-	closeBtn: { position: 'absolute', top: 12, right: 4 },
-	closeBtnInner: {
-		width: 28,
-		height: 28,
-		borderRadius: 14,
-		backgroundColor: 'rgba(0,0,0,0.5)',
-		justifyContent: 'center',
-		alignItems: 'center',
-	},
-	closeBtnText: { color: '#fff', fontSize: 14 },
-});
+// ─── Home Tab ────────────────────────────────────────────────────────────────
 
+function HomeTab() {
+  const [hasStories, setHasStories] = useState(false);
+
+  return (
+    <ScrollView contentContainerStyle={styles.scroll}>
+      <Measurable appstorys="home-app-bar">
+        <View style={styles.appBar}>
+          <Text style={styles.appBarTitle}>Good morning, Yash 👋</Text>
+        </View>
+      </Measurable>
+
+      {/* Stories — inline, reads STR campaign from ScreenContext */}
+      <View style={styles.section}>
+        {hasStories && <SectionHeader title="Featured Stories" />}
+        <Measurable appstorys="home-stories-row">
+          <View onLayout={(e) => setHasStories(e.nativeEvent.layout.height > 0)}>
+            <Stories />
+          </View>
+        </Measurable>
+      </View>
+
+      {/* Widgets — position widget_one */}
+      <Measurable appstorys="home-widget-one">
+        <Widgets leftPadding={16} rightPadding={16} position="widget_one" />
+      </Measurable>
+
+      {/* Mock: Featured Deals */}
+      <View style={styles.section}>
+        <Measurable appstorys="home-deals-header">
+          <SectionHeader title="Featured Deals" />
+        </Measurable>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {DEALS.map((d, i) => (
+            <Measurable key={d.title} appstorys={`home-deal-card-${i}`}>
+              <DealCard {...d} />
+            </Measurable>
+          ))}
+        </ScrollView>
+      </View>
+
+      {/* Widgets — position widget_two */}
+      <Measurable appstorys="home-widget-two">
+        <Widgets leftPadding={16} rightPadding={16} position="widget_two" />
+      </Measurable>
+
+      {/* Mock: Categories */}
+      <View style={styles.section}>
+        <Measurable appstorys="home-categories-header">
+          <SectionHeader title="Categories" />
+        </Measurable>
+        <View style={styles.categories}>
+          {CATEGORIES.map((c) => (
+            <Measurable key={c.label} appstorys={`home-category-${c.label.toLowerCase()}`}>
+              <CategoryChip {...c} />
+            </Measurable>
+          ))}
+        </View>
+      </View>
+
+      {/* Mock: Trending */}
+      <View style={styles.section}>
+        <Measurable appstorys="home-trending-header">
+          <SectionHeader title="Trending Now" />
+        </Measurable>
+        {TRENDING.map((p, i) => (
+          <Measurable key={p.name} appstorys={`home-trending-item-${i}`}>
+            <ProductTile {...p} />
+          </Measurable>
+        ))}
+      </View>
+    </ScrollView>
+  );
+}
+
+// ─── Shop Tab ────────────────────────────────────────────────────────────────
+
+function ShopTab() {
+  return (
+    <ScrollView contentContainerStyle={styles.scroll}>
+      <Text style={styles.screenTitle}>Shop</Text>
+      <View style={styles.grid}>
+        {PRODUCTS.map((p) => <ProductGridCard key={p.name} {...p} />)}
+      </View>
+    </ScrollView>
+  );
+}
+
+// ─── Profile Tab ─────────────────────────────────────────────────────────────
+
+function ProfileTab() {
+  return (
+    <ScrollView contentContainerStyle={styles.scroll}>
+      <Text style={styles.screenTitle}>My Profile</Text>
+      <View style={styles.avatar}>
+        <Text style={styles.avatarText}>YD</Text>
+      </View>
+      <Text style={styles.profileName}>Yash Demo</Text>
+      <Text style={styles.profileEmail}>yash1@appstorys.co</Text>
+      <View style={styles.section}>
+        {PROFILE_TILES.map((t) => <InfoTile key={t.title} {...t} />)}
+      </View>
+    </ScrollView>
+  );
+}
+
+// ─── Settings Tab ─────────────────────────────────────────────────────────────
+
+function SettingsTab() {
+  const [snack, setSnack] = useState('');
+
+  const trackTestEvent = async () => {
+    await AppStorys.trackEvent('settings_opened');
+    setSnack('Event tracked: settings_opened');
+    setTimeout(() => setSnack(''), 2500);
+  };
+
+  return (
+    <ScrollView contentContainerStyle={styles.scroll}>
+      <Text style={styles.screenTitle}>Settings</Text>
+
+      <SectionHeader title="Account" />
+      <InfoTile title="Notifications"      subtitle="Manage push alerts" />
+      <InfoTile title="Privacy & Security" subtitle="Data and permissions" />
+      <InfoTile title="Language"           subtitle="English" />
+
+      <SectionHeader title="SDK Debug" />
+      <Pressable style={styles.debugButton} onPress={trackTestEvent}>
+        <Text style={styles.debugButtonText}>Track Test Event</Text>
+      </Pressable>
+      {snack ? <Text style={styles.snack}>{snack}</Text> : null}
+
+      <SectionHeader title="Support" />
+      <InfoTile title="Help Center" subtitle="FAQs and guides" />
+      <InfoTile title="About" subtitle="AppStorys SDK" onPress={() =>
+        Linking.openURL('https://appversal.com').catch(() => {})
+      } />
+    </ScrollView>
+  );
+}
+
+// ─── Shared UI primitives ─────────────────────────────────────────────────────
+
+function SectionHeader({ title }: { title: string }) {
+  return <Text style={styles.sectionTitle}>{title}</Text>;
+}
+
+function DealCard({ title, color }: { title: string; color: string }) {
+  return (
+    <View style={[styles.dealCard, { backgroundColor: color }]}>
+      <Text style={styles.dealTitle}>{title}</Text>
+      <Text style={styles.dealSub}>Tap to explore</Text>
+    </View>
+  );
+}
+
+function CategoryChip({ label }: { label: string }) {
+  return (
+    <View style={styles.chip}>
+      <Text style={styles.chipText}>{label}</Text>
+    </View>
+  );
+}
+
+function ProductTile({ name, category, price }: typeof TRENDING[number]) {
+  return (
+    <View style={styles.productTile}>
+      <View style={styles.productTileIcon} />
+      <View style={styles.productTileInfo}>
+        <Text style={styles.productTileName}>{name}</Text>
+        <Text style={styles.productTileCat}>{category}</Text>
+      </View>
+      <Text style={styles.productTilePrice}>{price}</Text>
+    </View>
+  );
+}
+
+function ProductGridCard({ name, category, price }: typeof PRODUCTS[number]) {
+  return (
+    <View style={styles.gridCard}>
+      <View style={styles.gridCardImage} />
+      <Text style={styles.gridCardName} numberOfLines={1}>{name}</Text>
+      <Text style={styles.gridCardCat}>{category}</Text>
+      <Text style={styles.gridCardPrice}>{price}</Text>
+    </View>
+  );
+}
+
+function InfoTile({ title, subtitle, onPress }: { title: string; subtitle?: string; onPress?: () => void }) {
+  return (
+    <TouchableOpacity style={styles.infoTile} onPress={onPress} activeOpacity={onPress ? 0.7 : 1}>
+      <View style={styles.infoTileText}>
+        <Text style={styles.infoTileTitle}>{title}</Text>
+        {subtitle && <Text style={styles.infoTileSub}>{subtitle}</Text>}
+      </View>
+      <Text style={styles.chevron}>›</Text>
+    </TouchableOpacity>
+  );
+}
+
+// ─── Mock data ────────────────────────────────────────────────────────────────
+
+const DEALS = [
+  { title: '50% Off Electronics', color: '#ffd7aa' },
+  { title: 'Buy 2 Get 1 Free',    color: '#bbf7d0' },
+  { title: 'Flash Sale: 6PM',     color: '#fecaca' },
+];
+
+const CATEGORIES = [
+  { label: 'Electronics' },
+  { label: 'Fashion'     },
+  { label: 'Home'        },
+  { label: 'Sports'      },
+];
+
+const TRENDING = [
+  { name: 'Wireless Earbuds', category: 'Electronics', price: '₹1,299' },
+  { name: 'Running Shoes',    category: 'Sports',      price: '₹2,499' },
+  { name: 'Smart Watch',      category: 'Electronics', price: '₹4,999' },
+];
+
+const PRODUCTS = [
+  { name: 'Wireless Earbuds',  category: 'Electronics', price: '₹1,299' },
+  { name: 'Running Shoes',     category: 'Sports',      price: '₹2,499' },
+  { name: 'Smart Watch',       category: 'Electronics', price: '₹4,999' },
+  { name: 'Denim Jacket',      category: 'Fashion',     price: '₹1,899' },
+  { name: 'Coffee Maker',      category: 'Home',        price: '₹3,199' },
+  { name: 'Yoga Mat',          category: 'Sports',      price: '₹699'   },
+  { name: 'Bluetooth Speaker', category: 'Electronics', price: '₹2,199' },
+  { name: 'Backpack',          category: 'Fashion',     price: '₹1,099' },
+];
+
+const PROFILE_TILES = [
+  { title: 'My Orders',       subtitle: '3 active orders' },
+  { title: 'Wishlist',        subtitle: '12 saved items'  },
+  { title: 'Rewards',         subtitle: '480 points'      },
+  { title: 'Saved Addresses', subtitle: '2 addresses'     },
+];
+
+// ─── Styles ──────────────────────────────────────────────────────────────────
+
+const INDIGO = '#4f46e5';
+
+const styles = StyleSheet.create({
+  root:   { flex: 1, backgroundColor: '#f5f5f5' },
+  body:   { flex: 1 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+  scroll: { paddingBottom: 40 },
+
+  initLabel: { marginTop: 12, color: '#555' },
+  errorText: { color: '#ef4444', textAlign: 'center', fontSize: 14 },
+
+  appBar: {
+    backgroundColor: INDIGO,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  appBarTitle: { color: '#fff', fontSize: 18, fontWeight: '700' },
+
+  screenTitle: { fontSize: 22, fontWeight: '700', color: '#111', margin: 16 },
+
+  section:      { paddingHorizontal: 16, marginTop: 16 },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#222', marginBottom: 12 },
+
+  dealCard:  { width: 180, height: 120, borderRadius: 12, padding: 16, marginRight: 12, justifyContent: 'flex-end' },
+  dealTitle: { fontWeight: '700', fontSize: 14 },
+  dealSub:   { fontSize: 11, color: '#555', marginTop: 2 },
+
+  categories: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip:       { backgroundColor: '#e0e7ff', borderRadius: 20, paddingVertical: 6, paddingHorizontal: 14 },
+  chipText:   { color: INDIGO, fontWeight: '600', fontSize: 12 },
+
+  productTile: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff',
+    borderRadius: 10, padding: 12, marginBottom: 8, elevation: 1,
+    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 2, shadowOffset: { width: 0, height: 1 },
+  },
+  productTileIcon:  { width: 40, height: 40, borderRadius: 20, backgroundColor: '#e0e7ff', marginRight: 12 },
+  productTileInfo:  { flex: 1 },
+  productTileName:  { fontWeight: '600', color: '#222' },
+  productTileCat:   { fontSize: 11, color: '#999', marginTop: 2 },
+  productTilePrice: { fontWeight: '700', color: INDIGO },
+
+  grid:          { flexDirection: 'row', flexWrap: 'wrap', padding: 8, gap: 8 },
+  gridCard:      { width: '47%', backgroundColor: '#fff', borderRadius: 10, overflow: 'hidden', padding: 8 },
+  gridCardImage: { height: 100, backgroundColor: '#e0e7ff', borderRadius: 8, marginBottom: 8 },
+  gridCardName:  { fontWeight: '700', fontSize: 13, color: '#222' },
+  gridCardCat:   { fontSize: 11, color: '#999' },
+  gridCardPrice: { fontWeight: '700', color: INDIGO, marginTop: 4 },
+
+  avatar:       { width: 88, height: 88, borderRadius: 44, backgroundColor: '#e0e7ff', alignSelf: 'center', marginTop: 24, justifyContent: 'center', alignItems: 'center' },
+  avatarText:   { fontSize: 28, fontWeight: '700', color: INDIGO },
+  profileName:  { textAlign: 'center', fontSize: 20, fontWeight: '700', marginTop: 8, color: '#111' },
+  profileEmail: { textAlign: 'center', fontSize: 13, color: '#999', marginBottom: 4 },
+
+  infoTile:      { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', padding: 14, marginBottom: 1 },
+  infoTileText:  { flex: 1 },
+  infoTileTitle: { fontWeight: '600', color: '#222' },
+  infoTileSub:   { fontSize: 12, color: '#999', marginTop: 2 },
+  chevron:       { fontSize: 20, color: '#ccc' },
+
+  debugButton:     { margin: 16, backgroundColor: '#222', borderRadius: 10, paddingVertical: 14, alignItems: 'center' },
+  debugButtonText: { color: '#fff', fontWeight: '600', fontSize: 15 },
+  snack:           { textAlign: 'center', color: '#22c55e', marginTop: 8, fontWeight: '600' },
+
+  tabBar:          { flexDirection: 'row', backgroundColor: '#fff', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#ddd', paddingBottom: 4 },
+  tabItem:         { flex: 1, alignItems: 'center', paddingTop: 10, paddingBottom: 4 },
+  tabLabel:        { fontSize: 12, color: '#aaa', fontWeight: '500' },
+  tabLabelActive:  { color: INDIGO, fontWeight: '700' },
+  tabIndicator:    { width: 4, height: 4, borderRadius: 2, backgroundColor: INDIGO, marginTop: 3 },
+});

@@ -9,7 +9,7 @@ interface SpinWheelProps {
 const REWARDS = ['5% OFF', '10% OFF', 'Free Shipping', 'Try Again'];
 
 export function SpinWheel({ campaigns }: SpinWheelProps) {
-  const campaign = campaigns.find((item) => item.campaign_type === 'SPW');
+  const campaign = campaigns.find((item) => item.campaign_type === 'STW');
   const [result, setResult] = useState<string | null>(null);
 
   if (!campaign) return null;

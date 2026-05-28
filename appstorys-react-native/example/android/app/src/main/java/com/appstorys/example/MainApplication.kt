@@ -8,6 +8,11 @@ import com.facebook.react.ReactNativeHost
 import com.facebook.react.ReactPackage
 import com.facebook.react.shell.MainReactPackage
 import com.facebook.soloader.SoLoader
+import com.th3rdwave.safeareacontext.SafeAreaContextPackage
+import com.airbnb.android.react.lottie.LottiePackage
+import com.rnfs.RNFSPackage
+import fr.greweb.reactnativeviewshot.RNViewShotPackage
+import com.brentvatne.react.ReactVideoPackage
 
 class MainApplication : Application(), ReactApplication {
 
@@ -17,7 +22,12 @@ class MainApplication : Application(), ReactApplication {
 
         override fun getPackages(): List<ReactPackage> = listOf(
             MainReactPackage(),
-            AppStorysPackage()
+            AppStorysPackage(),
+            SafeAreaContextPackage(),
+            LottiePackage(),
+            RNFSPackage(),
+            RNViewShotPackage(),
+            ReactVideoPackage()
         )
 
         override fun getJSMainModuleName(): String = "index"

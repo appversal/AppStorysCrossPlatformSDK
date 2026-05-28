@@ -7,3 +7,4 @@ before_install:
 
 install:
   - ./gradlew :shared-core:publishToMavenLocal -x test
+  - ./gradlew :app:appstorys:publishToMavenLocal -x test

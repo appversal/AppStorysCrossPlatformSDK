@@ -1,46 +1,79 @@
-import React from 'react';
-import { Modal as RNModal, Pressable, StyleSheet, Text, View } from 'react-native';
-import AppStorys, { CampaignData } from '../index';
+import { useEffect, useState } from 'react';
+import trackEvent from '../domain/actions/trackEvent';
+import { removeTrackedEvent } from '../domain/actions/utils/viaAppStorys';
+import FullPageCarouselModal from './modals/FullPageCarouselModal';
+import MediaOnlyModal from './modals/MediaOnlyModal';
+import ModalWithCTA from './modals/ModalWithCTA';
+import AppStorys from '../index';
+import useScreen from '../domain/screen/useScreen';
 
-interface ModalProps {
-  campaigns: CampaignData[];
-  visible: boolean;
-  onClose: () => void;
-}
+export default function Modal() {
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
-export function Modal({ campaigns, visible, onClose }: ModalProps) {
-  const campaign = campaigns.find((item) => item.campaign_type === 'MOD');
-  if (!campaign) return null;
+  const { campaigns } = useScreen();
+  const data = campaigns.find((c) => c.campaign_type === 'MOD') as any;
+  const modalDetails = data?.details || null;
+  const modal = modalDetails?.modals?.[0];
 
-  const campaignId = campaign.campaign_id ?? campaign.id ?? '';
+  useEffect(() => {
+    if (data?.id && modalDetails && modal) {
+      setIsModalVisible(true);
+      void trackEvent('viewed', data.id);
+    }
+  }, [data?.id, modalDetails, modal]);
 
-  const handleClose = async () => {
-    if (campaignId) await AppStorys.dismissCampaign(campaignId);
-    onClose();
+  const handleCloseClick = () => {
+    setIsModalVisible(false);
+    if (data?.id) removeTrackedEvent(`viaAppStorys${data.id}`);
   };
 
-  return (
-    <RNModal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
-      <Pressable style={styles.overlay} onPress={handleClose}>
-        <View style={styles.card}>
-          <Text style={styles.title}>Campaign Modal</Text>
-          <Text style={styles.subtitle}>{campaignId || 'No campaign id'}</Text>
-        </View>
-      </Pressable>
-    </RNModal>
-  );
+  const handleModalClick = (link?: string) => {
+    if (data?.id && link) {
+      void trackEvent('clicked', data.id);
+      AppStorys.handleNavigation(link);
+    }
+  };
+
+  const handlePrimaryCta = (link?: string) => {
+    if (link) {
+      void trackEvent('clicked', data?.id || '', { cta_type: 'primary' });
+      AppStorys.handleNavigation(link);
+    }
+  };
+
+  const handleSecondaryCta = (link?: string) => {
+    if (link) {
+      void trackEvent('clicked', data?.id || '', { cta_type: 'secondary' });
+      AppStorys.handleNavigation(link);
+    }
+  };
+
+  if (!modalDetails || !isModalVisible || !modal) return null;
+
+  const content = (modal as any).content;
+  const modalType = (modal as any).modalType;
+  const isCarousel = content?.set && Array.isArray(content.set) && content.set.length > 0;
+  const isMediaOnly =
+    modalType?.toLowerCase().includes('media-only') ||
+    (!content?.titleText && !content?.subtitleText && !content?.primaryCtaText && !content?.secondaryCtaText);
+
+  if (isCarousel || modalType?.toLowerCase().includes('carousel')) {
+    return (
+      <FullPageCarouselModal
+        modalDetails={modalDetails}
+        onClose={handleCloseClick}
+        onModalClick={handleModalClick}
+        onPrimaryCta={handlePrimaryCta}
+        onSecondaryCta={handleSecondaryCta}
+      />
+    );
+  }
+
+  if (isMediaOnly) {
+    return <MediaOnlyModal modal={modal} onClose={handleCloseClick} onModalClick={handleModalClick} />;
+  }
+
+  return <ModalWithCTA modal={modal} onClose={handleCloseClick} onPrimaryCta={handlePrimaryCta} onSecondaryCta={handleSecondaryCta} />;
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  card: { backgroundColor: '#fff', borderRadius: 12, width: '100%', padding: 16 },
-  title: { fontWeight: '700', fontSize: 16 },
-  subtitle: { marginTop: 8, color: '#444' },
-});
-
+export { Modal };
